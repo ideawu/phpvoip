@@ -5,12 +5,32 @@ Logger::init();
 include_once('UdpLink.php');
 include_once('SIP.php');
 
+// $str = <<<EOT
+// REGISTER sip:127.0.0.1 SIP/2.0
+// From: "2001" <sip:2001@127.0.0.1>;tag=tag_40846_1497969530.985607
+// To: "2001" <sip:2001@127.0.0.1>
+// Call-ID: call_21043_1497969530.985595
+// CSeq: 24134 REGISTER
+// Via: SIP/2.0/UDP 127.0.0.1:63862;rport;branch=z9hG4bK_28176_1497969530.985612
+// Contact: <sip:2001@127.0.0.1:63862>
+// User-Agent: phpvoip
+// Content-Length: 0
+// 
+// 
+// EOT;
+// 
+// $msg = new SipMessage();
+// $msg->decode($str);
+// echo $str . "\n\n";
+// echo $msg->encode() . "\n";
+// die();
+
 $link = UdpLink::listen();
 
 
 $sip = new SipAgent();
 $sip->proxy_ip = '127.0.0.1';
-$sip->proxy_port = 5060;
+$sip->proxy_port = 5050;
 $sip->register('2001', '1000');
 
 $time = microtime(1);

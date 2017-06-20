@@ -59,14 +59,12 @@ class SipMessage
 	}
 	
 	function decode($buf){
-		$ps = explode("\r\n\r\n", $buf, 2);
-		if(count($ps) != 2){
-			return false;
-		}
+		$buf = str_replace("\r\n", "\n", $buf);
+		$ps = explode("\n\n", $buf, 2);
 		$header = $ps[0];
-		$body = $ps[1];
+		$this->body = isset($ps[1])? $ps[1] : '';
 		
-		$lines = explode("\r\n", $header);
+		$lines = explode("\n", $header);
 		$ps = explode(' ', $lines[0], 3);
 		if(count($ps) != 3){
 			return false;
@@ -92,9 +90,8 @@ class SipMessage
 				}else{
 					break;
 				}
-				$this->parse_header_line($line);
 			}
-			
+			$this->parse_header_line($line);
 		}
 	}
 	
@@ -102,7 +99,7 @@ class SipMessage
 		$ps = explode(':', $line, 2);
 		if(count($ps) != 2){
 			// bad header line
-			continue;
+			return;
 		}
 		$key = $ps[0];
 		$val = trim($ps[1]);
