@@ -23,6 +23,8 @@ class SipMessage
 	public $to_tag;
 	public $content_length = 0;
 	
+	public $expires = 60;
+	
 	// 未详细解析的 header, 每个元素是 pair [key, val]
 	public $headers = array();
 	public $body = '';
@@ -160,6 +162,8 @@ class SipMessage
 			// TODO: support contact list
 			$ps = explode(',', $val);
 			$this->contact = trim($ps[0]);
+		}else if($key == 'Expires'){
+			$this->expires = intval($val);
 		}else if($key == 'Content-Length'){
 			$this->content_length = intval($val);
 		}else{

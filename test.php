@@ -47,8 +47,8 @@ while(1){
 		$msg->username = $sip->username;
 		$buf = $msg->encode();
 		
-		Logger::debug("send");
-		echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
+		Logger::debug("send " . ($msg->method? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason));
+		#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 		
 		$link->sendto($msg->encode(), $sip->proxy_ip, $sip->proxy_port);
 	}
@@ -60,19 +60,24 @@ while(1){
 	
 	$read[] = $link->sock;
 
-	$ret = @socket_select($read, $write, $except, 0, 100*1000);
+	if($msgs){
+		$timeout = 0;
+	}else{
+		$timeout = 100*1000;
+	}
+	$ret = @socket_select($read, $write, $except, 0, $timeout);
 	if($ret === false){
 		Logger::error(socket_strerror(socket_last_error()));
 		return false;
 	}
+	#Logger::debug('');
 	
 	if($read){
 		$buf = $link->recvfrom($ip, $port);
-		Logger::debug("recv");
-		echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
-		
 		$msg = new SipMessage();
 		if($msg->decode($buf) > 0){
+			Logger::debug("recv " . ($msg->method? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason));
+			#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 			$sip->incomming($msg);
 		}
 	}

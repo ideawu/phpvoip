@@ -30,7 +30,7 @@ class SipSession
 		$this->call_id = self::$call_id_prefix . SIP::token();
 		$this->from_tag = self::$tag_prefix . SIP::token();
 		$this->branch = self::$branch_prefix . SIP::token();
-		$this->cseq = mt_rand(1, 20);
+		$this->cseq = mt_rand(1, 1000);
 	}
 	
 	static function register(){
@@ -57,9 +57,13 @@ class SipSession
 				$msg->call_id = $this->call_id;
 				$msg->branch = $this->branch;
 				$msg->cseq = $this->cseq;
-			}
-			if($this->state == SIP::AUTHING){
-				$msg->headers[] = array('Authorization', $this->auth);
+				if($this->state == SIP::AUTHING){
+					$msg->headers[] = array('Authorization', $this->auth);
+				}
+			}else if($this->state == SIP::ESTABLISHED){
+				Logger::debug("refresh registration");
+				$this->state = SIP::REGISTERING;
+				$this->cseq ++;
 			}
 		}else if($this->role == SIP::REGISTRAR){
 			Logger::debug("send OK for REGISTER");
@@ -72,17 +76,23 @@ class SipSession
 			if($this->state == SIP::REGISTERING || $this->state == SIP::AUTHING){
 				if($msg->is_response()){
 					if($msg->code == 200){
-						Logger::debug("response {$msg->code} {$msg->reason}, registered");
+						Logger::debug("registered");
 						$this->to_tag = $msg->to_tag;
 						$this->state = SIP::ESTABLISHED;
-						// TODO:
+
+						// registration refresh
+						$expires = $msg->expires - 5;
+						$expires = min(60, max(5, $expires));
+						Logger::debug("expires: $expires");
+						$this->timers = self::$reg_timers;
+						$this->timers[0] = $expires;
 					}else if($msg->code == 401){
 						if($this->state == SIP::AUTHING){
 							Logger::error("auth failed");
 							$this->timers = self::$reg_timers;
 							$this->timers[0] = 3; // wait before retry
 						}else{
-							Logger::debug("response {$msg->code} {$msg->reason}, auth");
+							Logger::debug("auth");
 							$this->timers = self::$reg_timers;
 						}
 						$this->cseq ++;
@@ -97,8 +107,8 @@ class SipSession
 						return;
 					}
 				}
-			}else if($this->state == SIP::REGISTERED){
-				//
+			}else if($this->state == SIP::ESTABLISHED){
+				Logger::debug("recv, exit.");
 				die();
 			}
 		}
