@@ -47,7 +47,7 @@ while(1){
 		$msg->username = $sip->username;
 		$buf = $msg->encode();
 		
-		Logger::debug("send " . ($msg->method? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason));
+		Logger::debug("send " . ($msg->method? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 		#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 		
 		$link->sendto($msg->encode(), $sip->proxy_ip, $sip->proxy_port);
@@ -76,7 +76,7 @@ while(1){
 		$buf = $link->recvfrom($ip, $port);
 		$msg = new SipMessage();
 		if($msg->decode($buf) > 0){
-			Logger::debug("recv " . ($msg->method? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason));
+			Logger::debug("recv " . ($msg->method? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 			#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 			$sip->incomming($msg);
 		}

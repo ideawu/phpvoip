@@ -76,7 +76,7 @@ class SipSession
 			if($this->state == SIP::REGISTERING || $this->state == SIP::AUTHING){
 				if($msg->is_response()){
 					if($msg->code == 200){
-						Logger::debug("registered");
+						Logger::debug("registered ");
 						$this->to_tag = $msg->to_tag;
 						$this->state = SIP::ESTABLISHED;
 
