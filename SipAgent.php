@@ -27,7 +27,7 @@ class SipAgent
 		$sess = SipSession::register();
 		$sess->uri = "sip:{$this->domain}";
 		$sess->from = $this->from;
-		$sess->to = $this->to;
+		$sess->to = $this->from;
 		
 		$sess->username = $this->username;
 		$sess->password = $this->password;

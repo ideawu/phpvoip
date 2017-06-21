@@ -29,9 +29,9 @@ $link = UdpLink::listen();
 
 
 $sip = new SipAgent();
-#$sip->domain = 'alice.com';
 $sip->proxy_ip = '172.26.0.96';
 $sip->proxy_port = 5060;
+$sip->domain = 'alice.com';
 $sip->register('1001', '1000');
 
 $time = microtime(1);

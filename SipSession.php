@@ -30,7 +30,7 @@ class SipSession
 		$this->call_id = self::$call_id_prefix . SIP::token();
 		$this->from_tag = self::$tag_prefix . SIP::token();
 		$this->branch = self::$branch_prefix . SIP::token();
-		$this->cseq = mt_rand(1, 1000);
+		$this->cseq = mt_rand(1, 10000);
 	}
 	
 	static function register(){
