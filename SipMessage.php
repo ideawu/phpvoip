@@ -21,10 +21,19 @@ class SipMessage
 	public $to;
 	public $from_tag;
 	public $to_tag;
+	public $content_length = 0;
 	
 	// 未详细解析的 header, 每个元素是 pair [key, val]
 	public $headers = array();
 	public $body = '';
+	
+	function is_request(){
+		return (bool)$this->method;
+	}
+	
+	function is_response(){
+		return !$this->is_request();
+	}
 	
 	function encode(){
 		$headers = array();
@@ -51,34 +60,50 @@ class SipMessage
 			$headers[] = "Contact: <sip:{$this->username}@{$this->ip}:{$this->port}>";
 		}
 		
+		foreach($this->headers as $v){
+			$headers[] = "{$v[0]}: {$v[1]}";
+		}
+		
+		$this->content_length = strlen($this->body);
 		$headers[] = "User-Agent: phpvoip";
-		$headers[] = "Content-Length: " . strlen($this->body);;
+		$headers[] = "Content-Length: " . $this->content_length;
 		
 		$ret = join("\r\n", $headers) . "\r\n\r\n{$this->body}";
 		return $ret;
 	}
 	
+	// 返回解析的字节数，支持流式解析
 	function decode($buf){
-		$buf = str_replace("\r\n", "\n", $buf);
-		$ps = explode("\n\n", $buf, 2);
-		$header = $ps[0];
-		$this->body = isset($ps[1])? $ps[1] : '';
+		$sp_len = 4;
+		$pos = strpos($buf, "\r\n\r\n");
+		if($pos === false){
+			$sp_len = 2;
+			$pos = strpos($buf, "\n\n");
+			if($pos === false){
+				return 0;
+			}
+		}
+		$header = substr($buf, 0, $pos);
+		$pos += $sp_len;
 		
 		$lines = explode("\n", $header);
-		$ps = explode(' ', $lines[0], 3);
-		if(count($ps) != 3){
-			return false;
-		}
-		if($ps[0] == 'SIP/2.0'){
-			// is response
-			$this->code = intval($ps[1]);
-			$this->reason = $ps[2];
-		}else{
-			$this->method = $ps[0];
-			$this->uri = $ps[1];
-		}
-		
-		for($i=1; $i<count($lines); $i++){
+		for($i=0; $i<count($lines); $i++){
+			if($i == 0){
+				$ps = explode(' ', trim($lines[0]), 3);
+				if(count($ps) != 3){
+					return false;
+				}
+				if($ps[0] == 'SIP/2.0'){
+					// is response
+					$this->code = intval($ps[1]);
+					$this->reason = $ps[2];
+				}else{
+					$this->method = $ps[0];
+					$this->uri = $ps[1];
+				}
+				continue;
+			}
+			
 			$line = $lines[$i];
 			// multi-line value
 			for($j=$i+1; $j<count($lines); $j++){
@@ -93,6 +118,9 @@ class SipMessage
 			}
 			$this->parse_header_line($line);
 		}
+		
+		$this->body = substr($buf, $pos, $this->content_length);
+		return $pos + $this->content_length;
 	}
 	
 	private function parse_header_line($line){
@@ -101,7 +129,7 @@ class SipMessage
 			// bad header line
 			return;
 		}
-		$key = $ps[0];
+		$key = trim($ps[0]);
 		$val = trim($ps[1]);
 		// TODO: case insensitive
 		if($key == 'From'){
@@ -127,10 +155,15 @@ class SipMessage
 			if(isset($ret['tags']['branch'])){
 				$this->branch = $ret['tags']['branch'];
 			}
+			$this->via = $val;
 		}else if($key == 'Contact'){
 			// TODO: support contact list
 			$ps = explode(',', $val);
 			$this->contact = trim($ps[0]);
+		}else if($key == 'Content-Length'){
+			$this->content_length = intval($val);
+		}else{
+			$this->headers[] = array($key, $val);
 		}
 	}
 	

@@ -14,11 +14,11 @@ include_once('SIP.php');
 // Via: SIP/2.0/UDP 127.0.0.1:63862;rport;branch=z9hG4bK_28176_1497969530.985612
 // Contact: <sip:2001@127.0.0.1:63862>
 // User-Agent: phpvoip
-// Content-Length: 0
-// 
-// 
+// Content-Length: 1
+//
+// a
 // EOT;
-// 
+//
 // $msg = new SipMessage();
 // $msg->decode($str);
 // echo $str . "\n\n";
@@ -29,9 +29,10 @@ $link = UdpLink::listen();
 
 
 $sip = new SipAgent();
-$sip->proxy_ip = '127.0.0.1';
-$sip->proxy_port = 5050;
-$sip->register('2001', '1000');
+#$sip->domain = 'alice.com';
+$sip->proxy_ip = '172.26.0.96';
+$sip->proxy_port = 5060;
+$sip->register('1001', '1000');
 
 $time = microtime(1);
 while(1){
@@ -44,7 +45,10 @@ while(1){
 		$msg->ip = $link->local_ip;
 		$msg->port = $link->local_port;
 		$msg->username = $sip->username;
-		echo $msg->encode() . "\n";
+		$buf = $msg->encode();
+		
+		Logger::debug("send");
+		echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 		
 		$link->sendto($msg->encode(), $sip->proxy_ip, $sip->proxy_port);
 	}
@@ -63,7 +67,13 @@ while(1){
 	}
 	
 	if($read){
-		$ret = $link->recvfrom($ip, $port);
-		var_dump($ret);
+		$buf = $link->recvfrom($ip, $port);
+		Logger::debug("recv");
+		echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
+		
+		$msg = new SipMessage();
+		if($msg->decode($buf) > 0){
+			$sip->incomming($msg);
+		}
 	}
 }

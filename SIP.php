@@ -56,4 +56,23 @@ class SIP
 		}
 		return $ret;
 	}
+	
+	static function parse_www_auth($str){
+		$ret = array(
+			'scheme' => '',
+		);
+		$kvs = explode(',', $str);
+		foreach($kvs as $n=>$kv){
+			$kv = trim($kv);
+			if($n == 0){
+				$ps = explode(' ', $kv, 2);
+				$ret['scheme'] = $ps[0];
+				$kv = $ps[1];
+			}
+			list($k, $v) = explode('=', $kv);
+			$v = trim($v, '"');
+			$ret[$k] = $v;
+		}
+		return $ret;
+	}
 }

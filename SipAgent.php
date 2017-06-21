@@ -29,6 +29,9 @@ class SipAgent
 		$sess->from = $this->from;
 		$sess->to = $this->to;
 		
+		$sess->username = $this->username;
+		$sess->password = $this->password;
+		
 		$this->reg_sess = $sess;
 		$this->sessions[] = $sess;
 	}
@@ -61,7 +64,26 @@ class SipAgent
 	
 	// 当有收到消息时，调用一次
 	function incomming($msg){
-		
+		foreach($this->sessions as $sess){
+			if($sess->call_id != $msg->call_id){
+				continue;
+			}
+			if($sess->from_tag != $msg->from_tag){
+				continue;
+			}
+			
+			if($msg->is_response()){
+				if($msg->cseq != $sess->cseq){
+					continue;
+				}
+				if($msg->branch != $sess->branch){
+					continue;
+				}
+			}
+			
+			$sess->on_recv($msg);
+			break;
+		}
 	}
 }
 
