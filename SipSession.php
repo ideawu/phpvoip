@@ -138,6 +138,7 @@ class SipSession
 			$this->state = SIP::REG_REFRESH;
 			$this->to_tag = null;
 			$this->cseq ++;
+			$this->timers = self::$reg_timers;
 		}
 	}
 	
