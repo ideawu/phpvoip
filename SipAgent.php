@@ -42,6 +42,7 @@ class SipAgent
 		foreach($this->sessions as $index=>$sess){
 			if($sess->state == SIP::CLOSED){
 				unset($this->sessions[$index]);
+				Logger::debug("del session");
 				continue;
 			}
 			
@@ -49,8 +50,13 @@ class SipAgent
 			if($sess->timers[0] <= 0){
 				array_shift($sess->timers);
 				if(count($sess->timers[0]) == 0){
-					// transaction timeout
-					Logger::debug("transaction timeout");
+					if($sess->state == SIP::CLOSING){
+						//
+					}else{
+						// transaction timeout
+						Logger::debug("transaction timeout");
+					}
+					$sess->state = SIP::CLOSED;
 					unset($this->sessions[$index]);
 				}else{
 					// re/transmission timeout

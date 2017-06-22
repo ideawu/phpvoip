@@ -9,9 +9,10 @@ class SipSession
 	public $password;
 
 	private $expires = 60;
-	private static $reg_timers = array(0, 0.5, 1, 2, 2);
-	private static $call_timers = array(0, 0.5, 1, 2, 2);
-	private static $dialog_timers = array(10, 2);
+	private static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
+	private static $call_timers = array(0, 0.5, 1, 2, 4, 2);
+	private static $refresh_timers = array(10, 2);
+	private static $closing_timers = array(0, 10);
 	private static $call_id_prefix = 'call_';
 	private static $tag_prefix = 'tag_';
 	private static $branch_prefix = 'z9hG4bK_';
@@ -78,19 +79,36 @@ class SipSession
 		}else if($this->role == SIP::CALLEE){
 			$msg = $this->role_callee_send();
 		}
+		if($msg){
+			$msg->uri = $this->uri;
+			$msg->call_id = $this->call_id;
+			$msg->branch = $this->branch;
+			$msg->cseq = $this->cseq;
+			$msg->from = $this->from;
+			$msg->from_tag = $this->from_tag;
+			if($msg->is_response()){
+				$msg->to = $this->from;
+				$msg->to_tag = $this->to_tag;
+			}
+		}
 		return $msg;
 	}
 	
 	function on_recv($msg){
-		if($msg->is_response()){
-			if($msg->cseq != $this->cseq){
-				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$this->cseq}");
-				return;
-			}
+		if($msg->is_request()){
+			$this->uri = $msg->uri; // will uri be updated during session?
+			$this->branch = $msg->branch;
+			$this->cseq = $msg->cseq;
+		}else{
 			if($msg->branch != $this->branch){
 				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$this->branch}");
 				return;
 			}
+			if($msg->cseq != $this->cseq){
+				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$this->cseq}");
+				return;
+			}
+			$msg->to_tag = $this->to_tag;
 		}
 		
 		if($this->role == SIP::REGISTER){
@@ -110,13 +128,6 @@ class SipSession
 			
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
-			$msg->uri = $this->uri;
-			$msg->call_id = $this->call_id;
-			$msg->branch = $this->branch;
-			$msg->cseq = $this->cseq;
-			
-			$msg->from = $this->from;
-			$msg->from_tag = $this->from_tag;
 			$msg->to = $this->from;
 			if($this->state == SIP::AUTHING){
 				$msg->headers[] = array('Authorization', $this->auth);
@@ -145,17 +156,16 @@ class SipSession
 					$this->timers = self::$reg_timers;
 					$this->timers[0] = $expires;
 				}else if($msg->code == 401){
+					$this->cseq ++;
+					$this->auth = $this->www_auth($msg->auth);
+					$this->timers = self::$reg_timers;
 					if($this->state == SIP::AUTHING){
 						Logger::error("auth failed");
-						$this->timers = self::$reg_timers;
 						$this->timers[0] = 3; // wait before retry
 					}else{
 						Logger::debug("auth");
-						$this->timers = self::$reg_timers;
+						$this->state = SIP::AUTHING;
 					}
-					$this->cseq ++;
-					$this->state = SIP::AUTHING;
-					$this->auth = $this->www_auth($msg->auth);
 				}
 			}
 		}else if($this->state == SIP::REGISTERED){
@@ -200,36 +210,23 @@ class SipSession
 			$msg->code = 200;
 			$msg->reason = 'OK';
 			$msg->method = 'INVITE';
-			$msg->uri = $this->uri;
-			$msg->call_id = $this->call_id;
-			$msg->branch = $this->branch;
-			$msg->cseq = $this->cseq;
-			
-			$msg->from = $this->from;
-			$msg->from_tag = $this->from_tag;
-			$msg->to = $this->from;
-			$msg->to_tag = $this->to_tag;
 			return $msg;
 		}else if($this->state == SIP::ESTABLISHED){
 			// TODO: refresh
-			$this->timers = self::$dialog_timers;
+			$this->timers = self::$refresh_timers;
 			Logger::debug("refresh dialog");
 		}else if($this->state == SIP::CLOSING){
-			$this->state = SIP::CLOSED;
+			// TESTING
+			// static $i = 0;
+			// if($i++%2 == 0){
+			// 	echo "drop OK for BYE\n";
+			// 	return;
+			// }
 			
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';
 			$msg->method = 'BYE';
-			$msg->uri = $this->uri;
-			$msg->call_id = $this->call_id;
-			$msg->branch = $this->branch;
-			$msg->cseq = $this->cseq;
-			
-			$msg->from = $this->from;
-			$msg->from_tag = $this->from_tag;
-			$msg->to = $this->from;
-			$msg->to_tag = $this->to_tag;
 			return $msg;
 		}
 	}
@@ -239,15 +236,17 @@ class SipSession
 			if($msg->method == 'ACK'){
 				Logger::debug("call established");
 				$this->state = SIP::ESTABLISHED;
-				$this->timers = self::$dialog_timers;
+				$this->timers = self::$refresh_timers;
 			}
-		}else if($this->state == SIP::ESTABLISHED){
+		}else if($this->state == SIP::ESTABLISHED || $this->state == SIP::CLOSING){
 			if($msg->method == 'BYE'){
-				Logger::debug("call closed by BYE");
+				if($this->state == SIP::ESTABLISHED){
+					Logger::debug("call closed by BYE");
+				}else{
+					Logger::debug("recv BYE while closing");
+				}
 				$this->state = SIP::CLOSING;
-				$this->cseq = $msg->cseq;
-				$this->branch = $msg->branch;
-				array_unshift($this->timers, 0);
+				$this->timers = self::$closing_timers;
 			}
 		}
 	}
