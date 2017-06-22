@@ -33,7 +33,6 @@ class SipAgent
 	}
 	
 	function unregister(){
-		
 	}
 	
 	// 返回要发送的报文列表
@@ -82,13 +81,13 @@ class SipAgent
 		}
 		if($msg->method == 'INVITE'){
 			Logger::debug("new session");
-			
 			$sess = SipSession::oncall($msg);
 			$this->sessions[] = $sess;
-			return;
+		}else if($msg->method == 'REGISTER'){
+			//
+		}else{
+			Logger::debug("ignore " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 		}
-
-		Logger::debug("ignore " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 	}
 }
 
