@@ -24,15 +24,11 @@ class SipAgent
 		$this->password = $password;
 		$this->from = "\"{$this->username}\" <sip:{$this->username}@{$this->domain}>";
 		
-		$sess = SipSession::register();
+		$sess = SipSession::register($username, $password);
 		$sess->uri = "sip:{$this->domain}";
 		$sess->from = $this->from;
 		$sess->to = $this->from;
 		
-		$sess->username = $this->username;
-		$sess->password = $this->password;
-		
-		$this->reg_sess = $sess;
 		$this->sessions[] = $sess;
 	}
 	
@@ -43,13 +39,19 @@ class SipAgent
 	// 返回要发送的报文列表
 	function outgoing($time, $timespan){
 		$ret = array();
-		foreach($this->sessions as $sess){
+		foreach($this->sessions as $index=>$sess){
+			if($sess->state == SIP::CLOSED){
+				unset($this->sessions[$index]);
+				continue;
+			}
+			
 			$sess->timers[0] -= $timespan;
 			if($sess->timers[0] <= 0){
 				array_shift($sess->timers);
 				if(count($sess->timers[0]) == 0){
 					// transaction timeout
 					Logger::debug("transaction timeout");
+					unset($this->sessions[$index]);
 				}else{
 					// re/transmission timeout
 					$msg = $sess->to_send();
@@ -65,25 +67,22 @@ class SipAgent
 	// 当有收到消息时，调用一次
 	function incomming($msg){
 		foreach($this->sessions as $sess){
-			if($sess->call_id != $msg->call_id){
-				continue;
-			}
-			if($sess->from_tag != $msg->from_tag){
-				continue;
-			}
-			
-			if($msg->is_response()){
-				if($msg->cseq != $sess->cseq){
-					continue;
-				}
-				if($msg->branch != $sess->branch){
-					continue;
+			if($msg->call_id == $sess->call_id && $msg->from_tag == $sess->from_tag){
+				if(!$sess->to_tag || $msg->to_tag == $sess->to_tag){
+					$sess->on_recv($msg);
+					return;
 				}
 			}
-			
-			$sess->on_recv($msg);
-			break;
 		}
+		if($msg->method == 'INVITE'){
+			Logger::debug("new session");
+			
+			$sess = SipSession::oncall($msg);
+			$this->sessions[] = $sess;
+			return;
+		}
+
+		Logger::debug("ignore " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 	}
 }
 

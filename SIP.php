@@ -5,16 +5,22 @@ include_once(dirname(__FILE__) . '/SipMessage.php');
 
 class SIP
 {
+	// role
 	const REGISTER    = 1;
 	const REGISTRAR   = 2;
 	const CALLER      = 3;
 	const CALLEE      = 4;
 
-	const ESTABLISHED = 200;
+	// state
+	const CLOSED      = 0;
+	const CLOSING     = 1;
+	const REGISTERED  = 200;
+	const ESTABLISHED = 201;
 
 	const REGISTERING = 1001;
 	const PROCEEDING  = 1002;
 	const AUTHING     = 1003;
+	const REG_REFRESH = 1004;
 
 	const CALLING     = 3001;
 	const ACCEPTING   = 3002;

@@ -24,13 +24,14 @@ class SipMessage
 	public $content_length = 0;
 	
 	public $expires = 60;
+	public $auth;
 	
 	// 未详细解析的 header, 每个元素是 pair [key, val]
 	public $headers = array();
 	public $body = '';
 	
 	function is_request(){
-		return (bool)$this->method;
+		return $this->code == 0;
 	}
 	
 	function is_response(){
@@ -39,7 +40,7 @@ class SipMessage
 	
 	function encode(){
 		$headers = array();
-		if($this->method){
+		if($this->is_request()){
 			$headers[] = "{$this->method} {$this->uri} SIP/2.0";
 		}else{
 			$headers[] = "SIP/2.0 {$this->code} {$this->reason}";
@@ -166,6 +167,8 @@ class SipMessage
 			$this->expires = intval($val);
 		}else if($key == 'Content-Length'){
 			$this->content_length = intval($val);
+		}else if($key == 'WWW-Authenticate'){
+			$this->auth = $val;
 		}else{
 			$this->headers[] = array($key, $val);
 		}
