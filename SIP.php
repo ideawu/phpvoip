@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__) . '/SipEngine.php');
 include_once(dirname(__FILE__) . '/SipAgent.php');
 include_once(dirname(__FILE__) . '/SipSession.php');
 include_once(dirname(__FILE__) . '/SipMessage.php');
@@ -47,7 +48,7 @@ class SIP
 		// }
 	}
 
-	static function parse_uri($str){
+	static function parse_address($str){
 		$ret = array(
 			'contact' => '',
 			'tags' => array(),

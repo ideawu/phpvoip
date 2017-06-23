@@ -8,7 +8,7 @@ class SipSession
 	public $username;
 	public $password;
 
-	private $expires = 600;
+	private $expires = 60;
 	private static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	private static $call_timers = array(0, 0.5, 1, 2, 4, 2);
 	private static $refresh_timers = array(10, 2);
@@ -22,6 +22,7 @@ class SipSession
 	public $cseq;    // command/transaction seq
 	
 	public $uri;
+	
 	public $from;
 	public $from_tag; // session id
 	public $to;
@@ -90,6 +91,7 @@ class SipSession
 				$msg->to = $this->from;
 				$msg->to_tag = $this->to_tag;
 			}
+			$msg->username = $this->username;
 		}
 		return $msg;
 	}
@@ -100,12 +102,12 @@ class SipSession
 			$this->branch = $msg->branch;
 			$this->cseq = $msg->cseq;
 		}else{
-			if($msg->branch !== $this->branch){
-				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$this->branch}");
-				return;
-			}
 			if($msg->cseq !== $this->cseq){
 				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$this->cseq}");
+				return;
+			}
+			if($msg->branch !== $this->branch){
+				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$this->branch}");
 				return;
 			}
 			if($this->state == SIP::ESTABLISHED){
@@ -114,7 +116,7 @@ class SipSession
 					return;
 				}
 			}
-			$msg->to_tag = $this->to_tag;
+			$this->to_tag = $msg->to_tag;
 		}
 		
 		if($this->role == SIP::REGISTER){
@@ -125,6 +127,10 @@ class SipSession
 			$this->role_caller_recv($msg);
 		}else if($this->role == SIP::CALLEE){
 			$this->role_callee_recv($msg);
+		}
+		
+		if($msg->is_response() && $msg->code > 100){
+			$this->cseq ++;
 		}
 	}
 	
@@ -144,7 +150,6 @@ class SipSession
 			Logger::debug("refresh registration");
 			$this->state = SIP::REG_REFRESH;
 			$this->to_tag = null;
-			$this->cseq ++;
 			$this->timers = self::$reg_timers;
 		}
 	}
@@ -158,13 +163,11 @@ class SipSession
 					$this->state = SIP::REGISTERED;
 
 					// registration refresh
-					$expires = $msg->expires - 5;
-					$expires = min($this->expires, max(5, $expires));
+					$expires = min($this->expires, max($this->expires, $expires - 5));
 					Logger::debug("expires: $expires");
 					$this->timers = self::$reg_timers;
 					$this->timers[0] = $expires;
 				}else if($msg->code == 401){
-					$this->cseq ++;
 					$this->auth = $this->www_auth($msg->auth);
 					$this->timers = self::$reg_timers;
 					if($this->state == SIP::AUTHING){
@@ -176,7 +179,12 @@ class SipSession
 					}
 				}else if($msg->code == 423){
 					// 423 Interval Too Brief
-					// Min-Expires
+					foreach($msg->headers as $v){
+						if($v[0] == 'Min-Expires'){
+							$this->expires = max($this->expires, intval($v[1]));
+							break;
+						}
+					}
 				}
 			}
 		}else if($this->state == SIP::REGISTERED){
@@ -252,7 +260,7 @@ class SipSession
 		}else if($this->state == SIP::ESTABLISHED || $this->state == SIP::CLOSING){
 			if($msg->method == 'BYE'){
 				if($this->state == SIP::ESTABLISHED){
-					Logger::debug("call closed by BYE");
+					Logger::debug("call close by BYE");
 				}else{
 					Logger::debug("recv BYE while closing");
 				}

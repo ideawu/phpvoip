@@ -1,9 +1,9 @@
 <?php
 class SipMessage
 {
+	// src_ip, dst_ip
 	public $ip;
 	public $port;
-	public $username;
 	
 	public $method;
 	public $uri;
@@ -23,7 +23,7 @@ class SipMessage
 	public $to_tag;
 	public $content_length = 0;
 	
-	public $expires = 60;
+	public $expires;
 	public $auth;
 	
 	// 未详细解析的 header, 每个元素是 pair [key, val]
@@ -57,12 +57,8 @@ class SipMessage
 		}else{
 			$headers[] = "Via: SIP/2.0/UDP {$this->ip}:{$this->port};rport;branch={$this->branch}";
 		}
-		if($this->contact){
-			$headers[] = "Contact: {$this->contact}";
-		}else{
-			$headers[] = "Contact: <sip:{$this->username}@{$this->ip}:{$this->port}>";
-		}
-		
+		$headers[] = "Contact: {$this->contact}";
+
 		foreach($this->headers as $v){
 			$headers[] = "{$v[0]}: {$v[1]}";
 		}
@@ -137,13 +133,13 @@ class SipMessage
 		$val = trim($ps[1]);
 		// TODO: case insensitive
 		if($key == 'From'){
-			$ret = SIP::parse_uri($val);
+			$ret = SIP::parse_address($val);
 			$this->from = $ret['contact'];
 			if(isset($ret['tags']['tag'])){
 				$this->from_tag = $ret['tags']['tag'];
 			}		
 		}else if($key == 'To'){
-			$ret = SIP::parse_uri($val);
+			$ret = SIP::parse_address($val);
 			$this->to = $ret['contact'];
 			if(isset($ret['tags']['tag'])){
 				$this->to_tag = $ret['tags']['tag'];
