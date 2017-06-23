@@ -72,15 +72,13 @@ class SipAgent
 	// 当有收到消息时，调用一次
 	function incomming($msg){
 		foreach($this->sessions as $sess){
-			if($msg->call_id == $sess->call_id && $msg->from_tag == $sess->from_tag){
-				if(!$sess->to_tag || $msg->to_tag == $sess->to_tag){
-					$sess->on_recv($msg);
-					return;
-				}
+			if($msg->call_id === $sess->call_id && $msg->from_tag === $sess->from_tag){
+				$sess->on_recv($msg);
+				return;
 			}
 		}
 		if($msg->method == 'INVITE'){
-			Logger::debug("new session");
+			Logger::debug("NEW session, {$msg->call_id} {$msg->from_tag} {$msg->to_tag}");
 			$sess = SipSession::oncall($msg);
 			$this->sessions[] = $sess;
 		}else if($msg->method == 'REGISTER'){

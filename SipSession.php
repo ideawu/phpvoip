@@ -8,11 +8,11 @@ class SipSession
 	public $username;
 	public $password;
 
-	private $expires = 60;
+	private $expires = 600;
 	private static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	private static $call_timers = array(0, 0.5, 1, 2, 4, 2);
 	private static $refresh_timers = array(10, 2);
-	private static $closing_timers = array(0, 10);
+	private static $closing_timers = array(0, 5);
 	private static $call_id_prefix = 'call_';
 	private static $tag_prefix = 'tag_';
 	private static $branch_prefix = 'z9hG4bK_';
@@ -100,13 +100,19 @@ class SipSession
 			$this->branch = $msg->branch;
 			$this->cseq = $msg->cseq;
 		}else{
-			if($msg->branch != $this->branch){
+			if($msg->branch !== $this->branch){
 				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$this->branch}");
 				return;
 			}
-			if($msg->cseq != $this->cseq){
+			if($msg->cseq !== $this->cseq){
 				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$this->cseq}");
 				return;
+			}
+			if($this->state == SIP::ESTABLISHED){
+				if($msg->to_tag !== $this->to_tag){
+					Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.cseq: {$this->to_tag}");
+					return;
+				}
 			}
 			$msg->to_tag = $this->to_tag;
 		}
@@ -129,6 +135,7 @@ class SipSession
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
 			$msg->to = $this->from;
+			$msg->expires = $this->expires;
 			if($this->state == SIP::AUTHING){
 				$msg->headers[] = array('Authorization', $this->auth);
 			}
@@ -167,6 +174,9 @@ class SipSession
 						Logger::debug("auth");
 						$this->state = SIP::AUTHING;
 					}
+				}else if($msg->code == 423){
+					// 423 Interval Too Brief
+					// Min-Expires
 				}
 			}
 		}else if($this->state == SIP::REGISTERED){

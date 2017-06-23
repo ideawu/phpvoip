@@ -68,6 +68,7 @@ class SipMessage
 		}
 		
 		$this->content_length = strlen($this->body);
+		$headers[] = "Expires: {$this->expires}";
 		$headers[] = "User-Agent: phpvoip";
 		$headers[] = "Content-Length: " . $this->content_length;
 		
