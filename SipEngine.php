@@ -8,7 +8,10 @@ class SipEngine
 	private $agents = array();
 	private $sessions = array();
 	
+	private $time = 0;
+	
 	private function __construct(){
+		$this->time = microtime(1);
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
@@ -26,6 +29,27 @@ class SipEngine
 		$agent->local_port = $this->local_port;
 		$agent->register($username, $password, $proxy_ip, $proxy_port);
 		$this->agents[] = $agent;
+	}
+
+	function loop(){
+		$old_time = $this->time;
+		$this->time = microtime(1);
+		$timespan = max(0, $this->time - $old_time);
+
+		$read = array($this->link->sock);
+		$write = array();
+		$except = array();
+	
+		$ret = @socket_select($read, $write, $except, 0, 100*1000);
+		if($ret === false){
+			Logger::error(socket_strerror(socket_last_error()));
+			return false;
+		}
+		
+		if($read){
+			$this->on_recv();
+		}
+		$this->to_send($time, $timespan);
 	}
 	
 	private function on_recv(){
@@ -61,25 +85,5 @@ class SipEngine
 				#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 			}
 		}
-	}
-
-	function loop($time, $timespan){
-		$link = $this->link;
-		
-		$read = array($link->sock);
-		$write = array();
-		$except = array();
-	
-		$timeout = 100*1000;
-		$ret = @socket_select($read, $write, $except, 0, $timeout);
-		if($ret === false){
-			Logger::error(socket_strerror(socket_last_error()));
-			return false;
-		}
-		
-		if($read){
-			$this->on_recv();
-		}
-		$this->to_send($time, $timespan);
 	}
 }
