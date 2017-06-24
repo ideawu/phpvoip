@@ -10,4 +10,4 @@ Engine
 	Conference
 
 所有 INVITE 到来时，创建 Conf，Conf 包含2个 Session。
-
+Module之间通过网络进行通信，不支持相互调用
