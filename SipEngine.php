@@ -8,17 +8,8 @@ class SipEngine
 	private $modules = array();
 	private $sessions = array();
 	
-	private $mod_register = null;
-	private $mod_conference = null;
-	
 	private function __construct(){
 		$this->time = microtime(1);
-
-		$this->mod_register = new SipRegisterModule();
-		$this->modules[] = $this->mod_register;
-		
-		$this->mod_conference = new SipConferenceModule();
-		$this->modules[] = $this->mod_conference;
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
@@ -29,9 +20,8 @@ class SipEngine
 		return $ret;
 	}
 	
-	// username format: username[@domain]
-	function register($username, $password, $proxy_ip, $proxy_port=5060){
-		$this->mod_register->register($username, $password, $proxy_ip, $proxy_port);
+	function add_module($mod){
+		$this->modules[] = $mod;
 	}
 
 	function loop(){
