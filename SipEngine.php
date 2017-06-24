@@ -97,6 +97,7 @@ class SipEngine
 		foreach($this->modules as $module){
 			$msgs = $module->outgoing($time, $timespan);
 			foreach($msgs as $msg){
+				// TODO: 如果绑的是 0.0.0.0，需要自动选一个 src_ip
 				$msg->src_ip = $this->local_ip;
 				$msg->src_port = $this->local_port;
 

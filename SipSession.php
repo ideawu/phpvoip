@@ -5,7 +5,7 @@ abstract class SipSession
 	public $state = 0;
 	public $timers;
 
-	// remote_ip, remote_port
+	// TODO: add local_ip, local_port
 	public $proxy_ip;
 	public $proxy_port;
 
