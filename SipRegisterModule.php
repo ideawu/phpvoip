@@ -12,7 +12,7 @@ class SipRegisterModule extends SipModule
 		
 		foreach($this->sessions as $sess){
 			if($msg->call_id === $sess->call_id && $msg->from_tag === $sess->from_tag){
-				$sess->on_recv($msg);
+				$sess->on_recv_msg($msg);
 				return true;
 			}
 		}

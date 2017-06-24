@@ -34,13 +34,7 @@ class SipEngine
 		$this->mod_register->register($username, $password, $proxy_ip, $proxy_port);
 	}
 
-	private $time = 0;
-
 	function loop(){
-		$old_time = $this->time;
-		$this->time = microtime(1);
-		$timespan = max(0, $this->time - $old_time);
-
 		$read = array($this->link->sock);
 		$write = array();
 		$except = array();
@@ -52,12 +46,12 @@ class SipEngine
 		}
 		
 		if($read){
-			$this->on_recv();
+			$this->proc_recv();
 		}
-		$this->to_send($this->time, $timespan);
+		$this->proc_send();
 	}
 	
-	private function on_recv(){
+	private function proc_recv(){
 		$link = $this->link;
 		$buf = $link->recvfrom($ip, $port);
 		$msg = new SipMessage();
@@ -68,6 +62,14 @@ class SipEngine
 		Logger::debug("recv " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 
+		foreach($this->modules as $module){
+			$ret = $module->incoming($msg);
+			if($ret === true){
+				return;
+			}
+		}
+		
+		// 注：如果是重传的 INVITE，则应该被 incoming 发现并处理，不会走到此处逻辑。
 		if($msg->method == 'INVITE'){
 			foreach($this->modules as $module){
 				$sess1 = $module->callin($msg);
@@ -90,18 +92,17 @@ class SipEngine
 			}
 		}
 		
-		foreach($this->modules as $module){
-			$ret = $module->incoming($msg);
-			if($ret === true){
-				return;
-			}
-		}
-		
 		// TODO
 		Logger::debug("ignore " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 	}
 	
-	function to_send($time, $timespan){
+	private $time = 0;
+
+	function proc_send(){
+		$old_time = $this->time;
+		$this->time = microtime(1);
+		$timespan = max(0, $this->time - $old_time);
+
 		$link = $this->link;
 		foreach($this->modules as $module){
 			$msgs = $module->outgoing($time, $timespan);

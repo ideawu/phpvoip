@@ -5,6 +5,7 @@ abstract class SipSession
 	public $state = 0;
 	public $timers;
 
+	// remote_ip, remote_port
 	public $proxy_ip;
 	public $proxy_port;
 
@@ -34,10 +35,9 @@ abstract class SipSession
 	}
 	
 	abstract function incoming($msg);
-	// 返回要发送的消息
 	abstract function outgoing();
 	
-	function to_send(){
+	function get_msg_to_send(){
 		$msg = $this->outgoing();;
 		if($msg){
 			$msg->dst_ip = $this->proxy_ip;
@@ -58,7 +58,7 @@ abstract class SipSession
 		return $msg;
 	}
 	
-	function on_recv($msg){
+	function on_recv_msg($msg){
 		if($msg->is_request()){
 			$this->uri = $msg->uri; // will uri be updated during session?
 			$this->branch = $msg->branch;
