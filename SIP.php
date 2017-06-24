@@ -12,6 +12,7 @@ include_once(dirname(__FILE__) . '/SipCalleeSession.php');
 include_once(dirname(__FILE__) . '/SipModule.php');
 include_once(dirname(__FILE__) . '/SipRegistrarModule.php');
 include_once(dirname(__FILE__) . '/SipRegisterModule.php');
+include_once(dirname(__FILE__) . '/SipConferenceModule.php');
 
 
 class SIP

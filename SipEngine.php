@@ -9,12 +9,16 @@ class SipEngine
 	private $sessions = array();
 	
 	private $mod_register = null;
+	private $mod_conference = null;
 	
 	private function __construct(){
 		$this->time = microtime(1);
 
 		$this->mod_register = new SipRegisterModule();
 		$this->modules[] = $this->mod_register;
+		
+		$this->mod_conference = new SipConferenceModule();
+		$this->modules[] = $this->mod_conference;
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
@@ -63,9 +67,31 @@ class SipEngine
 		}
 		Logger::debug("recv " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
+
+		if($msg->method == 'INVITE'){
+			foreach($this->modules as $module){
+				$sess1 = $module->callin($msg);
+				if($sess1 === true){
+					break;
+				}
+			}
+			foreach($this->modules as $module){
+				$sess2 = $module->callout($msg);
+				if($sess2 === true){
+					break;
+				}
+			}
+			// TODO: new conference = sess1 + sess2
+			if(!$sess1){
+				// forbidden client
+			}
+			if($sess1 && !$sess2){
+				// 404
+			}
+		}
 		
-		foreach($this->agents as $agent){
-			$ret = $agent->incoming($msg);
+		foreach($this->modules as $module){
+			$ret = $module->incoming($msg);
 			if($ret === true){
 				return;
 			}

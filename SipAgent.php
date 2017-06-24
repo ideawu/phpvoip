@@ -26,14 +26,6 @@ class SipAgent
 	
 	function incoming($msg){
 		
-		if($msg->method == 'INVITE'){
-			// WTF?
-			if($this->uri === $msg->uri || strpos($msg->uri, "sip:{$this->username}@") === 0){
-				$this->oncall($msg);
-				return true;
-			}else{
-			}
-		}
 	}
 	
 }
