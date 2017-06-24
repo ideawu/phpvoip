@@ -1,0 +1,13 @@
+Engine
+	Registrar
+	Register
+	Relay
+	
+	// 
+	IvrModule
+	AttendantModule
+
+	Conference
+
+所有 INVITE 到来时，创建 Conf，Conf 包含2个 Session。
+
