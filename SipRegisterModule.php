@@ -7,7 +7,6 @@ class SipRegisterModule extends SipModule
 		$this->sessions[] = $sess;
 	}
 	
-	// 如果 msg 已经被处理，返回 true
 	function incoming($msg){
 		parent::incoming($msg);
 		
