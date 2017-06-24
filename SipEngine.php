@@ -5,13 +5,16 @@ class SipEngine
 	public $local_ip;
 	public $local_port;
 	
-	private $agents = array();
+	private $modules = array();
 	private $sessions = array();
 	
-	private $time = 0;
+	private $mod_register = null;
 	
 	private function __construct(){
 		$this->time = microtime(1);
+
+		$this->mod_register = new SipRegisterModule();
+		$this->modules[] = $this->mod_register;
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
@@ -24,12 +27,10 @@ class SipEngine
 	
 	// username format: username[@domain]
 	function register($username, $password, $proxy_ip, $proxy_port=5060){
-		$agent = new SipAgent();
-		$agent->local_ip = $this->local_ip;
-		$agent->local_port = $this->local_port;
-		$agent->register($username, $password, $proxy_ip, $proxy_port);
-		$this->agents[] = $agent;
+		$this->mod_register->register($username, $password, $proxy_ip, $proxy_port);
 	}
+
+	private $time = 0;
 
 	function loop(){
 		$old_time = $this->time;
@@ -49,7 +50,7 @@ class SipEngine
 		if($read){
 			$this->on_recv();
 		}
-		$this->to_send($time, $timespan);
+		$this->to_send($this->time, $timespan);
 	}
 	
 	private function on_recv(){
@@ -76,11 +77,14 @@ class SipEngine
 	
 	function to_send($time, $timespan){
 		$link = $this->link;
-		foreach($this->agents as $agent){
-			$msgs = $agent->outgoing($time, $timespan);
+		foreach($this->modules as $module){
+			$msgs = $module->outgoing($time, $timespan);
 			foreach($msgs as $msg){
+				$msg->src_ip = $this->local_ip;
+				$msg->src_port = $this->local_port;
+
 				$buf = $msg->encode();
-				$link->sendto($buf, $agent->proxy_ip, $agent->proxy_port);
+				$link->sendto($buf, $msg->dst_ip, $msg->dst_port);
 				Logger::debug("send " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . ' ' . $msg->from);
 				#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 			}

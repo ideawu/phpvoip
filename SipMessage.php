@@ -1,9 +1,11 @@
 <?php
 class SipMessage
 {
-	// src_ip, dst_ip
-	public $ip;
-	public $port;
+	public $src_ip;
+	public $src_port;
+	
+	public $dst_ip;
+	public $dst_port;
 	
 	public $method;
 	public $uri;
@@ -55,7 +57,7 @@ class SipMessage
 		if($this->via){
 			$headers[] = "Via: {$this->via}";
 		}else{
-			$headers[] = "Via: SIP/2.0/UDP {$this->ip}:{$this->port};rport;branch={$this->branch}";
+			$headers[] = "Via: SIP/2.0/UDP {$this->src_ip}:{$this->src_port};rport;branch={$this->branch}";
 		}
 		$headers[] = "Contact: {$this->contact}";
 
@@ -150,8 +152,8 @@ class SipMessage
 			$this->cseq = intval($val);
 		}else if($key == 'Via'){
 			$ret = $this->parse_via($val);
-			$this->ip = $ret['ip'];
-			$this->port = $ret['port'];
+			$this->src_ip = $ret['ip'];
+			$this->src_port = $ret['port'];
 			if(isset($ret['tags']['branch'])){
 				$this->branch = $ret['tags']['branch'];
 			}

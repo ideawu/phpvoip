@@ -4,7 +4,13 @@ Logger::init();
 
 include_once('UdpLink.php');
 
-$link = UdpLink::listen('127.0.0.1', 5050);
+if($argv[1]){
+	$port = intval($argv[1]);
+}else{
+	$port = 5060;
+}
+
+$link = UdpLink::listen('127.0.0.1', $port);
 
 while(1){
 	$ip = null;
