@@ -10,7 +10,7 @@ abstract class SipSession
 	public $proxy_ip;
 	public $proxy_port;
 
-	protected $expires = 300;
+	protected $expires = 59;
 	protected static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $refresh_timers = array(10, 2);

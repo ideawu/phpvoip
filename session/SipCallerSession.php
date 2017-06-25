@@ -3,6 +3,7 @@ class SipCallerSession extends SipSession
 {
 	function __construct(){
 		parent::__construct();
+		
 		$this->role = SIP::CALLER;
 		$this->state = SIP::CALLING;
 		$this->timers = self::$call_timers;

@@ -90,15 +90,18 @@ class SipEngine
 		
 		// 注：如果是重传的 INVITE，则应该被 incoming 发现并处理，不会走到此处逻辑。
 		if($msg->method == 'INVITE'){
+			$in_sess = null;
+			$out_sess = null;
+			
 			foreach($this->modules as $mi){
 				$module = $mi['module'];
-				$sess1 = $module->callin($msg);
-				if($sess1){
+				$in_sess = $module->callin($msg);
+				if($in_sess){
 					Logger::debug("module " . get_class($module) . " accept callin.");
 					break;
 				}
 			}
-			if(!$sess1){
+			if(!$in_sess){
 				// TODO: reply 403 forbidden
 				Logger::info("403 Forbidden");
 				return;
@@ -106,19 +109,19 @@ class SipEngine
 			
 			foreach($this->modules as $mi){
 				$module = $mi['module'];
-				$sess2 = $module->callout($msg);
-				if($sess2){
+				$out_sess = $module->callout($msg);
+				if($out_sess){
 					Logger::debug("module " . get_class($module) . " create callout.");
 					break;
 				}
 			}
-			if(!$sess2){
+			if(!$out_sess){
 				// TODO: reply 404
 				Logger::info("404 Not Found");
 				return;
 			}
 			
-			$this->mod_conference->create_conference($sess1, $sess2);
+			$this->mod_conference->create_conference($in_sess, $out_sess);
 			return;
 		}
 		

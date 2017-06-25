@@ -41,7 +41,11 @@ class SipRegisterSession extends SipSession
 		if($this->state == SIP::REGISTERING || $this->state == SIP::AUTHING || $this->state == SIP::REG_REFRESH){
 			if($msg->is_response()){
 				if($msg->code == 200){
-					Logger::debug("registered ");
+					if($this->state == SIP::REG_REFRESH){
+						Logger::debug("refreshed");
+					}else{
+						Logger::debug("registered");
+					}
 					$this->to_tag = $msg->to_tag;
 					$this->state = SIP::REGISTERED;
 

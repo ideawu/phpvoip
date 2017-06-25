@@ -2,7 +2,6 @@
 include_once('/data/lib/iphp/framework/Logger.php');
 Logger::init();
 
-include_once('UdpLink.php');
 include_once('SIP.php');
 
 $ip = '0.0.0.0';
