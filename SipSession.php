@@ -13,7 +13,7 @@ abstract class SipSession
 	protected $expires = 300;
 	protected static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
-	protected static $refresh_timers = array(5, 2);
+	protected static $refresh_timers = array(10, 2);
 	protected static $closing_timers = array(0, 5);
 	
 	public $call_id; // session id
