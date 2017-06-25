@@ -44,6 +44,7 @@ class SipCalleeSession extends SipSession
 			$msg->code = 200;
 			$msg->reason = 'OK';
 			$msg->method = 'INVITE';
+			$msg->headers[] = array('Session-Expires', 10);
 			return $msg;
 		}else if($this->state == SIP::ESTABLISHED){
 			// TODO: re-invite
