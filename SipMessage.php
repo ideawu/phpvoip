@@ -25,7 +25,7 @@ class SipMessage
 	public $to_tag;
 	public $content_length = 0;
 	
-	public $expires;
+	public $expires = null;
 	public $auth;
 	
 	// 未详细解析的 header, 每个元素是 pair [key, val]
@@ -66,7 +66,9 @@ class SipMessage
 		}
 		
 		$this->content_length = strlen($this->body);
-		$headers[] = "Expires: {$this->expires}";
+		if($this->expires !== null){
+			$headers[] = "Expires: {$this->expires}";
+		}
 		$headers[] = "User-Agent: phpvoip";
 		$headers[] = "Content-Length: " . $this->content_length;
 		

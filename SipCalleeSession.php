@@ -15,7 +15,7 @@ class SipCalleeSession extends SipSession
 		$this->from = $msg->from;
 		$this->from_tag = $msg->from_tag;
 		$this->to = $msg->to;
-		$this->to_tag = self::$tag_prefix . SIP::token();
+		$this->to_tag = SIP::new_tag();
 	}
 	
 	function incoming($msg){

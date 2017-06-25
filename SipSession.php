@@ -10,14 +10,11 @@ abstract class SipSession
 	public $proxy_ip;
 	public $proxy_port;
 
-	protected $expires = 60;
+	protected $expires = 300;
 	protected static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $refresh_timers = array(10, 2);
 	protected static $closing_timers = array(0, 5);
-	protected static $call_id_prefix = 'call_';
-	protected static $tag_prefix = 'tag_';
-	protected static $branch_prefix = 'z9hG4bK_';
 	
 	public $call_id; // session id
 	public $branch;  // transaction id
@@ -37,6 +34,18 @@ abstract class SipSession
 	
 	abstract function incoming($msg);
 	abstract function outgoing();
+	
+	function role_name(){
+		if($this->role == SIP::REGISTER){
+			return 'REGISTER';
+		}else if($this->role == SIP::REGISTRAR){
+			return 'REGISTRAR';
+		}else if($this->role == SIP::CALLER){
+			return 'CALLER';
+		}else if($this->role == SIP::CALLEE){
+			return 'CALLEE';
+		}
+	}
 	
 	function get_msg_to_send(){
 		$msg = $this->outgoing();;

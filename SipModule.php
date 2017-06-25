@@ -48,7 +48,7 @@ abstract class SipModule
 				array_shift($sess->timers);
 				if(count($sess->timers[0]) == 0){
 					if($sess->state == SIP::CLOSING){
-						//
+						Logger::debug("CLOSING " . $sess->role_name() . " session, call_id: {$sess->call_id}");
 					}else{
 						// transaction timeout
 						Logger::debug("transaction timeout");
@@ -69,8 +69,14 @@ abstract class SipModule
 		}
 		return $ret;
 	}
+	
+	protected function add_session($sess){
+		Logger::debug("NEW " . $sess->role_name() . " session, call_id: {$sess->call_id}");
+		$this->sessions[] = $sess;
+	}
 
 	protected function del_session($sess){
+		Logger::debug("DEL " . $sess->role_name() . " session, call_id: {$sess->call_id}");
 		foreach($this->sessions as $index=>$tmp){
 			if($tmp === $sess){
 				unset($this->sessions[$index]);

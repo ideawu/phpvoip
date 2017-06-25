@@ -10,6 +10,7 @@ include_once(dirname(__FILE__) . '/SipCallerSession.php');
 include_once(dirname(__FILE__) . '/SipCalleeSession.php');
 
 include_once(dirname(__FILE__) . '/SipModule.php');
+include_once(dirname(__FILE__) . '/SipRobotModule.php');
 include_once(dirname(__FILE__) . '/SipRegistrarModule.php');
 include_once(dirname(__FILE__) . '/SipRegisterModule.php');
 include_once(dirname(__FILE__) . '/SipConferenceModule.php');
@@ -35,12 +36,29 @@ class SIP
 
 	const CALLING     = 3001;
 	const ACCEPTING   = 3002;
+	const NOT_FOUND   = 3003;
 	const ESTABLISHED = 201;
+
+	private static $call_id_prefix = 'call_';
+	private static $tag_prefix = 'tag_';
+	private static $branch_prefix = 'z9hG4bK_';
 
 	static function token(){
 		$rand = substr(sprintf('%05d', mt_rand()), 0, 5);
 		$time = sprintf('%.6f', microtime(1));
 		return $rand . '_' . $time;
+	}
+	
+	static function new_call_id(){
+		return self::$call_id_prefix . self::token();
+	}
+	
+	static function new_branch(){
+		return self::$branch_prefix . self::token();
+	}
+	
+	static function new_tag(){
+		return self::$tag_prefix . self::token();
 	}
 	
 	static function parse_contact($str){

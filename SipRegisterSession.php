@@ -31,10 +31,10 @@ class SipRegisterSession extends SipSession
 		$this->to = $this->from;
 		$this->contact = $this->from;
 		
-		$this->call_id = self::$call_id_prefix . SIP::token();
-		$this->branch = self::$branch_prefix . SIP::token();
+		$this->call_id = SIP::new_call_id();
+		$this->branch = SIP::new_branch();
+		$this->from_tag = SIP::new_tag();
 		$this->cseq = mt_rand(1, 10000);
-		$this->from_tag = self::$tag_prefix . SIP::token();
 	}
 
 	function incoming($msg){
@@ -80,7 +80,7 @@ class SipRegisterSession extends SipSession
 	function outgoing(){
 		$msg = null;
 		if($this->state == SIP::REGISTERING || $this->state == SIP::AUTHING || $this->state == SIP::REG_REFRESH){
-			$this->branch = self::$branch_prefix . SIP::token();
+			$this->branch = SIP::new_branch();
 			
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
