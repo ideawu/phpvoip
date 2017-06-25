@@ -93,4 +93,16 @@ class SIP
 		}
 		return $ret;
 	}
+	
+	static function guess_local_ip($remote_ip){
+		$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+		if(!@socket_connect($sock, $remote_ip, 8888)){
+			return false;
+		}
+		if(!socket_getsockname($sock, $ip, $port)){
+			return false;
+		}
+		socket_close($sock);
+		return $ip;
+	}
 }

@@ -5,7 +5,8 @@ abstract class SipSession
 	public $state = 0;
 	public $timers;
 
-	// TODO: add local_ip, local_port
+	public $local_ip;
+	public $local_port;
 	public $proxy_ip;
 	public $proxy_port;
 
@@ -40,6 +41,8 @@ abstract class SipSession
 	function get_msg_to_send(){
 		$msg = $this->outgoing();;
 		if($msg){
+			$msg->src_ip = $this->local_ip;
+			$msg->src_port = $this->local_port;
 			$msg->dst_ip = $this->proxy_ip;
 			$msg->dst_port = $this->proxy_port;
 
@@ -51,6 +54,7 @@ abstract class SipSession
 			$msg->from_tag = $this->from_tag;
 			$msg->to = $this->to;
 			$msg->contact = $this->contact;
+			// 重发的请求不需要带 to_tag
 			if($msg->is_response()){
 				$msg->to_tag = $this->to_tag;
 			}
