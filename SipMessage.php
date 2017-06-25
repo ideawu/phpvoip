@@ -50,7 +50,7 @@ class SipMessage
 		$tag = $this->from_tag? ";tag={$this->from_tag}" : '';
 		$headers[] = "From: {$this->from}{$tag}";
 		$tag = $this->to_tag? ";tag={$this->to_tag}" : '';
-		$headers[] = "To: {$this->from}{$tag}";
+		$headers[] = "To: {$this->to}{$tag}";
 		$headers[] = "Call-ID: {$this->call_id}";
 		$headers[] = "CSeq: {$this->cseq} {$this->method}";
 		

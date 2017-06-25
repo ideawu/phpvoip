@@ -21,14 +21,14 @@ class SipCalleeSession extends SipSession
 	function incoming($msg){
 		if($this->state == SIP::ACCEPTING){
 			if($msg->method == 'ACK'){
-				Logger::debug("call established");
+				Logger::debug("call {$this->call_id} established");
 				$this->state = SIP::ESTABLISHED;
 				$this->timers = self::$refresh_timers;
 			}
 		}else if($this->state == SIP::ESTABLISHED || $this->state == SIP::CLOSING){
 			if($msg->method == 'BYE'){
 				if($this->state == SIP::ESTABLISHED){
-					Logger::debug("call close by BYE");
+					Logger::debug("call {$this->call_id} close by BYE");
 				}else{
 					Logger::debug("recv BYE while closing");
 				}
@@ -46,17 +46,15 @@ class SipCalleeSession extends SipSession
 			$msg->method = 'INVITE';
 			return $msg;
 		}else if($this->state == SIP::ESTABLISHED){
-			// TODO: refresh
+			// TODO: re-invite
 			$this->timers = self::$refresh_timers;
-			Logger::debug("refresh dialog");
-		}else if($this->state == SIP::CLOSING){
-			// TESTING
-			// static $i = 0;
-			// if($i++%2 == 0){
-			// 	echo "drop OK for BYE\n";
-			// 	return;
-			// }
+			Logger::debug("refresh call {$this->call_id}");
 			
+			// $msg = new SipMessage();
+			// $msg->method = 'INVITE';
+			// $msg->to_tag = $this->to_tag;
+			// return $msg;
+		}else if($this->state == SIP::CLOSING){
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';

@@ -64,6 +64,14 @@ class SipEngine
 	private function proc_recv(){
 		$link = $this->link;
 		$buf = $link->recvfrom($ip, $port);
+
+		// 模拟丢包
+		// static $i = 0;
+		// if($i++%2 == 0){
+		// 	echo "drop OK for BYE\n";
+		// 	return;
+		// }
+			
 		$msg = new SipMessage();
 		if($msg->decode($buf) <= 0){
 			Logger::error("bad SIP packet");
