@@ -90,23 +90,26 @@ abstract class SipModule
 	function outgoing($time, $timespan){
 		$ret = array();
 		foreach($this->sessions as $index=>$sess){
-			$sess->timers[0] -= $timespan;
-			if($sess->timers[0] <= 0){
-				array_shift($sess->timers);
-				if(count($sess->timers) == 0){
-					if($sess->state == SIP::CLOSING){
-						Logger::debug("gracefully close session " . $sess->role_name());
+			if($sess->timers){
+				$sess->timers[0] -= $timespan;
+				if($sess->timers[0] <= 0){
+					array_shift($sess->timers);
+					if(count($sess->timers) == 0){
+						if($sess->state == SIP::FIN_WAIT || $sess->state == SIP::CLOSE_WAIT){
+							Logger::debug("gracefully close session " . $sess->role_name());
+							$sess->terminate();
+						}else{
+							// transaction timeout
+							Logger::debug("transaction timeout");
+							$sess->timeout();
+						}
 					}else{
-						// transaction timeout
-						Logger::debug("transaction timeout");
-					}
-					$sess->state = SIP::CLOSED;
-				}else{
-					// re/transmission timer trigger
-					$msg = $sess->outgoing();
-					if($msg){
-						$this->before_sess_send_msg($sess, $msg);
-						$ret[] = $msg;
+						// re/transmission timer trigger
+						$msg = $sess->outgoing();
+						if($msg){
+							$this->before_sess_send_msg($sess, $msg);
+							$ret[] = $msg;
+						}
 					}
 				}
 			}

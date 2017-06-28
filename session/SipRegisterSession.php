@@ -41,9 +41,9 @@ class SipRegisterSession extends SipSession
 		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
 			if($msg->code == 200){
 				if($this->renew){
-					Logger::debug("{$this->from} renewed");
+					Logger::debug("REGISTER {$this->from} renewed");
 				}else{
-					Logger::debug("{$this->from} registered");
+					Logger::debug("REGISTER {$this->from} registered");
 				}
 				$this->to_tag = $msg->to_tag;
 				$this->complete();
@@ -51,7 +51,7 @@ class SipRegisterSession extends SipSession
 				$this->auth = null;
 
 				// registration renew
-				$expires = min($this->expires, max($this->expires, $expires)) - 5;
+				$expires = min($this->expires, max($this->expires, $msg->expires)) - 5;
 				Logger::debug("expires: $expires");
 				$this->refresh_after($expires);
 			}else if($msg->code == 401){

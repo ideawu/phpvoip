@@ -61,13 +61,28 @@ abstract class SipSession
 		$this->timers[0] = $seconds;
 	}
 	
-	function close(){
-		$this->state = SIP::CLOSING;
+	/*
+	当某一个步骤超时时调用此方法，默认将关闭 Session。子类可以重写，
+	更改状态并进行其它操作。
+	*/
+	function timeout(){
+		$this->state = SIP::CLOSED;
+	}
+	
+	function terminate(){
+		$this->state = SIP::CLOSED;
 		$this->timers = array();
 	}
 	
-	function closing(){
-		$this->state = SIP::CLOSING;
+	// 主动关闭
+	function close(){
+		$this->state = SIP::FIN_WAIT;
+		$this->timers = self::$closing_timers;
+	}
+	
+	// 被动关闭
+	function onclose(){
+		$this->state = SIP::CLOSE_WAIT;
 		$this->timers = self::$closing_timers;
 	}
 }

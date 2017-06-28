@@ -34,7 +34,8 @@ class SIP
 
 	// state
 	const CLOSED      = 0;
-	const CLOSING     = 1;
+	const FIN_WAIT    = 2; // 主动关闭
+	const CLOSE_WAIT  = 3; // 被动关闭
 
 	private static $call_id_prefix = 'call_';
 	private static $tag_prefix = 'tag_';
