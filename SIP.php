@@ -26,20 +26,20 @@ class SIP
 	const CALLER      = 3;
 	const CALLEE      = 4;
 
+	const TRYING      = 100;
+	const ESTABLISHED = 200;
+	const AUTHING     = 401;
+	const NOT_FOUND   = 404;
+
 	// state
 	const CLOSED      = 0;
 	const CLOSING     = 1;
+	const RENEWING    = 2001;
 
-	const REGISTERING = 1001;
 	const PROCEEDING  = 1002;
-	const AUTHING     = 1003;
-	const REG_REFRESH = 1004;
-	const REGISTERED  = 200;
 
 	const CALLING     = 3001;
 	const ACCEPTING   = 3002;
-	const NOT_FOUND   = 3003;
-	const ESTABLISHED = 201;
 
 	private static $call_id_prefix = 'call_';
 	private static $tag_prefix = 'tag_';

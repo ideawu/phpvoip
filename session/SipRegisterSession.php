@@ -17,7 +17,7 @@ class SipRegisterSession extends SipSession
 		}
 		
 		$this->role = SIP::REGISTER;
-		$this->state = SIP::REGISTERING;
+		$this->state = SIP::TRYING;
 		$this->timers = self::$reg_timers;
 		
 		$this->remote_ip = $remote_ip;
@@ -38,16 +38,17 @@ class SipRegisterSession extends SipSession
 	}
 
 	function incoming($msg){
-		if($this->state == SIP::REGISTERING || $this->state == SIP::AUTHING || $this->state == SIP::REG_REFRESH){
+		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->state == SIP::RENEWING){
 			if($msg->is_response()){
 				if($msg->code == 200){
-					if($this->state == SIP::REG_REFRESH){
+					if($this->state == SIP::RENEWING){
 						Logger::debug("refreshed");
 					}else{
 						Logger::debug("registered");
 					}
 					$this->to_tag = $msg->to_tag;
-					$this->state = SIP::REGISTERED;
+					$this->state = SIP::ESTABLISHED;
+					$this->auth = null;
 
 					// registration refresh
 					$expires = min($this->expires, max($this->expires, $expires)) - 5;
@@ -68,13 +69,15 @@ class SipRegisterSession extends SipSession
 					// 423 Interval Too Brief
 					foreach($msg->headers as $v){
 						if($v[0] == 'Min-Expires'){
+							$this->timers = self::$reg_timers;
 							$this->expires = max($this->expires, intval($v[1]));
 							break;
 						}
 					}
 				}
 			}
-		}else if($this->state == SIP::REGISTERED){
+		}else if($this->state == SIP::ESTABLISHED){
+			// TODO: 
 			Logger::debug("recv, exit.");
 			die();
 		}
@@ -83,7 +86,7 @@ class SipRegisterSession extends SipSession
 	// 返回要发送的消息
 	function outgoing(){
 		$msg = null;
-		if($this->state == SIP::REGISTERING || $this->state == SIP::AUTHING || $this->state == SIP::REG_REFRESH){
+		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->state == SIP::RENEWING){
 			$this->branch = SIP::new_branch();
 			
 			$msg = new SipMessage();
@@ -95,9 +98,9 @@ class SipRegisterSession extends SipSession
 
 			$msg->username = $this->username;
 			$msg->password = $this->password;
-		}else if($this->state == SIP::REGISTERED){
+		}else if($this->state == SIP::ESTABLISHED){
 			Logger::debug("refresh registration");
-			$this->state = SIP::REG_REFRESH;
+			$this->state = SIP::RENEWING;
 			// $this->to_tag = null; TODO:?
 			$this->timers = self::$reg_timers;
 		}

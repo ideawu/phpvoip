@@ -27,8 +27,9 @@ abstract class SipModule
 				continue;
 			}
 			
-			$this->before_sess_recv_msg($sess, $msg);
-			$sess->incoming($msg);
+			if($this->before_sess_recv_msg($sess, $msg) !== false){
+				$sess->incoming($msg);
+			}
 			return true;
 		}
 		return false;
@@ -37,8 +38,8 @@ abstract class SipModule
 	private function before_sess_recv_msg($sess, $msg){
 		if($sess->state == SIP::ESTABLISHED){
 			if($msg->to_tag !== $sess->to_tag){
-				Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.cseq: {$this->to_tag}");
-				return;
+				Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.cseq: {$sess->to_tag}");
+				return false;
 			}
 		}
 		if($msg->is_request()){
@@ -47,15 +48,17 @@ abstract class SipModule
 			$sess->cseq = $msg->cseq;
 		}else{
 			if($msg->cseq !== $sess->cseq){
-				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$this->cseq}");
-				return;
+				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$sess->cseq}");
+				return false;
 			}
 			if($msg->branch !== $sess->branch){
-				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$this->branch}");
-				return;
+				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$sess->branch}");
+				return false;
 			}
-			$sess->to_tag = $msg->to_tag;
-			$sess->cseq ++;
+			if($msg->code >= 200){
+				$sess->to_tag = $msg->to_tag;
+				$sess->cseq ++;
+			}
 		}
 	}
 	
