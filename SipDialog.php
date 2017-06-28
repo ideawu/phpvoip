@@ -13,12 +13,12 @@ class SipDialog
 		if($sess === $this->callee){
 			$this->callee = null;
 			if($this->caller){
-				$this->caller->close();
+				$this->caller->closing();
 			}
 		}else if($sess === $this->caller){
 			$this->caller = null;
 			if($this->callee){
-				$this->callee->close();
+				$this->callee->closing();
 			}
 		}
 	}

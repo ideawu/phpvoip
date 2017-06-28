@@ -39,45 +39,42 @@ class SipRegisterSession extends SipSession
 
 	function incoming($msg){
 		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
-			if($msg->is_response()){
-				if($msg->code == 200){
-					if($this->renew){
-						Logger::debug("{$this->from} renewed");
-					}else{
-						Logger::debug("{$this->from} registered");
-					}
-					$this->to_tag = $msg->to_tag;
-					$this->state = SIP::ESTABLISHED;
-					$this->renew = false;
-					$this->auth = null;
+			if($msg->code == 200){
+				if($this->renew){
+					Logger::debug("{$this->from} renewed");
+				}else{
+					Logger::debug("{$this->from} registered");
+				}
+				$this->to_tag = $msg->to_tag;
+				$this->complete();
+				$this->renew = false;
+				$this->auth = null;
 
-					// registration renew
-					$expires = 30;//min($this->expires, max($this->expires, $expires)) - 5;
-					Logger::debug("expires: $expires");
-					$this->timers = self::$reg_timers;
-					$this->timers[0] = $expires;
-				}else if($msg->code == 401){
-					$this->auth = $this->www_auth($msg->auth);
-					$this->timers = self::$reg_timers;
-					if($this->state == SIP::AUTHING){
-						Logger::error("{$this->from} auth failed");
-						$this->timers[0] = 3; // wait before retry
-					}else{
-						Logger::debug("{$this->from} auth");
-						$this->state = SIP::AUTHING;
-					}
-				}else if($msg->code == 423){
-					// 423 Interval Too Brief
-					foreach($msg->headers as $v){
-						if($v[0] == 'Min-Expires'){
-							$this->timers = self::$reg_timers;
-							$this->expires = max($this->expires, intval($v[1]));
-							break;
-						}
+				// registration renew
+				$expires = min($this->expires, max($this->expires, $expires)) - 5;
+				Logger::debug("expires: $expires");
+				$this->refresh_after($expires);
+			}else if($msg->code == 401){
+				$this->auth = $this->www_auth($msg->auth);
+				$this->timers = self::$reg_timers;
+				if($this->state == SIP::AUTHING){
+					Logger::error("{$this->from} auth failed");
+					$this->timers[0] = 3; // wait before retry
+				}else{
+					Logger::debug("{$this->from} auth");
+					$this->state = SIP::AUTHING;
+				}
+			}else if($msg->code == 423){
+				// 423 Interval Too Brief
+				foreach($msg->headers as $v){
+					if($v[0] == 'Min-Expires'){
+						$this->timers = self::$reg_timers;
+						$this->expires = max($this->expires, intval($v[1]));
+						break;
 					}
 				}
 			}
-		}else if($this->state == SIP::ESTABLISHED){
+		}else if($this->state == SIP::COMPLETED){
 			// TODO: 
 			Logger::debug("recv, exit.");
 			die();
@@ -99,7 +96,7 @@ class SipRegisterSession extends SipSession
 
 			$msg->username = $this->username;
 			$msg->password = $this->password;
-		}else if($this->state == SIP::ESTABLISHED){
+		}else if($this->state == SIP::COMPLETED){
 			Logger::debug("refresh registration");
 			$this->renew = true;
 			$this->timers = self::$reg_timers;

@@ -5,7 +5,7 @@ class SipCalleeSession extends SipSession
 		parent::__construct();
 		
 		$this->role = SIP::CALLEE;
-		$this->state = SIP::ACCEPTING;
+		$this->state = SIP::TRYING;
 		$this->timers = self::$call_timers;
 
 		$this->uri = $msg->uri;
@@ -19,36 +19,35 @@ class SipCalleeSession extends SipSession
 	}
 	
 	function incoming($msg){
-		if($this->state == SIP::ACCEPTING){
+		if($this->state == SIP::TRYING){
 			if($msg->method == 'ACK'){
-				Logger::debug("call {$this->call_id} established");
-				$this->state = SIP::ESTABLISHED;
-				$this->timers = self::$refresh_timers;
+				Logger::debug("callee session {$this->call_id} established");
+				$this->complete();
+				$this->refresh_after();
 			}
-		}else if($this->state == SIP::ESTABLISHED || $this->state == SIP::CLOSING){
+		}else if($this->state == SIP::COMPLETED || $this->state == SIP::CLOSING){
 			if($msg->method == 'BYE'){
-				if($this->state == SIP::ESTABLISHED){
+				if($this->state == SIP::COMPLETED){
 					Logger::debug("call {$this->call_id} close by BYE");
 				}else{
 					Logger::debug("recv BYE while closing");
 				}
-				// 该方法更新 timer
-				$this->close();
+				$this->closing();
 			}
 		}
 	}
 	
 	function outgoing(){
-		if($this->state == SIP::ACCEPTING){
+		if($this->state == SIP::TRYING){
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';
-			$msg->method = 'INVITE';
-			$msg->headers[] = array('Session-Expires', 90);
+			$msg->cseq_method = 'INVITE';
+			#$msg->headers[] = array('Session-Expires', 90);
 			return $msg;
-		}else if($this->state == SIP::ESTABLISHED){
-			$this->timers = self::$refresh_timers;
-			Logger::debug("refresh call {$this->call_id}");
+		}else if($this->state == SIP::COMPLETED){
+			$this->refresh_after();
+			Logger::debug("refresh callee session {$this->call_id}");
 			
 			// TODO: re-invite?
 			// $msg = new SipMessage();
@@ -60,7 +59,7 @@ class SipCalleeSession extends SipSession
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';
-			$msg->method = 'BYE';
+			$msg->cseq_method = 'BYE';
 			return $msg;
 		}
 	}

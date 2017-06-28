@@ -19,6 +19,7 @@ abstract class SipSession
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $refresh_timers = array(10, 2);
 	protected static $closing_timers = array(0, 5);
+	protected static $now_timers = array(0, 0);
 	
 	public $call_id; // session id
 	public $branch;  // transaction id
@@ -51,7 +52,21 @@ abstract class SipSession
 		}
 	}
 	
+	function complete(){
+		$this->state = SIP::COMPLETED;
+	}
+	
+	function refresh_after($seconds=10){
+		$this->timers = self::$reg_timers;
+		$this->timers[0] = $seconds;
+	}
+	
 	function close(){
+		$this->state = SIP::CLOSING;
+		$this->timers = array();
+	}
+	
+	function closing(){
 		$this->state = SIP::CLOSING;
 		$this->timers = self::$closing_timers;
 	}

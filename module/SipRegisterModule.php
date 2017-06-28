@@ -17,9 +17,13 @@ class SipRegisterModule extends SipModule
 		parent::up_session($sess);
 		
 		// TESTING
+		if($sess->role != SIP::REGISTER){
+			return;
+		}
+		
 		$remote_ip = $sess->remote_ip;
 		$remote_port = $sess->remote_port;
-		$remote_port = 5050;
+		#$remote_port = 5050;
 		
 		$local_ip = $this->engine->local_ip;
 		$local_port = $this->engine->local_port;

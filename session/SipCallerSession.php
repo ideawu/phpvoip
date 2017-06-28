@@ -16,8 +16,12 @@ class SipCallerSession extends SipSession
 
 	function incoming($msg){
 		if($this->state == SIP::TRYING){
-			if($msg->is_response()){
-				
+			if($msg->code == 200){
+				Logger::debug("caller session {$this->call_id} established");
+				$this->state = SIP::COMPLETING;
+				$this->timers = self::$now_timers;
+			}else if($msg->code >= 300){
+				$this->close();
 			}
 		}
 	}
@@ -26,7 +30,18 @@ class SipCallerSession extends SipSession
 		if($this->state == SIP::TRYING){
 			$msg = new SipMessage();
 			$msg->method = 'INVITE';
+			$msg->headers[] = array('Session-Expires', 90);
 			return $msg;
+		}else if($this->state == SIP::COMPLETING){
+			$this->complete();
+			$this->refresh_after();
+			
+			$msg = new SipMessage();
+			$msg->method = 'ACK';
+			return $msg;
+		}else if($this->state == SIP::COMPLETED){
+			$this->refresh_after();
+			Logger::debug("refresh caller session {$this->call_id}");
 		}
 	}
 }

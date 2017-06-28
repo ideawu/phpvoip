@@ -19,6 +19,7 @@ class SipMessage
 	public $call_id;
 	public $branch;
 	public $cseq;
+	public $cseq_method;
 	public $from;
 	public $to;
 	public $from_tag;
@@ -52,7 +53,7 @@ class SipMessage
 		$tag = $this->to_tag? ";tag={$this->to_tag}" : '';
 		$headers[] = "To: {$this->to}{$tag}";
 		$headers[] = "Call-ID: {$this->call_id}";
-		$headers[] = "CSeq: {$this->cseq} {$this->method}";
+		$headers[] = "CSeq: {$this->cseq} " . ($this->cseq_method? $this->cseq_method : $this->method);
 		
 		if($this->via){
 			$headers[] = "Via: {$this->via}";
@@ -151,7 +152,9 @@ class SipMessage
 		}else if($key == 'Call-ID'){
 			$this->call_id = $val;
 		}else if($key == 'CSeq'){
-			$this->cseq = intval($val);
+			$ps = explode(' ', $val);
+			$this->cseq = intval($ps[0]);
+			$this->cseq_method = $ps[1];
 		}else if($key == 'Via'){
 			$ret = $this->parse_via($val);
 			$this->via_ip = $ret['ip'];

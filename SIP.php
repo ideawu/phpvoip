@@ -27,16 +27,14 @@ class SIP
 	const CALLEE      = 4;
 
 	const TRYING      = 100;
-	const ESTABLISHED = 200;
+	const COMPLETED   = 200;
+	const COMPLETING  = 201;
 	const AUTHING     = 401;
 	const NOT_FOUND   = 404;
 
 	// state
 	const CLOSED      = 0;
 	const CLOSING     = 1;
-
-	const CALLING     = 3001;
-	const ACCEPTING   = 3002;
 
 	private static $call_id_prefix = 'call_';
 	private static $tag_prefix = 'tag_';

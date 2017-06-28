@@ -26,14 +26,27 @@ abstract class SipModule
 				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 					continue;
 				}
-			}else{
+			}else if($sess->role == SIP::CALLER){
+				if($msg->call_id !== $sess->call_id){
+					continue;
+				}
+				if($msg->from_tag !== $sess->from_tag){
+					continue;
+				}
+				if($msg->from !== $sess->from || $msg->to !== $sess->to){
+					continue;
+				}
+				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+					continue;
+				}
+			}else if($sess->role == SIP::CALLEE){
 				continue;
 			}
 			
 			if($this->before_sess_recv_msg($sess, $msg) !== false){
-				$s1 = ($sess->state == SIP::ESTABLISHED);
+				$s1 = ($sess->state == SIP::COMPLETED || $sess->renew);
 				$sess->incoming($msg);
-				$s2 = ($sess->state == SIP::ESTABLISHED);
+				$s2 = ($sess->state == SIP::COMPLETED);
 				if(!$s1 && $s2){
 					$this->up_session($sess);
 				}
@@ -44,7 +57,7 @@ abstract class SipModule
 	}
 	
 	private function before_sess_recv_msg($sess, $msg){
-		if($sess->state == SIP::ESTABLISHED){
+		if($sess->state == SIP::COMPLETED){
 			if($msg->to_tag !== $sess->to_tag){
 				Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->to_tag}");
 				return false;
@@ -82,7 +95,7 @@ abstract class SipModule
 				array_shift($sess->timers);
 				if(count($sess->timers) == 0){
 					if($sess->state == SIP::CLOSING){
-						Logger::debug("CLOSING " . $sess->role_name() . " session, call_id: {$sess->call_id}");
+						Logger::debug("gracefully close session " . $sess->role_name());
 					}else{
 						// transaction timeout
 						Logger::debug("transaction timeout");
