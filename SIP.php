@@ -36,8 +36,6 @@ class SIP
 	const CLOSING     = 1;
 	const RENEWING    = 2001;
 
-	const PROCEEDING  = 1002;
-
 	const CALLING     = 3001;
 	const ACCEPTING   = 3002;
 

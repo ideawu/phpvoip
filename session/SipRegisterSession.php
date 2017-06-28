@@ -42,9 +42,9 @@ class SipRegisterSession extends SipSession
 			if($msg->is_response()){
 				if($msg->code == 200){
 					if($this->state == SIP::RENEWING){
-						Logger::debug("refreshed");
+						Logger::debug("{$this->from} refreshed");
 					}else{
-						Logger::debug("registered");
+						Logger::debug("{$this->from} registered");
 					}
 					$this->to_tag = $msg->to_tag;
 					$this->state = SIP::ESTABLISHED;
@@ -59,10 +59,10 @@ class SipRegisterSession extends SipSession
 					$this->auth = $this->www_auth($msg->auth);
 					$this->timers = self::$reg_timers;
 					if($this->state == SIP::AUTHING){
-						Logger::error("auth failed");
+						Logger::error("{$this->from} auth failed");
 						$this->timers[0] = 3; // wait before retry
 					}else{
-						Logger::debug("auth");
+						Logger::debug("{$this->from} auth");
 						$this->state = SIP::AUTHING;
 					}
 				}else if($msg->code == 423){

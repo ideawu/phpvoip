@@ -11,20 +11,4 @@ class SipRegisterModule extends SipModule
 		$this->add_session($sess);
 	}
 	
-	function callin($msg){
-		foreach($this->sessions as $sess){
-			if($msg->src_ip === $sess->proxy_ip && $msg->src_port === $sess->proxy_port){
-				$ret = new SipCalleeSession($msg);
-				$ret->local_ip = $sess->local_ip;
-				$ret->local_port = $sess->local_port;
-				$ret->proxy_ip = $sess->proxy_ip;
-				$ret->proxy_port = $sess->proxy_port;
-
-				$ret->username = $sess->username;
-				$ret->contact = $sess->contact;
-				return $ret;
-			}
-		}
-	}
-	
 }
