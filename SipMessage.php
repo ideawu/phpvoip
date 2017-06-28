@@ -154,8 +154,8 @@ class SipMessage
 			$this->cseq = intval($val);
 		}else if($key == 'Via'){
 			$ret = $this->parse_via($val);
-			$this->src_ip = $ret['ip'];
-			$this->src_port = $ret['port'];
+			$this->via_ip = $ret['ip'];
+			$this->via_port = $ret['port'];
 			if(isset($ret['tags']['branch'])){
 				$this->branch = $ret['tags']['branch'];
 			}

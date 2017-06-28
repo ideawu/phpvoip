@@ -8,8 +8,8 @@ class SipCallerSession extends SipSession
 		$this->state = SIP::CALLING;
 		$this->timers = self::$call_timers;
 
-		// $this->proxy_ip = $proxy_ip;
-		// $this->proxy_port = $proxy_port;
+		// $this->remote_ip = $remote_ip;
+		// $this->remote_port = $remote_port;
 		// $this->username = $username;
 		// $this->password = $password;
 		// $this->domain = $domain;

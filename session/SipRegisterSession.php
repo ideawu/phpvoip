@@ -5,7 +5,7 @@ class SipRegisterSession extends SipSession
 	public $password;
 	public $domain;
 
-	function __construct($username, $password, $proxy_ip, $proxy_port){
+	function __construct($username, $password, $remote_ip, $remote_port){
 		parent::__construct();
 
 		$ps = explode('@', $username);
@@ -13,15 +13,15 @@ class SipRegisterSession extends SipSession
 			$username = $ps[0];
 			$domain = $ps[1];
 		}else{
-			$domain = $proxy_ip;
+			$domain = $remote_ip;
 		}
 		
 		$this->role = SIP::REGISTER;
 		$this->state = SIP::REGISTERING;
 		$this->timers = self::$reg_timers;
 		
-		$this->proxy_ip = $proxy_ip;
-		$this->proxy_port = $proxy_port;
+		$this->remote_ip = $remote_ip;
+		$this->remote_port = $remote_port;
 		$this->username = $username;
 		$this->password = $password;
 		$this->domain = $domain;
@@ -50,7 +50,7 @@ class SipRegisterSession extends SipSession
 					$this->state = SIP::REGISTERED;
 
 					// registration refresh
-					$expires = min($this->expires, max($this->expires, $expires - 5));
+					$expires = min($this->expires, max($this->expires, $expires)) - 5;
 					Logger::debug("expires: $expires");
 					$this->timers = self::$reg_timers;
 					$this->timers[0] = $expires;

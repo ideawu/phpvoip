@@ -1,44 +1,67 @@
 <?php
 abstract class SipModule
 {
-	/*
-	此模块管理的会话列表，如果是 Registrar，则是收到的注册的客户端列表；
-	如果是 Register，则是向上级注册的通道列表；如果是终端应用模块，则是
-	本模块收到的 INVITE 会话（也即 CalleeSession）列表.
+	// 记录 session 间的关系。
+	protected $dialogs = array();
 	
-	对于终端应用模块，它会在 callout() 返回一个 CallerSession，同时创建
-	一个 CalleeSession 自己保留，就像无端的节点所要做的那样。
-	*/
+	// session 存储在 sessions 列表中。
 	protected $sessions = array();
-	
-	/*
-	系统收到 INVITE 时调用，如果 INVITE 是由此模块负责的号码(from)发出的，
-	则返回一个新创建的 CalleeSession，接收此号码(from)的 INVITE。
-	*/
-	function callin($msg){
-	}
-	
-	/*
-	系统收到 INVITE 时调用，如果 INVITE 是由此模块负责的号码(to)接收的，
-	则返回一个新创建的 CallerSession，向号码(to)发起 INVITE。
-	*/
-	function callout($msg){
-	}
 
-	/*
-	系统收到任意 msg 时调用，如果此消息被本模块处理，应返回 true。
-	模块一般检测其管理的 Session 是否是此消息的处理者，如是则交给 Session 处理。
-	
-	注：收到 INVITE 创建 Session 的操作应由 callin/callout 方法处理，但应该
-	处理重传的 INVITE。
-	*/
 	function incoming($msg){
+		foreach($this->sessions as $sess){
+			//外线：判断 call_id + from_tag + from + to + src.ip:port
+			if($sess->role == SIP::REGISTER){
+				if($msg->call_id !== $sess->call_id){
+					continue;
+				}
+				if($msg->from_tag !== $sess->from_tag){
+					continue;
+				}
+				if($msg->from !== $sess->from || $msg->to !== $sess->to){
+					continue;
+				}
+				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+					continue;
+				}
+			}else{
+				continue;
+			}
+			
+			$this->before_sess_recv_msg($sess, $msg);
+			$sess->incoming($msg);
+			return true;
+		}
 		return false;
 	}
 	
+	private function before_sess_recv_msg($sess, $msg){
+		if($sess->state == SIP::ESTABLISHED){
+			if($msg->to_tag !== $sess->to_tag){
+				Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.cseq: {$this->to_tag}");
+				return;
+			}
+		}
+		if($msg->is_request()){
+			$sess->uri = $msg->uri; // will uri be updated during session?
+			$sess->branch = $msg->branch;
+			$sess->cseq = $msg->cseq;
+		}else{
+			if($msg->cseq !== $sess->cseq){
+				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$this->cseq}");
+				return;
+			}
+			if($msg->branch !== $sess->branch){
+				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$this->branch}");
+				return;
+			}
+			$sess->to_tag = $msg->to_tag;
+			$sess->cseq ++;
+		}
+	}
+	
 	/*
-	该方法定期（很小间隔时间）被系统调用，如果有需要发送出去的一个或者多个 msg，
-	放在一个数组中返回。
+	该方法定期（很小间隔时间）被系统调用。更新 dialog 中 session 的定时器，
+	如果定时器有触发，则调用 session 的 outgoing() 方法获取要发送的消息。
 	*/
 	function outgoing($time, $timespan){
 		$ret = array();
@@ -46,7 +69,7 @@ abstract class SipModule
 			$sess->timers[0] -= $timespan;
 			if($sess->timers[0] <= 0){
 				array_shift($sess->timers);
-				if(count($sess->timers[0]) == 0){
+				if(count($sess->timers) == 0){
 					if($sess->state == SIP::CLOSING){
 						Logger::debug("CLOSING " . $sess->role_name() . " session, call_id: {$sess->call_id}");
 					}else{
@@ -56,8 +79,9 @@ abstract class SipModule
 					$sess->state = SIP::CLOSED;
 				}else{
 					// re/transmission timer trigger
-					$msg = $sess->get_msg_to_send();
+					$msg = $sess->outgoing();
 					if($msg){
+						$this->before_sess_send_msg($sess, $msg);
 						$ret[] = $msg;
 					}
 				}
@@ -70,6 +94,27 @@ abstract class SipModule
 		return $ret;
 	}
 	
+	private function before_sess_send_msg($sess, $msg){
+		$msg->src_ip = $sess->local_ip;
+		$msg->src_port = $sess->local_port;
+		$msg->dst_ip = $sess->remote_ip;
+		$msg->dst_port = $sess->remote_port;
+
+		$msg->uri = $sess->uri;
+		$msg->call_id = $sess->call_id;
+		$msg->branch = $sess->branch;
+		$msg->cseq = $sess->cseq;
+		$msg->from = $sess->from;
+		$msg->from_tag = $sess->from_tag;
+		$msg->to = $sess->to;
+		$msg->contact = $sess->contact;
+		// // 重发的请求不需要带 to_tag?
+		// if($msg->is_response()){
+		// 	$msg->to_tag = $$sess->to_tag;
+		// }
+		$msg->to_tag = $sess->to_tag;
+	}
+	
 	protected function add_session($sess){
 		Logger::debug("NEW " . $sess->role_name() . " session, call_id: {$sess->call_id}");
 		$this->sessions[] = $sess;
@@ -78,9 +123,15 @@ abstract class SipModule
 	protected function del_session($sess){
 		Logger::debug("DEL " . $sess->role_name() . " session, call_id: {$sess->call_id}");
 		foreach($this->sessions as $index=>$tmp){
-			if($tmp === $sess){
-				unset($this->sessions[$index]);
+			if($tmp !== $sess){
+				continue;
 			}
+			unset($this->sessions[$index]);
+			// 如果存在于 dialog 中，dialog 也要删除
+			foreach($this->dialogs as $dialog){
+				$dialog->del_session($sess);
+			}
+			break;
 		}
 	}
 }

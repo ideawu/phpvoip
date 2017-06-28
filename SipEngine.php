@@ -6,24 +6,17 @@ class SipEngine
 	public $local_port;
 	
 	private $modules = array();
-	private $sessions = array();
-	
-	private $mod_conference;
 	
 	private function __construct(){
 		$this->time = microtime(1);
-
-		$mod = new SipConferenceModule();
-		$this->add_module($mod, INT_MAX);
-		$this->mod_conference = $mod;
 		
-		$mod = new SipRobotModule();
-		$this->add_module($mod, -1);
+		#$mod = new SipRobotModule();
+		#$this->add_module($mod, -1);
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
 		$ret = new SipEngine();
-		$ret->link = UdpLink::listen($local_ip, $local_port);
+		$ret->link = SipLink::listen($local_ip, $local_port);
 		$ret->local_ip = $ret->link->local_ip;
 		$ret->local_port = $ret->link->local_port;
 		return $ret;
@@ -62,24 +55,7 @@ class SipEngine
 	}
 	
 	private function proc_recv(){
-		$link = $this->link;
-		$buf = $link->recvfrom($ip, $port);
-
-		// 模拟丢包
-		// static $i = 0;
-		// if($i++%2 == 0){
-		// 	echo "drop OK for BYE\n";
-		// 	return;
-		// }
-			
-		$msg = new SipMessage();
-		if($msg->decode($buf) <= 0){
-			Logger::error("bad SIP packet");
-			return;
-		}
-		Logger::debug("recv " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . " from {$msg->src_ip}:{$msg->src_port}");
-		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
-
+		$msg = $this->link->recv();
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
 			$ret = $module->incoming($msg);
@@ -87,47 +63,6 @@ class SipEngine
 				return;
 			}
 		}
-		
-		// 注：如果是重传的 INVITE，则应该被 incoming 发现并处理，不会走到此处逻辑。
-		if($msg->method == 'INVITE'){
-			$in_sess = null;
-			$out_sess = null;
-			
-			foreach($this->modules as $mi){
-				$module = $mi['module'];
-				$in_sess = $module->callin($msg);
-				if($in_sess){
-					Logger::debug("module " . get_class($module) . " accept callin.");
-					break;
-				}
-			}
-			if(!$in_sess){
-				// TODO: reply 403 forbidden
-				Logger::info("403 Forbidden");
-				return;
-			}
-			
-			foreach($this->modules as $mi){
-				$module = $mi['module'];
-				$out_sess = $module->callout($msg);
-				if($out_sess){
-					Logger::debug("module " . get_class($module) . " create callout.");
-					break;
-				}
-			}
-			if(!$out_sess){
-				// TODO: reply 404
-				Logger::info("404 Not Found");
-				return;
-			}
-			
-			$this->mod_conference->create_conference($in_sess, $out_sess);
-			return;
-		}
-		
-		// TODO
-		Logger::debug("ignore " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason));
-		echo '  < ' . str_replace("\n", "\n  < ", trim($msg->encode())) . "\n\n";
 	}
 	
 	private $time = 0;
@@ -137,16 +72,12 @@ class SipEngine
 		$this->time = microtime(1);
 		$timespan = max(0, $this->time - $old_time);
 
-		$link = $this->link;
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
 			$msgs = $module->outgoing($time, $timespan);
 			foreach($msgs as $msg){
 				// TODO: 对于模块消息，不通过 socket 发送
-				$buf = $msg->encode();
-				$link->sendto($buf, $msg->dst_ip, $msg->dst_port);
-				Logger::debug("send " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . " to {$msg->dst_ip}:{$msg->dst_port}");
-				#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
+				$this->link->send($msg);
 			}
 		}
 	}

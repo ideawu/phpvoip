@@ -32,8 +32,7 @@ class SipCalleeSession extends SipSession
 				}else{
 					Logger::debug("recv BYE while closing");
 				}
-				$this->state = SIP::CLOSING;
-				$this->timers = self::$closing_timers;
+				$this->close();
 			}
 		}
 	}

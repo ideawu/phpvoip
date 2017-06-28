@@ -1,26 +1,14 @@
 <?php
 class SipRegisterModule extends SipModule
 {
-	function register($username, $password, $proxy_ip, $proxy_port, $local_ip, $local_port){
-		$sess = new SipRegisterSession($username, $password, $proxy_ip, $proxy_port);
+	function register($username, $password, $remote_ip, $remote_port, $local_ip, $local_port){
+		$sess = new SipRegisterSession($username, $password, $remote_ip, $remote_port);
 		if($local_ip === '0.0.0.0'){
-			$local_ip = SIP::guess_local_ip($proxy_ip);
+			$local_ip = SIP::guess_local_ip($remote_ip);
 		}
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
 		$this->add_session($sess);
-	}
-	
-	function incoming($msg){
-		parent::incoming($msg);
-		
-		foreach($this->sessions as $sess){
-			if($msg->call_id === $sess->call_id && $msg->from_tag === $sess->from_tag){
-				$sess->on_recv_msg($msg);
-				return true;
-			}
-		}
-		return false;
 	}
 	
 	function callin($msg){
