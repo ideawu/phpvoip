@@ -51,7 +51,7 @@ class SipRegisterSession extends SipSession
 				$this->auth = null;
 
 				// registration renew
-				$expires = min($this->expires, max($this->expires, $msg->expires)) - 5;
+				$expires = 10;//min($this->expires, max($this->expires, $msg->expires)) - 5;
 				Logger::debug("expires: $expires");
 				$this->refresh_after($expires);
 			}else if($msg->code == 401){
