@@ -15,15 +15,8 @@ class SipRegistrarSession extends SipSession
 	}
 	
 	function incoming($msg){
-		if($this->state == SIP::TRYING || $this->state == SIP::RENEWING){
-		}else if($this->state == SIP::ESTABLISHED){
-		}
 	}
 	
 	function outgoing(){
-		if($this->state == SIP::TRYING || $this->state == SIP::RENEWING){
-		}else if($this->state == SIP::ESTABLISHED){
-			// expired
-		}
 	}
 }

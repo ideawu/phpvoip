@@ -34,7 +34,6 @@ class SIP
 	// state
 	const CLOSED      = 0;
 	const CLOSING     = 1;
-	const RENEWING    = 2001;
 
 	const CALLING     = 3001;
 	const ACCEPTING   = 3002;
@@ -44,7 +43,7 @@ class SIP
 	private static $branch_prefix = 'z9hG4bK_';
 
 	static function token(){
-		$rand = substr(sprintf('%05d', mt_rand()), 0, 5);
+		$rand = substr(sprintf('%15d', mt_rand()), -3);
 		$time = sprintf('%.6f', microtime(1));
 		return $rand . '_' . $time;
 	}

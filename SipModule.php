@@ -1,6 +1,9 @@
 <?php
 abstract class SipModule
 {
+	// 指向引擎
+	public $engine;
+	
 	// 记录 session 间的关系。
 	protected $dialogs = array();
 	
@@ -28,7 +31,12 @@ abstract class SipModule
 			}
 			
 			if($this->before_sess_recv_msg($sess, $msg) !== false){
+				$s1 = ($sess->state == SIP::ESTABLISHED);
 				$sess->incoming($msg);
+				$s2 = ($sess->state == SIP::ESTABLISHED);
+				if(!$s1 && $s2){
+					$this->up_session($sess);
+				}
 			}
 			return true;
 		}
@@ -38,7 +46,7 @@ abstract class SipModule
 	private function before_sess_recv_msg($sess, $msg){
 		if($sess->state == SIP::ESTABLISHED){
 			if($msg->to_tag !== $sess->to_tag){
-				Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.cseq: {$sess->to_tag}");
+				Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->to_tag}");
 				return false;
 			}
 		}
@@ -110,25 +118,23 @@ abstract class SipModule
 		$msg->from = $sess->from;
 		$msg->from_tag = $sess->from_tag;
 		$msg->to = $sess->to;
-		$msg->contact = $sess->contact;
-		// // 重发的请求不需要带 to_tag?
-		// if($msg->is_response()){
-		// 	$msg->to_tag = $$sess->to_tag;
-		// }
 		$msg->to_tag = $sess->to_tag;
+		$msg->contact = $sess->contact;
 	}
 	
 	function add_session($sess){
-		Logger::debug("NEW " . $sess->role_name() . " session, call_id: {$sess->call_id}");
+		Logger::debug("NEW session " . $sess->role_name() . ", {$sess->from} => {$sess->to}");
+		$sess->module = $this;
 		$this->sessions[] = $sess;
 	}
 
 	function del_session($sess){
-		Logger::debug("DEL " . $sess->role_name() . " session, call_id: {$sess->call_id}");
+		Logger::debug("DEL session " . $sess->role_name() . ", {$sess->from} => {$sess->to}");
 		foreach($this->sessions as $index=>$tmp){
 			if($tmp !== $sess){
 				continue;
 			}
+			$sess->module = null;
 			unset($this->sessions[$index]);
 			// 如果存在于 dialog 中，dialog 也要删除
 			foreach($this->dialogs as $dialog){
@@ -136,5 +142,9 @@ abstract class SipModule
 			}
 			break;
 		}
+	}
+	
+	function up_session($sess){
+		Logger::debug("UP session " . $sess->role_name() . ", {$sess->from} => {$sess->to}");
 	}
 }

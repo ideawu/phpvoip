@@ -30,6 +30,7 @@ class SipEngine
 				break;
 			}
 		}
+		$mod->engine = $this;
 		$mi = array(
 			'weight' => $weight,
 			'module' => $mod,
@@ -63,6 +64,7 @@ class SipEngine
 				return;
 			}
 		}
+		Logger::debug("drop msg");
 	}
 	
 	private $time = 0;

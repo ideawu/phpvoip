@@ -32,6 +32,7 @@ class SipCalleeSession extends SipSession
 				}else{
 					Logger::debug("recv BYE while closing");
 				}
+				// 该方法更新 timer
 				$this->close();
 			}
 		}
@@ -55,6 +56,7 @@ class SipCalleeSession extends SipSession
 			// $msg->to_tag = $this->to_tag;
 			// return $msg;
 		}else if($this->state == SIP::CLOSING){
+			// TODO: 这是被动关闭的情况，主动关闭呢？
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';

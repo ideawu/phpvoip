@@ -1,8 +1,12 @@
 <?php
 abstract class SipSession
 {
+	// 指向本 Session 所属的 module。
+	public $module;
+	
 	public $role;
 	public $state = 0;
+	public $renew = false;
 	public $timers;
 
 	public $local_ip;
@@ -10,7 +14,7 @@ abstract class SipSession
 	public $remote_ip;
 	public $remote_port;
 
-	protected $expires = 59;
+	protected $expires = 60;
 	protected static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $refresh_timers = array(10, 2);

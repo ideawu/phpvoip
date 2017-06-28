@@ -38,20 +38,21 @@ class SipRegisterSession extends SipSession
 	}
 
 	function incoming($msg){
-		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->state == SIP::RENEWING){
+		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
 			if($msg->is_response()){
 				if($msg->code == 200){
-					if($this->state == SIP::RENEWING){
-						Logger::debug("{$this->from} refreshed");
+					if($this->renew){
+						Logger::debug("{$this->from} renewed");
 					}else{
 						Logger::debug("{$this->from} registered");
 					}
 					$this->to_tag = $msg->to_tag;
 					$this->state = SIP::ESTABLISHED;
+					$this->renew = false;
 					$this->auth = null;
 
-					// registration refresh
-					$expires = min($this->expires, max($this->expires, $expires)) - 5;
+					// registration renew
+					$expires = 30;//min($this->expires, max($this->expires, $expires)) - 5;
 					Logger::debug("expires: $expires");
 					$this->timers = self::$reg_timers;
 					$this->timers[0] = $expires;
@@ -86,7 +87,7 @@ class SipRegisterSession extends SipSession
 	// 返回要发送的消息
 	function outgoing(){
 		$msg = null;
-		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->state == SIP::RENEWING){
+		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
 			$this->branch = SIP::new_branch();
 			
 			$msg = new SipMessage();
@@ -100,8 +101,7 @@ class SipRegisterSession extends SipSession
 			$msg->password = $this->password;
 		}else if($this->state == SIP::ESTABLISHED){
 			Logger::debug("refresh registration");
-			$this->state = SIP::RENEWING;
-			// $this->to_tag = null; TODO:?
+			$this->renew = true;
 			$this->timers = self::$reg_timers;
 		}
 		return $msg;
