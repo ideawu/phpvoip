@@ -14,6 +14,9 @@ abstract class SipModule
 		foreach($this->sessions as $sess){
 			//外线：判断 call_id + from_tag + from + to + src.ip:port
 			if($sess->role == SIP::REGISTER){
+				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+					continue;
+				}
 				if($msg->call_id !== $sess->call_id){
 					continue;
 				}
@@ -21,23 +24,31 @@ abstract class SipModule
 					continue;
 				}
 				if($msg->from !== $sess->from || $msg->to !== $sess->to){
-					continue;
-				}
-				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 					continue;
 				}
 			}else if($sess->role == SIP::CALLER){
+				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+					continue;
+				}
 				if($msg->call_id !== $sess->call_id){
 					continue;
 				}
-				if($msg->from_tag !== $sess->from_tag){
-					continue;
-				}
-				if($msg->from !== $sess->from || $msg->to !== $sess->to){
-					continue;
-				}
-				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
-					continue;
+				if($msg->is_request()){
+					if($msg->from_tag !== $sess->to_tag || $msg->to_tag !== $sess->from_tag){
+						Logger::debug("{$msg->from_tag} {$sess->from_tag} {$msg->to_tag} {$sess->to_tag}");
+						continue;
+					}
+					if($msg->from !== $sess->to || $msg->to !== $sess->from){
+						continue;
+					}
+				}else{
+					if($msg->from_tag !== $sess->from_tag || ($msg->to_tag != $sess->to_tag && $sess->to_tag)){
+						Logger::debug("{$msg->from_tag} {$sess->from_tag} {$msg->to_tag} {$sess->to_tag}");
+						continue;
+					}
+					if($msg->from !== $sess->from || $msg->to !== $sess->to){
+						continue;
+					}
 				}
 			}else if($sess->role == SIP::CALLEE){
 				continue;
@@ -57,17 +68,23 @@ abstract class SipModule
 	}
 	
 	private function before_sess_recv_msg($sess, $msg){
-		if($sess->state == SIP::COMPLETED){
-			if($msg->to_tag !== $sess->to_tag){
-				Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->to_tag}");
-				return false;
-			}
-		}
 		if($msg->is_request()){
+			// if($sess->state == SIP::COMPLETED){
+			// 	if($msg->to_tag !== $sess->from_tag){
+			// 		Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->to_tag}");
+			// 		return false;
+			// 	}
+			// }
 			$sess->uri = $msg->uri; // will uri be updated during session?
 			$sess->branch = $msg->branch;
 			$sess->cseq = $msg->cseq;
 		}else{
+			// if($sess->state == SIP::COMPLETED){
+			// 	if($msg->to_tag !== $sess->to_tag){
+			// 		Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->to_tag}");
+			// 		return false;
+			// 	}
+			// }
 			if($msg->cseq !== $sess->cseq){
 				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$sess->cseq}");
 				return false;
