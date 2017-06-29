@@ -43,10 +43,16 @@ class SIP
 	private static $branch_prefix = 'z9hG4bK_';
 
 	static function token(){
-		$rand = substr(sprintf('%15d', mt_rand()), -3);
-		$time = sprintf('%.6f', microtime(1));
-		return $rand . '_' . $time;
+		static $seq = -1;
+		if($seq == -1){
+			$seq = mt_rand();
+		}
+		$seq = ($seq + 1) % 1000;
+		$num = sprintf('%03d', $seq);
+		$time = substr(sprintf('%.3f', microtime(1)), 2);
+		return $num . $time;
 	}
+
 	
 	static function new_call_id(){
 		return self::$call_id_prefix . self::token();
