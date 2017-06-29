@@ -54,6 +54,8 @@ abstract class SipSession
 			return 'CALLER';
 		}else if($this->role == SIP::CALLEE){
 			return 'CALLEE';
+		}else{
+			return 'NULL';
 		}
 	}
 	

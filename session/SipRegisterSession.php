@@ -27,7 +27,7 @@ class SipRegisterSession extends SipSession
 		$this->domain = $domain;
 
 		$this->uri = "sip:{$this->domain}";
-		$this->local = "\"{$this->username}\" <sip:{$this->username}@{$this->domain}>";
+		$this->local = "<sip:{$this->username}@{$this->domain}>";
 		$this->remote = $this->local;
 		$this->contact = $this->local;
 		

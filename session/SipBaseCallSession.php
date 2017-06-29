@@ -7,12 +7,8 @@ abstract class SipBaseCallSession extends SipSession
 	
 	function incoming($msg){
 		if($msg->cseq_method == 'OPTIONS' || $msg->cseq_method == 'INFO'){
-			if($msg->code == 481 || $msg->code >= 500){
-				// 让后面逻辑处理
-			}else if($msg->code >= 200){
+			if($msg->code == 200 || $msg->code == 415){ // 415 Unsupported Media Type
 				$this->refresh();
-				return true;
-			}else{
 				return true;
 			}
 		}

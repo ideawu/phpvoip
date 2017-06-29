@@ -3,9 +3,10 @@ include_once(dirname(__FILE__) . '/UdpLink.php');
 include_once(dirname(__FILE__) . '/SipLink.php');
 
 include_once(dirname(__FILE__) . '/SipEngine.php');
+include_once(dirname(__FILE__) . '/SipModule.php');
 include_once(dirname(__FILE__) . '/SipMessage.php');
 include_once(dirname(__FILE__) . '/SipSession.php');
-include_once(dirname(__FILE__) . '/SipModule.php');
+include_once(dirname(__FILE__) . '/SipDialog.php');
 
 include_once(dirname(__FILE__) . '/session/SipNullSession.php');
 include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
@@ -85,6 +86,7 @@ class SIP
 		// }
 	}
 
+	// TODO: 解析得更细致
 	static function parse_address($str){
 		$ret = array(
 			'contact' => '',

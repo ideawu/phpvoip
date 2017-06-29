@@ -18,8 +18,10 @@ class SipRegisterModule extends SipModule
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
 			}
-			// TODO: 只验证 username
-			if($msg->to !== $sess->local){
+			$ps1 = explode('@', $msg->to);
+			$ps2 = explode('@', $sess->local);
+			// 只验证 username
+			if($ps1[0] !== $ps2[0]){
 				Logger::debug("{$msg->to} {$sess->local}");
 				continue;
 			}

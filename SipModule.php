@@ -62,10 +62,43 @@ abstract class SipModule
 					}
 				}
 			}else if($sess->role == SIP::CALLEE){
+				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+					continue;
+				}
+				if($msg->call_id !== $sess->call_id){
+					continue;
+				}
+				if($msg->is_request() && $msg->method != 'ACK'){
+					// 重传的 INVITE 没有 to_tag
+					if($msg->method == 'INVITE'){
+						if($msg->from_tag !== $sess->remote_tag){
+							Logger::debug("{$msg->from_tag} {$sess->local_tag}");
+							continue;
+						}
+					}else{
+						if($msg->from_tag !== $sess->remote_tag || $msg->to_tag !== $sess->local_tag){
+							Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->local_tag}");
+							continue;
+						}
+					}
+					if($msg->from !== $sess->remote || $msg->to !== $sess->local){
+						continue;
+					}
+				}else{
+					if($msg->from_tag !== $sess->local_tag || $msg->to_tag != $sess->remote_tag){
+						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
+						continue;
+					}
+					if($msg->from !== $sess->local || $msg->to !== $sess->remote){
+						continue;
+					}
+				}
+			}else{
 				continue;
 			}
 
 			if($this->before_sess_recv_msg($sess, $msg) !== false){
+				// Logger::debug($sess->role_name() . " process msg");
 				$s1 = ($sess->state == SIP::COMPLETED || $sess->renew);
 				$sess->incoming($msg);
 				$s2 = ($sess->state == SIP::COMPLETED);

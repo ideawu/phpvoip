@@ -9,6 +9,11 @@ class SipDialog
 	// 在 caller 连接之前，callee 的状态一直是 TRYING
 	// 对于终端应用来说，它的 caller 创建后立即连接完毕
 	
+	function __construct($sess1, $sess2){
+		$this->callee = $sess1;
+		$this->caller = $sess2;
+	}
+	
 	function del_session($sess){
 		if($sess === $this->callee){
 			$this->callee = null;

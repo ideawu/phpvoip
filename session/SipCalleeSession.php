@@ -24,12 +24,14 @@ class SipCalleeSession extends SipBaseCallSession
 		if($ret === true){
 			return true;
 		}
-		
 		if($this->state == SIP::TRYING){
 			if($msg->method == 'ACK'){
 				$this->complete();
 				$this->refresh();
 				return true;
+			}else if($msg->method == 'INVITE'){
+				Logger::debug("recv duplicated INVITE, resend OK");
+				$this->timers = self::$call_timers;
 			}
 		}
 	}

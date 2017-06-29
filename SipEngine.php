@@ -94,11 +94,12 @@ class SipEngine
 			}
 		}
 		if(!$callee){
-			// Unauthorized request/Not Found
+			Logger::debug("403 Forbidden");
+			// TODO: send error response
 			return;
 		}
 		
-		// TODO: 在此路由转换
+		// TODO: 在此进行路由转换
 		
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
@@ -115,6 +116,7 @@ class SipEngine
 		
 		// 创建路由记录
 		$this->router->add_route($callee, $caller);
+		return true;
 	}
 	
 	private $time = 0;
