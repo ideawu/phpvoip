@@ -57,6 +57,7 @@ abstract class SipSession
 	}
 	
 	function complete(){
+		Logger::debug($this->role_name() . " session {$this->call_id} established");
 		$this->state = SIP::COMPLETED;
 	}
 	
