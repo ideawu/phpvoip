@@ -85,17 +85,35 @@ abstract class SipModule
 			// 		return false;
 			// 	}
 			// }
-			if($msg->cseq !== $sess->cseq){
-				Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$sess->cseq}");
-				return false;
-			}
 			if($msg->branch !== $sess->branch){
 				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$sess->branch}");
 				return false;
 			}
+			// 对于会话中的 OPTIONS/INFO，响应的 cseq 不会变化。
+			if($msg->cseq_method == 'OPTIONS'){
+				if($msg->cseq !== $sess->options_cseq){
+					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.options_cseq: {$sess->options_cseq}");
+					return false;
+				}
+			}else if($msg->cseq_method == 'INFO'){
+				if($msg->cseq !== $sess->info_cseq){
+					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.info_cseq: {$sess->info_cseq}");
+					return false;
+				}
+			}else{
+				if($msg->cseq !== $sess->cseq){
+					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$sess->cseq}");
+					return false;
+				}
+			}
+			
 			if($msg->code >= 200){
 				$sess->to_tag = $msg->to_tag;
 				$sess->cseq ++;
+				if(!$sess->remote_allow){
+					$str = $msg->get_header('Allow');
+					$sess->remote_allow = preg_split('/[, ]+/', trim($str));
+				}
 			}
 		}
 	}

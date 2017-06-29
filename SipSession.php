@@ -13,17 +13,21 @@ abstract class SipSession
 	public $local_port;
 	public $remote_ip;
 	public $remote_port;
+	
+	public $remote_allow = array();
 
 	protected $expires = 60;
 	protected static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
-	protected static $refresh_timers = array(10, 2);
+	protected static $refresh_timers = array(3, 2, 1, 1);
 	protected static $closing_timers = array(0, 5);
 	protected static $now_timers = array(0, 0);
 	
 	public $call_id; // session id
 	public $branch;  // transaction id
 	public $cseq;    // command/transaction seq
+	public $options_cseq; // 用于 OPTIONS
+	public $info_cseq; // 用于 INFO
 	
 	public $uri;
 	
@@ -56,9 +60,11 @@ abstract class SipSession
 		$this->state = SIP::COMPLETED;
 	}
 	
-	function refresh_after($seconds=10){
-		$this->timers = self::$reg_timers;
-		$this->timers[0] = $seconds;
+	function refresh($after=null){
+		$this->timers = self::$refresh_timers;
+		if($after !== null){
+			$this->timers[0] = $after;
+		}
 	}
 	
 	/*

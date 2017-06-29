@@ -51,9 +51,9 @@ class SipRegisterSession extends SipSession
 				$this->auth = null;
 
 				// registration renew
-				$expires = 10;//min($this->expires, max($this->expires, $msg->expires)) - 5;
+				$expires = min($this->expires, max($this->expires, $msg->expires)) - 5;
 				Logger::debug("expires: $expires");
-				$this->refresh_after($expires);
+				$this->refresh($expires);
 			}else if($msg->code == 401){
 				$this->auth = $this->www_auth($msg->auth);
 				$this->timers = self::$reg_timers;
@@ -91,9 +91,8 @@ class SipRegisterSession extends SipSession
 			$msg->method = 'REGISTER';
 			$msg->expires = $this->expires;
 			if($this->state == SIP::AUTHING){
-				$msg->headers[] = array('Authorization', $this->auth);
+				$msg->add_header('Authorization', $this->auth);
 			}
-
 			$msg->username = $this->username;
 			$msg->password = $this->password;
 		}else if($this->state == SIP::COMPLETED){

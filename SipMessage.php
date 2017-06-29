@@ -31,7 +31,7 @@ class SipMessage
 	
 	// 未详细解析的 header, 每个元素是 pair [key, val]
 	public $headers = array();
-	public $body = '';
+	public $content = '';
 	
 	function is_request(){
 		return $this->code == 0;
@@ -39,6 +39,29 @@ class SipMessage
 	
 	function is_response(){
 		return !$this->is_request();
+	}
+	
+	function add_header($key, $val){
+		$this->headers[] = array($key, $val);
+	}
+	
+	function get_header($key){
+		foreach($this->headers as $v){
+			if($key === $v[0]){
+				return $v[1];
+			}
+		}
+		return null;
+	}
+	
+	function get_headers($key){
+		$ret = array();
+		foreach($this->headers as $v){
+			if($key === $v[0]){
+				$ret[] = $v;
+			}
+		}
+		return $ret;
 	}
 	
 	function encode(){
@@ -66,14 +89,14 @@ class SipMessage
 			$headers[] = "{$v[0]}: {$v[1]}";
 		}
 		
-		$this->content_length = strlen($this->body);
+		$this->content_length = strlen($this->content);
 		if($this->expires !== null){
 			$headers[] = "Expires: {$this->expires}";
 		}
 		$headers[] = "User-Agent: phpvoip";
 		$headers[] = "Content-Length: " . $this->content_length;
 		
-		$ret = join("\r\n", $headers) . "\r\n\r\n{$this->body}";
+		$ret = join("\r\n", $headers) . "\r\n\r\n{$this->content}";
 		return $ret;
 	}
 	
@@ -124,7 +147,7 @@ class SipMessage
 			$this->parse_header_line($line);
 		}
 		
-		$this->body = substr($buf, $pos, $this->content_length);
+		$this->content = substr($buf, $pos, $this->content_length);
 		return $pos + $this->content_length;
 	}
 	

@@ -23,7 +23,7 @@ class SipCalleeSession extends SipSession
 			if($msg->method == 'ACK'){
 				Logger::debug($this->role_name() . " session {$this->call_id} established");
 				$this->complete();
-				$this->refresh_after();
+				$this->refresh();
 			}
 		}else if($this->state == SIP::COMPLETED){
 			if($msg->method == 'BYE'){
@@ -50,10 +50,8 @@ class SipCalleeSession extends SipSession
 			$msg->code = 200;
 			$msg->reason = 'OK';
 			$msg->cseq_method = 'INVITE';
-			#$msg->headers[] = array('Session-Expires', 90);
 			return $msg;
 		}else if($this->state == SIP::COMPLETED){
-			$this->refresh_after();
 			Logger::debug("refresh " . $this->role_name() . " session {$this->call_id}");
 		
 			// TODO: re-invite?
