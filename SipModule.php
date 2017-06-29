@@ -5,14 +5,25 @@ abstract class SipModule
 	public $engine;
 	
 	// 记录 session 间的关系。
-	protected $dialogs = array();
+	//protected $dialogs = array();
 	
 	// session 存储在 sessions 列表中。
 	protected $sessions = array();
+	
+	/*
+	呼入处理：针对此条 INVITE 消息，如果是由此模块发出的，或者由此模块管理的 UA 发出的，
+	则创建一个 callee 返回。
+	*/
+	abstract function callin($msg);
+	
+	/*
+	外呼处理：针对此条 INVITE 消息，如果是由此模块接收的，或者由此模块管理的 UA 接收的，
+	则创建一个 caller 返回。
+	*/
+	abstract function callout($msg);
 
 	function incoming($msg){
 		foreach($this->sessions as $sess){
-			//外线：判断 call_id + from_tag + from + to + src.ip:port
 			if($sess->role == SIP::REGISTER){
 				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 					continue;
@@ -20,12 +31,15 @@ abstract class SipModule
 				if($msg->call_id !== $sess->call_id){
 					continue;
 				}
-				if($msg->from_tag !== $sess->from_tag){
+				if($msg->from_tag !== $sess->local_tag){
 					continue;
 				}
-				if($msg->from !== $sess->from || $msg->to !== $sess->to){
+				// TODO: 需要区分收到的是请求还是响应，目前转不支持请求
+				if($msg->from !== $sess->local_uri || $msg->to !== $sess->remote_uri){
 					continue;
 				}
+			}else if($sess->role == SIP::REGISTRAR){
+				continue;
 			}else if($sess->role == SIP::CALLER){
 				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 					continue;
@@ -34,24 +48,31 @@ abstract class SipModule
 					continue;
 				}
 				if($msg->is_request()){
-					if($msg->from_tag !== $sess->to_tag || $msg->to_tag !== $sess->from_tag){
-						Logger::debug("{$msg->from_tag} {$sess->from_tag} {$msg->to_tag} {$sess->to_tag}");
+					if($msg->from_tag !== $sess->remote_tag || $msg->to_tag !== $sess->local_tag){
+						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
 						continue;
 					}
-					if($msg->from !== $sess->to || $msg->to !== $sess->from){
+					if($msg->from !== $sess->remote_uri || $msg->to !== $sess->local_uri){
 						continue;
 					}
 				}else{
-					if($msg->from_tag !== $sess->from_tag || ($msg->to_tag != $sess->to_tag && $sess->to_tag)){
-						Logger::debug("{$msg->from_tag} {$sess->from_tag} {$msg->to_tag} {$sess->to_tag}");
+					if($msg->from_tag !== $sess->local_tag || ($msg->to_tag != $sess->remote_tag && $sess->remote_tag)){
+						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
 						continue;
 					}
-					if($msg->from !== $sess->from || $msg->to !== $sess->to){
+					if($msg->from !== $sess->local_uri || $msg->to !== $sess->remote_uri){
 						continue;
 					}
 				}
 			}else if($sess->role == SIP::CALLEE){
 				continue;
+			}
+
+			if($sess->state == SIP::COMPLETED){
+				if($msg->to_tag !== $sess->local_tag){
+					Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->remote_tag}");
+					return false;
+				}
 			}
 			
 			if($this->before_sess_recv_msg($sess, $msg) !== false){
@@ -69,22 +90,10 @@ abstract class SipModule
 	
 	private function before_sess_recv_msg($sess, $msg){
 		if($msg->is_request()){
-			// if($sess->state == SIP::COMPLETED){
-			// 	if($msg->to_tag !== $sess->from_tag){
-			// 		Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->to_tag}");
-			// 		return false;
-			// 	}
-			// }
 			$sess->uri = $msg->uri; // will uri be updated during session?
 			$sess->branch = $msg->branch;
 			$sess->cseq = $msg->cseq;
 		}else{
-			// if($sess->state == SIP::COMPLETED){
-			// 	if($msg->to_tag !== $sess->to_tag){
-			// 		Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->to_tag}");
-			// 		return false;
-			// 	}
-			// }
 			if($msg->branch !== $sess->branch){
 				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$sess->branch}");
 				return false;
@@ -109,7 +118,7 @@ abstract class SipModule
 			}
 			
 			if($msg->code >= 200){
-				$sess->to_tag = $msg->to_tag;
+				$sess->remote_tag = $msg->to_tag;
 				$sess->cseq ++;
 				if(!$sess->remote_allow){
 					$str = $msg->get_header('Allow');
@@ -167,10 +176,10 @@ abstract class SipModule
 		$msg->call_id = $sess->call_id;
 		$msg->branch = $sess->branch;
 		$msg->cseq = $sess->cseq;
-		$msg->from = $sess->from;
-		$msg->from_tag = $sess->from_tag;
-		$msg->to = $sess->to;
-		$msg->to_tag = $sess->to_tag;
+		$msg->from = $sess->local_uri;
+		$msg->from_tag = $sess->local_tag;
+		$msg->to = $sess->remote_uri;
+		$msg->to_tag = $sess->remote_tag;
 		$msg->contact = $sess->contact;
 		if($msg->method == 'INFO'){
 			$msg->cseq = $sess->info_cseq;
@@ -181,28 +190,28 @@ abstract class SipModule
 	}
 	
 	function add_session($sess){
-		Logger::debug("NEW session " . $sess->role_name() . ", {$sess->from} => {$sess->to}");
+		Logger::debug("NEW session " . $sess->role_name() . ", {$sess->local_uri} => {$sess->remote_uri}");
 		$sess->module = $this;
 		$this->sessions[] = $sess;
 	}
 
 	function del_session($sess){
-		Logger::debug("DEL session " . $sess->role_name() . ", {$sess->from} => {$sess->to}");
+		Logger::debug("DEL session " . $sess->role_name() . ", {$sess->local_uri} => {$sess->remote_uri}");
 		foreach($this->sessions as $index=>$tmp){
 			if($tmp !== $sess){
 				continue;
 			}
 			$sess->module = null;
 			unset($this->sessions[$index]);
-			// 如果存在于 dialog 中，dialog 也要删除
-			foreach($this->dialogs as $dialog){
-				$dialog->del_session($sess);
-			}
+			// // 如果存在于 dialog 中，dialog 也要删除
+			// foreach($this->dialogs as $dialog){
+			// 	$dialog->del_session($sess);
+			// }
 			break;
 		}
 	}
 	
 	function up_session($sess){
-		Logger::debug("UP session " . $sess->role_name() . ", {$sess->from} => {$sess->to}");
+		Logger::debug("UP session " . $sess->role_name() . ", {$sess->local_uri} => {$sess->remote_uri}");
 	}
 }

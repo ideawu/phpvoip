@@ -12,10 +12,11 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->call_id = $msg->call_id;
 		$this->branch = $msg->branch;
 		$this->cseq = $msg->cseq;
-		$this->from = $msg->from;
-		$this->from_tag = $msg->from_tag;
-		$this->to = $msg->to;
-		$this->to_tag = SIP::new_tag();
+		$this->local_uri = $msg->from;
+		$this->local_tag = $msg->from_tag;
+		$this->remote_uri = $msg->to;
+		$this->remote_tag = SIP::new_tag();
+		$this->contact = $msg->contact;
 	}
 	
 	function incoming($msg){

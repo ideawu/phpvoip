@@ -25,16 +25,17 @@ abstract class SipSession
 	
 	public $call_id; // session id
 	public $branch;  // transaction id
+	// local_cseq remote_cseq
 	public $cseq;    // command/transaction seq
 	public $options_cseq; // 用于 OPTIONS
 	public $info_cseq; // 用于 INFO
 	
 	public $uri;
 	
-	public $from;
-	public $from_tag; // session id
-	public $to;
-	public $to_tag;   // session id
+	public $local_uri;
+	public $local_tag;
+	public $remote_uri;
+	public $remote_tag;
 	
 	protected $auth;
 	

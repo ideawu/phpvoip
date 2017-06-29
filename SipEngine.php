@@ -64,6 +64,21 @@ class SipEngine
 				return;
 			}
 		}
+		
+		// if($msg->method == 'INVITE'){
+		// 	// 1, Router 先处理
+		// 	// TODO:
+		//
+		// 	// 2, 否则，各模块处理
+		// 	foreach($this->modules as $mi){
+		// 		$module = $mi['module'];
+		// 		$callee = $module->callin($msg);
+		// 		if($callee){
+		// 			break;
+		// 		}
+		// 	}
+		// }
+		
 		Logger::debug("drop msg");
 	}
 	

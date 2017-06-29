@@ -6,6 +6,9 @@
 */
 class SipRobotModule extends SipModule
 {
+	function callin($msg){
+	}
+	
 	function callout($msg){
 		$sess = new SipCalleeSession($sess);
 		#$this->add_session($sess);

@@ -10,7 +10,7 @@ class SipCallerSession extends SipBaseCallSession
 		
 		$this->call_id = SIP::new_call_id();
 		$this->branch = SIP::new_branch();
-		$this->from_tag = SIP::new_tag();
+		$this->local_tag = SIP::new_tag();
 		$this->cseq = mt_rand(1, 10000);
 	}
 

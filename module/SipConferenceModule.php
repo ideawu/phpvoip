@@ -10,14 +10,12 @@ class SipConferenceModule extends SipModule
 	
 	function incoming($msg){
 		parent::incoming($msg);
-		
-		foreach($this->sessions as $sess){
-			if($msg->call_id === $sess->call_id && $msg->from_tag === $sess->from_tag && $msg->to_tag === $sess->to_tag){
-				$sess->on_recv_msg($msg);
-				return true;
-			}
-		}
 		return false;
+	}
+
+	function callin($msg){
+	}
+	function callout($msg){
 	}
 }
 

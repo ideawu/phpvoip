@@ -27,13 +27,13 @@ class SipRegisterSession extends SipSession
 		$this->domain = $domain;
 
 		$this->uri = "sip:{$this->domain}";
-		$this->from = "\"{$this->username}\" <sip:{$this->username}@{$this->domain}>";
-		$this->to = $this->from;
-		$this->contact = $this->from;
+		$this->local_uri = "\"{$this->username}\" <sip:{$this->username}@{$this->domain}>";
+		$this->remote_uri = $this->local_uri;
+		$this->contact = $this->local_uri;
 		
 		$this->call_id = SIP::new_call_id();
 		$this->branch = SIP::new_branch();
-		$this->from_tag = SIP::new_tag();
+		$this->local_tag = SIP::new_tag();
 		$this->cseq = mt_rand(1, 10000);
 	}
 
@@ -41,11 +41,11 @@ class SipRegisterSession extends SipSession
 		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
 			if($msg->code == 200){
 				if($this->renew){
-					Logger::debug("REGISTER {$this->from} renewed");
+					Logger::debug("REGISTER {$this->local_uri} renewed");
 				}else{
-					Logger::debug("REGISTER {$this->from} registered");
+					Logger::debug("REGISTER {$this->local_uri} registered");
 				}
-				$this->to_tag = $msg->to_tag;
+				$this->remote_tag = $msg->to_tag;
 				$this->complete();
 				$this->renew = false;
 				$this->auth = null;
@@ -58,10 +58,10 @@ class SipRegisterSession extends SipSession
 				$this->auth = $this->www_auth($msg->auth);
 				$this->timers = self::$reg_timers;
 				if($this->state == SIP::AUTHING){
-					Logger::error("{$this->from} auth failed");
+					Logger::error("{$this->local_uri} auth failed");
 					$this->timers[0] = 3; // wait before retry
 				}else{
-					Logger::debug("{$this->from} auth");
+					Logger::debug("{$this->local_uri} auth");
 					$this->state = SIP::AUTHING;
 				}
 			}else if($msg->code == 423){
