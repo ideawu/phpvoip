@@ -25,13 +25,8 @@ class SipCallerSession extends SipBaseCallSession
 				$this->state = SIP::COMPLETING;
 				$this->timers = self::$now_timers;
 				return true;
-			}else if($msg->code >= 300){
-				Logger::debug($this->role_name() . " {$this->call_id} failed by {$msg->code}");
-				$this->close();
-				return true;
 			}
-		}
-		if($this->state == SIP::COMPLETED){
+		}else if($this->state == SIP::COMPLETED){
 			if($msg->code == 200){
 				// 收到重复的 200，回复 ACK
 				// TODO: 不应该修改状态，但 incoming 怎么返回消息呢？

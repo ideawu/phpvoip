@@ -6,30 +6,20 @@ abstract class SipBaseCallSession extends SipSession
 	}
 	
 	function incoming($msg){
-		if($msg->cseq_method == 'OPTIONS' || $msg->cseq_method == 'INFO'){
-			if($msg->is_request()){
-				//
-			}else{
-				if($msg->code == 481){ // Call/Transaction Does Not Exist
-					Logger::info("recv 481, close " . $this->role_name());
-					$this->close();
-				}else if($msg->code >= 200){
-					$this->refresh();
-				}
-			}
-			return true;
-		}else if($this->state == SIP::COMPLETED){
+		if($this->state == SIP::COMPLETED){
 			if($msg->method == 'BYE'){
 				Logger::debug($this->role_name() . " {$this->call_id} close by BYE");
 				$this->onclose();
 				return true;
 			}
+			return false;
 		}else if($this->state == SIP::FIN_WAIT){
 			if($msg->method == 'BYE'){
 				Logger::debug($this->role_name() . " {$this->call_id} FIN_WAIT => CLOSE_WAIT");
 				$this->onclose();
 				return true;
 			}
+			return false;
 		}else if($this->state == SIP::CLOSE_WAIT){
 			if($msg->method == 'BYE'){
 				Logger::debug("recv BYE while CLOSE_WAIT");
@@ -37,6 +27,27 @@ abstract class SipBaseCallSession extends SipSession
 				array_unshift($this->timers, 0);
 				return true;
 			}
+			return false;
+		} 
+		
+		if($msg->code == 481){ // Call/Transaction Does Not Exist
+			Logger::info("recv 481, close " . $this->role_name());
+			$this->close();
+			return true;
+		}else if($msg->code >= 300 && $msg->code < 400){
+			// ...
+			Logger::info("nothing to do with {$msg->code}");
+		}else if($msg->code >= 400){
+			Logger::debug($this->role_name() . " terminated by {$msg->code}");
+			$this->terminate();
+			return true;
+		}
+		
+		if($msg->cseq_method == 'OPTIONS' || $msg->cseq_method == 'INFO'){
+			if($msg->code >= 200){
+				$this->refresh();
+			}
+			return true;
 		}
 	}
 	
