@@ -18,7 +18,9 @@ class SipRegisterModule extends SipModule
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
 			}
-			if($msg->from !== $sess->remote || $msg->to !== $sess->local){
+			// TODO: 只验证 username
+			if($msg->to !== $sess->local){
+				Logger::debug("{$msg->to} {$sess->local}");
 				continue;
 			}
 			// TODO: 验证 uri
@@ -45,9 +47,9 @@ class SipRegisterModule extends SipModule
 			$call->remote_ip = $sess->remote_ip;
 			$call->remote_port = $sess->remote_port;
 			$call->uri = $msg->uri;
-			$this->local = $msg->from;
-			$this->remote = $msg->to;
-			$this->contact = $msg->contact;
+			$call->local = $msg->from;
+			$call->remote = $msg->to;
+			$call->contact = $msg->contact;
 			return $call;
 		}
 	}

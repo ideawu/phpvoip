@@ -4,9 +4,6 @@ abstract class SipModule
 	// 指向引擎
 	public $engine;
 	
-	// 记录 session 间的关系。
-	//protected $dialogs = array();
-	
 	// session 存储在 sessions 列表中。
 	protected $sessions = array();
 	
@@ -68,13 +65,6 @@ abstract class SipModule
 				continue;
 			}
 
-			if($sess->state == SIP::COMPLETED){
-				if($msg->to_tag !== $sess->local_tag){
-					Logger::debug("drop msg, msg.to_tag: {$msg->to_tag} != sess.to_tag: {$sess->remote_tag}");
-					return false;
-				}
-			}
-			
 			if($this->before_sess_recv_msg($sess, $msg) !== false){
 				$s1 = ($sess->state == SIP::COMPLETED || $sess->renew);
 				$sess->incoming($msg);

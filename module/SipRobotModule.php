@@ -7,14 +7,11 @@
 class SipRobotModule extends SipModule
 {
 	function callin($msg){
+		return null;
 	}
 	
 	function callout($msg){
-		$sess = new SipCalleeSession($sess);
-		#$this->add_session($sess);
-
-		$out = new SipCallerSession();
-		// TODO:
-		return $out;
+		$sess = new SipNullSession();
+		return $sess;
 	}
 }

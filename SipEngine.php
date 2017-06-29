@@ -6,12 +6,16 @@ class SipEngine
 	public $local_port;
 	
 	private $modules = array();
+	private $router;
 	
 	private function __construct(){
 		$this->time = microtime(1);
 		
-		#$mod = new SipRobotModule();
-		#$this->add_module($mod, -1);
+		$this->router = new SipRouter();
+		$this->add_module($this->router, INT_MAX);
+		
+		$mod = new SipRobotModule();
+		$this->add_module($mod, -1);
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
@@ -85,6 +89,7 @@ class SipEngine
 			$module = $mi['module'];
 			$callee = $module->callin($msg);
 			if($callee){
+				Logger::debug("callin {$callee->call_id}");
 				break;
 			}
 		}
@@ -99,6 +104,7 @@ class SipEngine
 			$module = $mi['module'];
 			$caller = $module->callout($msg);
 			if($caller){
+				Logger::debug("callout {$caller->call_id}");
 				break;
 			}
 		}
@@ -108,6 +114,7 @@ class SipEngine
 		}
 		
 		// 创建路由记录
+		$this->router->add_route($callee, $caller);
 	}
 	
 	private $time = 0;

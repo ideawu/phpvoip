@@ -9,7 +9,7 @@ $sip = SipEngine::create($ip);
 
 $mod = new SipRegisterModule();
 $sip->add_module($mod);
-$mod->register('2001@bob.com', '1000', '127.0.0.1', 5060);
+$mod->register('2005@bob.com', '1000', '127.0.0.1', 5060);
 #$mod->register('221', '123456', '172.16.10.100', 5060);
 
 while(1){
