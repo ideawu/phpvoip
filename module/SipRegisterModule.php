@@ -18,7 +18,7 @@ class SipRegisterModule extends SipModule
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
 			}
-			if($msg->from !== $sess->remote_uri || $msg->to !== $sess->local_uri){
+			if($msg->from !== $sess->remote || $msg->to !== $sess->local){
 				continue;
 			}
 			// TODO: 验证 uri
@@ -34,9 +34,21 @@ class SipRegisterModule extends SipModule
 	
 	function callout($msg){
 		foreach($this->sessions as $sess){
-			if($msg->to !== $sess->remote_uri){
-				
+			if($msg->to !== $sess->remote){
+				continue;
 			}
+			// TODO: 验证 uri
+
+			$call = new SipCallerSession();
+			$call->local_ip = $sess->local_ip;
+			$call->local_port = $sess->local_port;
+			$call->remote_ip = $sess->remote_ip;
+			$call->remote_port = $sess->remote_port;
+			$call->uri = $msg->uri;
+			$this->local = $msg->from;
+			$this->remote = $msg->to;
+			$this->contact = $msg->contact;
+			return $call;
 		}
 	}
 	
@@ -63,9 +75,9 @@ class SipRegisterModule extends SipModule
 		// $caller->remote_ip = $remote_ip;
 		// $caller->remote_port = $remote_port;
 		// $caller->uri = "sip:1001@{$local_ip}";
-		// $caller->local_uri = "<sip:2001@{$local_ip}>";
-		// $caller->remote_uri = "<{$caller->uri}>";
-		// $caller->contact = $caller->local_uri;
+		// $caller->local = "<sip:2001@{$local_ip}>";
+		// $caller->remote = "<{$caller->uri}>";
+		// $caller->contact = $caller->local;
 		//
 		// $this->add_session($caller);
 	}

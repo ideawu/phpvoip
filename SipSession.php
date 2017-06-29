@@ -32,9 +32,9 @@ abstract class SipSession
 	
 	public $uri;
 	
-	public $local_uri;
+	public $local;
 	public $local_tag;
-	public $remote_uri;
+	public $remote;
 	public $remote_tag;
 	
 	protected $auth;

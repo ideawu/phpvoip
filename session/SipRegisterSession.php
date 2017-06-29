@@ -27,9 +27,9 @@ class SipRegisterSession extends SipSession
 		$this->domain = $domain;
 
 		$this->uri = "sip:{$this->domain}";
-		$this->local_uri = "\"{$this->username}\" <sip:{$this->username}@{$this->domain}>";
-		$this->remote_uri = $this->local_uri;
-		$this->contact = $this->local_uri;
+		$this->local = "\"{$this->username}\" <sip:{$this->username}@{$this->domain}>";
+		$this->remote = $this->local;
+		$this->contact = $this->local;
 		
 		$this->call_id = SIP::new_call_id();
 		$this->branch = SIP::new_branch();
@@ -41,9 +41,9 @@ class SipRegisterSession extends SipSession
 		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
 			if($msg->code == 200){
 				if($this->renew){
-					Logger::debug("REGISTER {$this->local_uri} renewed");
+					Logger::debug("REGISTER {$this->local} renewed");
 				}else{
-					Logger::debug("REGISTER {$this->local_uri} registered");
+					Logger::debug("REGISTER {$this->local} registered");
 				}
 				$this->remote_tag = $msg->to_tag;
 				$this->complete();
@@ -58,10 +58,10 @@ class SipRegisterSession extends SipSession
 				$this->auth = $this->www_auth($msg->auth);
 				$this->timers = self::$reg_timers;
 				if($this->state == SIP::AUTHING){
-					Logger::error("{$this->local_uri} auth failed");
+					Logger::error("{$this->local} auth failed");
 					$this->timers[0] = 3; // wait before retry
 				}else{
-					Logger::debug("{$this->local_uri} auth");
+					Logger::debug("{$this->local} auth");
 					$this->state = SIP::AUTHING;
 				}
 			}else if($msg->code == 423){

@@ -35,7 +35,7 @@ abstract class SipModule
 					continue;
 				}
 				// TODO: 需要区分收到的是请求还是响应，目前转不支持请求
-				if($msg->from !== $sess->local_uri || $msg->to !== $sess->remote_uri){
+				if($msg->from !== $sess->local || $msg->to !== $sess->remote){
 					continue;
 				}
 			}else if($sess->role == SIP::REGISTRAR){
@@ -52,7 +52,7 @@ abstract class SipModule
 						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
 						continue;
 					}
-					if($msg->from !== $sess->remote_uri || $msg->to !== $sess->local_uri){
+					if($msg->from !== $sess->remote || $msg->to !== $sess->local){
 						continue;
 					}
 				}else{
@@ -60,7 +60,7 @@ abstract class SipModule
 						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
 						continue;
 					}
-					if($msg->from !== $sess->local_uri || $msg->to !== $sess->remote_uri){
+					if($msg->from !== $sess->local || $msg->to !== $sess->remote){
 						continue;
 					}
 				}
@@ -176,9 +176,9 @@ abstract class SipModule
 		$msg->call_id = $sess->call_id;
 		$msg->branch = $sess->branch;
 		$msg->cseq = $sess->cseq;
-		$msg->from = $sess->local_uri;
+		$msg->from = $sess->local;
 		$msg->from_tag = $sess->local_tag;
-		$msg->to = $sess->remote_uri;
+		$msg->to = $sess->remote;
 		$msg->to_tag = $sess->remote_tag;
 		$msg->contact = $sess->contact;
 		if($msg->method == 'INFO'){
@@ -190,13 +190,13 @@ abstract class SipModule
 	}
 	
 	function add_session($sess){
-		Logger::debug("NEW session " . $sess->role_name() . ", {$sess->local_uri} => {$sess->remote_uri}");
+		Logger::debug("NEW session " . $sess->role_name() . ", {$sess->local} => {$sess->remote}");
 		$sess->module = $this;
 		$this->sessions[] = $sess;
 	}
 
 	function del_session($sess){
-		Logger::debug("DEL session " . $sess->role_name() . ", {$sess->local_uri} => {$sess->remote_uri}");
+		Logger::debug("DEL session " . $sess->role_name() . ", {$sess->local} => {$sess->remote}");
 		foreach($this->sessions as $index=>$tmp){
 			if($tmp !== $sess){
 				continue;
@@ -212,6 +212,6 @@ abstract class SipModule
 	}
 	
 	function up_session($sess){
-		Logger::debug("UP session " . $sess->role_name() . ", {$sess->local_uri} => {$sess->remote_uri}");
+		Logger::debug("UP session " . $sess->role_name() . ", {$sess->local} => {$sess->remote}");
 	}
 }

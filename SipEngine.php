@@ -65,21 +65,49 @@ class SipEngine
 			}
 		}
 		
-		// if($msg->method == 'INVITE'){
-		// 	// 1, Router 先处理
-		// 	// TODO:
-		//
-		// 	// 2, 否则，各模块处理
-		// 	foreach($this->modules as $mi){
-		// 		$module = $mi['module'];
-		// 		$callee = $module->callin($msg);
-		// 		if($callee){
-		// 			break;
-		// 		}
-		// 	}
-		// }
+		if($msg->method == 'INVITE'){
+			if($this->proc_invite($msg) == true){
+				return;
+			}
+		}
 		
 		Logger::debug("drop msg");
+	}
+	
+	private function proc_invite($msg){
+		// 1, Router 先处理
+		// TODO:
+
+		// 2, 否则，各模块处理
+		$callee = null;
+		$caller = $null;
+		foreach($this->modules as $mi){
+			$module = $mi['module'];
+			$callee = $module->callin($msg);
+			if($callee){
+				break;
+			}
+		}
+		if(!$callee){
+			// Unauthorized request/Not Found
+			return;
+		}
+		
+		// TODO: 在此路由转换
+		
+		foreach($this->modules as $mi){
+			$module = $mi['module'];
+			$caller = $module->callout($msg);
+			if($caller){
+				break;
+			}
+		}
+		if(!$caller){
+			// 404
+			return;
+		}
+		
+		// 创建路由记录
 	}
 	
 	private $time = 0;
