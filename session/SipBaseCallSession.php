@@ -59,7 +59,9 @@ abstract class SipBaseCallSession extends SipSession
 			}
 			return $msg;
 		}else if($this->state == SIP::FIN_WAIT){
-			// 发送 BYE
+			$msg = new SipMessage();
+			$msg->method = 'BYE';
+			return $msg;
 		}else if($this->state == SIP::CLOSE_WAIT){
 			$msg = new SipMessage();
 			$msg->code = 200;
