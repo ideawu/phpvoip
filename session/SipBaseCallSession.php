@@ -6,6 +6,30 @@ abstract class SipBaseCallSession extends SipSession
 	}
 	
 	function incoming($msg){
+		if($msg->cseq_method == 'OPTIONS' || $msg->cseq_method == 'INFO'){
+			if($msg->code == 481 || $msg->code >= 500){
+				// 让后面逻辑处理
+			}else if($msg->code >= 200){
+				$this->refresh();
+				return true;
+			}else{
+				return true;
+			}
+		}
+
+		if($msg->code == 481 || $msg->code >= 500){ // Call/Transaction Does Not Exist
+			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
+			$this->terminate();
+			return true;
+		}else if($msg->code >= 300 && $msg->code < 400){
+			// ...
+			Logger::info("nothing to do with {$msg->code}");
+		}else if($msg->code >= 400){
+			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
+			$this->terminate();
+			return true;
+		}
+
 		if($this->state == SIP::COMPLETED){
 			if($msg->method == 'BYE'){
 				Logger::debug($this->role_name() . " {$this->call_id} close by BYE");
@@ -14,7 +38,11 @@ abstract class SipBaseCallSession extends SipSession
 			}
 			return false;
 		}else if($this->state == SIP::FIN_WAIT){
-			if($msg->method == 'BYE'){
+			if($msg->code == 200){
+				Logger::info("recv {$msg->code} {$msg->reason}, finish CLOSE_WAIT " . $this->role_name());
+				$this->terminate();
+				return true;
+			}else if($msg->method == 'BYE'){
 				Logger::debug($this->role_name() . " {$this->call_id} FIN_WAIT => CLOSE_WAIT");
 				$this->onclose();
 				return true;
@@ -29,26 +57,6 @@ abstract class SipBaseCallSession extends SipSession
 			}
 			return false;
 		} 
-		
-		if($msg->code == 481){ // Call/Transaction Does Not Exist
-			Logger::info("recv 481, close " . $this->role_name());
-			$this->close();
-			return true;
-		}else if($msg->code >= 300 && $msg->code < 400){
-			// ...
-			Logger::info("nothing to do with {$msg->code}");
-		}else if($msg->code >= 400){
-			Logger::debug($this->role_name() . " terminated by {$msg->code}");
-			$this->terminate();
-			return true;
-		}
-		
-		if($msg->cseq_method == 'OPTIONS' || $msg->cseq_method == 'INFO'){
-			if($msg->code >= 200){
-				$this->refresh();
-			}
-			return true;
-		}
 	}
 	
 	function outgoing(){

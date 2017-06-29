@@ -68,14 +68,6 @@ abstract class SipSession
 		}
 	}
 	
-	/*
-	当某一个步骤超时时调用此方法，默认将关闭 Session。子类可以重写，
-	更改状态并进行其它操作。
-	*/
-	function timeout(){
-		$this->state = SIP::CLOSED;
-	}
-	
 	function terminate(){
 		$this->state = SIP::CLOSED;
 		$this->timers = array();

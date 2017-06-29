@@ -100,6 +100,7 @@ abstract class SipModule
 					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.info_cseq: {$sess->info_cseq}");
 					return false;
 				}
+				$sess->close(); return true;
 			}else{
 				if($msg->cseq !== $sess->cseq){
 					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$sess->cseq}");
@@ -131,12 +132,12 @@ abstract class SipModule
 					array_shift($sess->timers);
 					if(count($sess->timers) == 0){
 						if($sess->state == SIP::FIN_WAIT || $sess->state == SIP::CLOSE_WAIT){
-							Logger::debug("gracefully close session " . $sess->role_name());
+							Logger::debug("close session " . $sess->role_name() . ' gracefully');
 							$sess->terminate();
 						}else{
 							// transaction timeout
 							Logger::debug("transaction timeout");
-							$sess->timeout();
+							$sess->close();
 						}
 					}else{
 						// re/transmission timer trigger
