@@ -100,7 +100,7 @@ abstract class SipModule
 					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.info_cseq: {$sess->info_cseq}");
 					return false;
 				}
-				$sess->close(); return true;
+				//$sess->close(); return true;
 			}else{
 				if($msg->cseq !== $sess->cseq){
 					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$sess->cseq}");
@@ -172,6 +172,12 @@ abstract class SipModule
 		$msg->to = $sess->to;
 		$msg->to_tag = $sess->to_tag;
 		$msg->contact = $sess->contact;
+		if($msg->method == 'INFO'){
+			$msg->cseq = $sess->info_cseq;
+		}
+		if($msg->method == 'OPTIONS'){
+			$msg->cseq = $sess->options_cseq;
+		}
 	}
 	
 	function add_session($sess){

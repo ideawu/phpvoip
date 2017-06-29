@@ -57,7 +57,9 @@ abstract class SipSession
 	}
 	
 	function complete(){
-		Logger::debug($this->role_name() . " session {$this->call_id} established");
+		if($this->state != SIP::COMPLETED && !$this->renew){
+			Logger::debug($this->role_name() . " session {$this->call_id} established");
+		}
 		$this->state = SIP::COMPLETED;
 	}
 	
