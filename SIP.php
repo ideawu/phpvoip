@@ -55,7 +55,7 @@ class SIP
 		$seq = ($seq + 1) % 1000;
 		$num = sprintf('%03d', $seq);
 		$time = substr(sprintf('%.3f', microtime(1)), 2);
-		return $num . $time;
+		return $num .'_'. $time;
 	}
 
 	

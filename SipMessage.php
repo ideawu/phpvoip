@@ -33,6 +33,21 @@ class SipMessage
 	public $headers = array();
 	public $content = '';
 	
+	// 返回简洁描述
+	function brief(){
+		if($this->is_request()){
+			$cmd = $this->method;
+		}else{
+			$cmd = $this->code;
+			if($this->code == 200){
+				$cmd .= ' OK';
+			}
+		}
+		$cmd = str_pad($cmd, 8, '.');
+		$ret = sprintf('%s %d c:%s b:%s', $cmd, $this->cseq, $this->call_id, $this->branch);
+		return $ret;
+	}
+	
 	function is_request(){
 		return $this->code == 0;
 	}

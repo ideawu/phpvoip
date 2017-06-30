@@ -31,7 +31,7 @@ class SipLink
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
-		Logger::debug("send " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . " cseq: {$msg->cseq}, to {$msg->dst_ip}:{$msg->dst_port}");
+		Logger::debug("send " . $msg->brief());
 		#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 	}
 	
@@ -51,7 +51,7 @@ class SipLink
 			Logger::error("bad SIP packet");
 			return;
 		}
-		Logger::debug("recv " . ($msg->is_request()? $msg->method.' '.$msg->uri : $msg->code.' '.$msg->reason) . "  cseq: {$msg->cseq} from {$msg->src_ip}:{$msg->src_port}");
+		Logger::debug("recv " . $msg->brief());
 		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 		return $msg;
 	}
