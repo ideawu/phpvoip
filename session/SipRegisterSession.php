@@ -39,7 +39,10 @@ class SipRegisterSession extends SipSession
 
 	function incoming($msg){
 		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
-			if($msg->code == 200){
+			if($msg->code == 100){
+				// 收到 100 更新重传定时器
+				$this->timers[0] += 0.5;
+			}else if($msg->code == 200){
 				if($this->renew){
 					Logger::debug("REGISTER {$this->local} renewed");
 				}else{
@@ -85,8 +88,6 @@ class SipRegisterSession extends SipSession
 	function outgoing(){
 		$msg = null;
 		if($this->state == SIP::TRYING || $this->state == SIP::AUTHING || $this->renew){
-			$this->branch = SIP::new_branch();
-			
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
 			$msg->expires = $this->expires;

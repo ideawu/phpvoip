@@ -21,80 +21,79 @@ abstract class SipModule
 
 	function incoming($msg){
 		foreach($this->sessions as $sess){
-			if($sess->role == SIP::REGISTER){
-				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
-					continue;
-				}
-				if($msg->call_id !== $sess->call_id){
-					continue;
-				}
-				if($msg->from_tag !== $sess->local_tag){
-					continue;
-				}
-				// TODO: 需要区分收到的是请求还是响应，目前转不支持请求
-				if($msg->from !== $sess->local || $msg->to !== $sess->remote){
-					continue;
-				}
-			}else if($sess->role == SIP::REGISTRAR){
+			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
-			}else if($sess->role == SIP::CALLER){
-				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+			}
+			if($msg->call_id !== $sess->call_id){
+				continue;
+			}
+			
+			if($msg->is_request()){
+				if($msg->from_tag !== $sess->remote_tag){
+					Logger::debug("from_tag: {$msg->from_tag} != remote_tag: {$sess->remote_tag}");
 					continue;
 				}
-				if($msg->call_id !== $sess->call_id){
+				if($msg->method !== 'INVITE'){ // 重传的 INVITE 不带 to_tag
+					if($msg->to_tag !== $sess->local_tag){
+						Logger::debug("to_tag: {$msg->to_tag} != local_tag: {$sess->local_tag}");
+						continue;
+					}
+				}
+				
+				// TODO: 验证 address 时，不能简单的文本比较，要解析之后比较
+				if($msg->from !== $sess->remote){
+					Logger::debug("from: {$msg->from} != remote: {$sess->remote}");
 					continue;
 				}
-				if($msg->is_request()){
-					if($msg->from_tag !== $sess->remote_tag || $msg->to_tag !== $sess->local_tag){
-						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
-						continue;
-					}
-					if($msg->from !== $sess->remote || $msg->to !== $sess->local){
-						continue;
-					}
-				}else{
-					if($msg->from_tag !== $sess->local_tag || ($msg->to_tag != $sess->remote_tag && $sess->remote_tag)){
-						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
-						continue;
-					}
-					if($msg->from !== $sess->local || $msg->to !== $sess->remote){
-						continue;
-					}
-				}
-			}else if($sess->role == SIP::CALLEE){
-				if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+				if($msg->to !== $sess->local){
+					Logger::debug("to: {$msg->to} != local: {$sess->local}");
 					continue;
-				}
-				if($msg->call_id !== $sess->call_id){
-					continue;
-				}
-				if($msg->is_request() && $msg->method != 'ACK'){
-					// 重传的 INVITE 没有 to_tag
-					if($msg->method == 'INVITE'){
-						if($msg->from_tag !== $sess->remote_tag){
-							Logger::debug("{$msg->from_tag} {$sess->local_tag}");
-							continue;
-						}
-					}else{
-						if($msg->from_tag !== $sess->remote_tag || $msg->to_tag !== $sess->local_tag){
-							Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->local_tag}");
-							continue;
-						}
-					}
-					if($msg->from !== $sess->remote || $msg->to !== $sess->local){
-						continue;
-					}
-				}else{
-					if($msg->from_tag !== $sess->local_tag || $msg->to_tag != $sess->remote_tag){
-						Logger::debug("{$msg->from_tag} {$sess->local_tag} {$msg->to_tag} {$sess->remote_tag}");
-						continue;
-					}
-					if($msg->from !== $sess->local || $msg->to !== $sess->remote){
-						continue;
-					}
 				}
 			}else{
-				continue;
+				if($msg->branch !== $sess->branch){
+					Logger::debug("branch: {$msg->branch} != branch: {$sess->branch}");
+					continue;
+				}
+
+				if($msg->from_tag !== $sess->local_tag){
+					Logger::debug("from_tag: {$msg->from_tag} != local_tag: {$sess->local_tag}");
+					continue;
+				}
+				if($sess->remote_tag){
+					if($msg->to_tag !== $sess->remote_tag){
+						Logger::debug("to_tag: {$msg->to_tag} != remote_tag: {$sess->remote_tag}");
+						continue;
+					}
+				}
+				
+				// 对于会话中的 OPTIONS/INFO，响应的 cseq 不会变化。
+				if($msg->cseq_method == 'OPTIONS'){
+					if($msg->cseq !== $sess->options_cseq){
+						Logger::debug("cseq: {$msg->cseq} != options_cseq: {$sess->options_cseq}");
+						continue;
+					}
+				}else if($msg->cseq_method == 'INFO'){
+					if($msg->cseq !== $sess->info_cseq){
+						Logger::debug("cseq: {$msg->cseq} != info_cseq: {$sess->info_cseq}");
+						continue;
+					}
+					//$sess->close(); return true;
+				}else{
+					if($msg->cseq !== $sess->cseq){
+						Logger::debug("cseq: {$msg->cseq} != cseq: {$sess->cseq}");
+						continue;
+					}
+				}
+
+				// TODO: 验证 address 时，不能简单的文本比较，要解析之后比较
+				if($msg->from !== $sess->local){
+					Logger::debug("from: {$msg->from} != local: {$sess->local}");
+					continue;
+				}
+				if($msg->to !== $sess->remote){
+					Logger::debug("to: {$msg->to} != remote: {$sess->remote}");
+					continue;
+				}
 			}
 
 			if($this->before_sess_recv_msg($sess, $msg) !== false){
@@ -113,40 +112,22 @@ abstract class SipModule
 	
 	private function before_sess_recv_msg($sess, $msg){
 		if($msg->is_request()){
-			$sess->uri = $msg->uri; // will uri be updated during session?
+			#$sess->uri = $msg->uri; // will uri be updated during session?
 			$sess->branch = $msg->branch;
 			$sess->cseq = $msg->cseq;
 		}else{
-			if($msg->branch !== $sess->branch){
-				Logger::debug("drop msg, msg.branch: {$msg->branch} != sess.branch: {$sess->branch}");
-				return false;
-			}
-			// 对于会话中的 OPTIONS/INFO，响应的 cseq 不会变化。
-			if($msg->cseq_method == 'OPTIONS'){
-				if($msg->cseq !== $sess->options_cseq){
-					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.options_cseq: {$sess->options_cseq}");
-					return false;
-				}
-			}else if($msg->cseq_method == 'INFO'){
-				if($msg->cseq !== $sess->info_cseq){
-					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.info_cseq: {$sess->info_cseq}");
-					return false;
-				}
-				//$sess->close(); return true;
-			}else{
-				if($msg->cseq !== $sess->cseq){
-					Logger::debug("drop msg, msg.cseq: {$msg->cseq} != sess.cseq: {$sess->cseq}");
-					return false;
-				}
-			}
-			
 			if($msg->code >= 200){
+				$sess->branch = SIP::new_branch();
 				$sess->remote_tag = $msg->to_tag;
 				$sess->cseq ++;
-				if(!$sess->remote_allow){
-					$str = $msg->get_header('Allow');
-					$sess->remote_allow = preg_split('/[, ]+/', trim($str));
-				}
+			}
+		}
+		
+		// TODO:
+		if(!$sess->remote_allow){
+			$str = $msg->get_header('Allow');
+			if($str){
+				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
 			}
 		}
 	}
@@ -173,7 +154,12 @@ abstract class SipModule
 						}
 					}else{
 						// re/transmission timer trigger
+						$s1 = ($sess->state == SIP::COMPLETED || $sess->renew);
 						$msg = $sess->outgoing();
+						$s2 = ($sess->state == SIP::COMPLETED);
+						if(!$s1 && $s2){
+							$this->up_session($sess);
+						}
 						if($msg){
 							$this->before_sess_send_msg($sess, $msg);
 							$ret[] = $msg;
@@ -199,10 +185,17 @@ abstract class SipModule
 		$msg->call_id = $sess->call_id;
 		$msg->branch = $sess->branch;
 		$msg->cseq = $sess->cseq;
-		$msg->from = $sess->local;
-		$msg->from_tag = $sess->local_tag;
-		$msg->to = $sess->remote;
-		$msg->to_tag = $sess->remote_tag;
+		if($msg->is_request()){
+			$msg->from = $sess->local;
+			$msg->from_tag = $sess->local_tag;
+			$msg->to = $sess->remote;
+			$msg->to_tag = $sess->remote_tag;
+		}else{
+			$msg->from = $sess->remote;
+			$msg->from_tag = $sess->remote_tag;
+			$msg->to = $sess->local;
+			$msg->to_tag = $sess->local_tag;
+		}
 		$msg->contact = $sess->contact;
 		if($msg->method == 'INFO'){
 			$msg->cseq = $sess->info_cseq;

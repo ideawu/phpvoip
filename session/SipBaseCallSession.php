@@ -13,7 +13,10 @@ abstract class SipBaseCallSession extends SipSession
 			}
 		}
 
-		if($msg->code == 481 || $msg->code >= 500){ // Call/Transaction Does Not Exist
+		if($msg->code == 100){
+			// 收到 100 更新重传定时器
+			$this->timers[0] += 0.5;
+		}else if($msg->code == 481 || $msg->code >= 500){ // Call/Transaction Does Not Exist
 			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
 			$this->terminate();
 			return true;
