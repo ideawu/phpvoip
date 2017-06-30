@@ -6,14 +6,15 @@ include_once(dirname(__FILE__) . '/SipEngine.php');
 include_once(dirname(__FILE__) . '/SipModule.php');
 include_once(dirname(__FILE__) . '/SipMessage.php');
 include_once(dirname(__FILE__) . '/SipSession.php');
+include_once(dirname(__FILE__) . '/SipTransaction.php');
 include_once(dirname(__FILE__) . '/SipDialog.php');
 
 include_once(dirname(__FILE__) . '/session/SipNullSession.php');
 include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
-include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
+// include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
 include_once(dirname(__FILE__) . '/session/SipBaseCallSession.php');
 include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
-include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
+#include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
 
 include_once(dirname(__FILE__) . '/module/SipRouter.php');
 include_once(dirname(__FILE__) . '/module/SipRobotModule.php');
@@ -31,6 +32,7 @@ class SIP
 	const CALLER      = 3;
 	const CALLEE      = 4;
 
+	const KEEPALIVE   = 90;
 	const TRYING      = 100;
 	const RINGING     = 180;
 	const COMPLETED   = 200;
@@ -43,8 +45,8 @@ class SIP
 	const FIN_WAIT    = 2; // 主动关闭
 	const CLOSE_WAIT  = 3; // 被动关闭
 
-	private static $call_id_prefix = 'call_';
-	private static $tag_prefix = 'tag_';
+	private static $call_id_prefix = 'c';
+	private static $tag_prefix = 't';
 	private static $branch_prefix = 'z9hG4bK_';
 
 	static function token(){

@@ -5,7 +5,7 @@ abstract class SipBaseCallSession extends SipSession
 		parent::__construct();
 	}
 	
-	function incoming($msg){
+	function incoming($msg, $trans){
 		if($msg->cseq_method == 'OPTIONS' || $msg->cseq_method == 'INFO'){
 			if($msg->code == 200 || $msg->code == 415){ // 415 Unsupported Media Type
 				$this->refresh();
@@ -15,7 +15,7 @@ abstract class SipBaseCallSession extends SipSession
 
 		if($msg->code == 100){
 			// 收到 100 更新重传定时器
-			$this->timers[0] += 0.5;
+			$trans->wait(0.5);
 		}else if($msg->code == 481 || $msg->code >= 500){ // Call/Transaction Does Not Exist
 			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
 			$this->terminate();
@@ -58,7 +58,7 @@ abstract class SipBaseCallSession extends SipSession
 		} 
 	}
 	
-	function outgoing(){
+	function outgoing($trans){
 		if($this->state == SIP::COMPLETED){
 			Logger::debug("refresh " . $this->role_name() . " session {$this->call_id}");
 

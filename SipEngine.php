@@ -12,7 +12,7 @@ class SipEngine
 		$this->time = microtime(1);
 		
 		$this->router = new SipRouter();
-		$this->add_module($this->router, INT_MAX);
+		$this->add_module($this->router, INT_MAX); // 路由模块必须放在所有模块的前面
 		
 		$mod = new SipRobotModule();
 		$this->add_module($mod, -1);
@@ -27,7 +27,7 @@ class SipEngine
 	}
 	
 	function add_module($mod, $weight=0){
-		$offset = 0;
+		$offset = count($this->modules);
 		foreach($this->modules as $index=>$mi){
 			if($weight > $mi['weight']){
 				$offset = $index;
@@ -88,10 +88,6 @@ class SipEngine
 	}
 	
 	private function proc_invite($msg){
-		// 1, Router 先处理
-		// TODO:
-
-		// 2, 否则，各模块处理
 		$callee = null;
 		$caller = $null;
 		foreach($this->modules as $mi){
@@ -108,8 +104,6 @@ class SipEngine
 			return;
 		}
 		
-		// TODO: 在此进行路由转换
-		
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
 			$caller = $module->callout($msg);
@@ -119,7 +113,7 @@ class SipEngine
 			}
 		}
 		if(!$caller){
-			// 404
+			Logger::debug("404 Not Found");
 			return;
 		}
 		

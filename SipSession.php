@@ -3,11 +3,10 @@ abstract class SipSession
 {
 	// 指向本 Session 所属的 module。
 	public $module;
+	public $transactions = array();
 	
 	public $role;
 	public $state = 0;
-	public $renew = false;
-	public $timers;
 
 	public $local_ip;
 	public $local_port;
@@ -17,11 +16,9 @@ abstract class SipSession
 	public $remote_allow = array();
 
 	protected $expires = 60;
-	protected static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
+	protected static $reg_timers = array(0, 0.5, 1, 2, 3, 2);
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $ring_timers = array(0, 3, 3, 3, 3, 3);
-	protected static $refresh_timers = array(5, 3, 1, 1);
-	protected static $closing_timers = array(0, 5);
 	protected static $now_timers = array(0, 0);
 	
 	public $call_id; // session id
@@ -43,8 +40,8 @@ abstract class SipSession
 	function __construct(){
 	}
 	
-	abstract function incoming($msg);
-	abstract function outgoing();
+	abstract function incoming($msg, $trans);
+	abstract function outgoing($trans);
 	
 	function role_name(){
 		if($this->role == SIP::REGISTER){
@@ -67,27 +64,42 @@ abstract class SipSession
 		$this->state = SIP::COMPLETED;
 	}
 	
-	function refresh($after=null){
-		$this->timers = self::$refresh_timers;
-		if($after !== null){
-			$this->timers[0] = $after;
+	function close(){
+		foreach($this->transactions as $trans){
+			$trans->close();
 		}
 	}
 	
 	function terminate(){
 		$this->state = SIP::CLOSED;
-		$this->timers = array();
+		$this->transactions = array();
 	}
 	
-	// 主动关闭
-	function close(){
-		$this->state = SIP::FIN_WAIT;
-		$this->timers = self::$closing_timers;
+	function new_transaction($state, $timers=array()){
+		$this->cseq ++;
+		
+		$trans = new SipTransaction();
+		$trans->state = $state;
+		$trans->timers = $timers;
+		$trans->branch = $this->branch;
+		$trans->local_tag = $this->local_tag;
+		$trans->remote_tag = $this->remote_tag;
+		$trans->cseq = $this->cseq;
+		$trans->branch = SIP::new_branch();
+		$this->add_transaction($trans);
+		return $trans;
 	}
 	
-	// 被动关闭
-	function onclose(){
-		$this->state = SIP::CLOSE_WAIT;
-		$this->timers = self::$closing_timers;
+	function add_transaction($trans){
+		$this->transactions[] = $trans;
+	}
+	
+	function del_transaction($trans){
+		foreach($this->transactions as $index=>$tmp){
+			if($tmp === $trans){
+				unset($this->transactions[$index]);
+				break;
+			}
+		}
 	}
 }

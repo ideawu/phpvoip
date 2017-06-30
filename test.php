@@ -1,6 +1,7 @@
 <?php
 include_once('/data/lib/iphp/framework/Logger.php');
 Logger::init();
+Logger::escape(false);
 
 include_once('SIP.php');
 

@@ -20,6 +20,36 @@ abstract class SipModule
 	abstract function callout($msg);
 
 	function incoming($msg){
+		$sess = $this->find_session_for_msg($msg);
+		if(!$sess){
+			return false;
+		}
+		
+		$trans = $this->find_transaction_for_msg($msg, $sess);
+		if(!$trans){
+			return false;
+		}
+		
+		// TODO:
+		if(!$sess->remote_allow){
+			$str = $msg->get_header('Allow');
+			if($str){
+				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
+			}
+		}
+
+		// Logger::debug($sess->role_name() . " process msg");
+		$s1 = $sess->state == SIP::COMPLETED;
+		$sess->incoming($msg, $trans);
+		$s2 = $sess->state == SIP::COMPLETED;
+		if(!$s1 && $s2){
+			$this->complete_session($sess);
+		}
+
+		return true;
+	}
+	
+	private function find_session_for_msg($msg){
 		foreach($this->sessions as $sess){
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
@@ -33,13 +63,7 @@ abstract class SipModule
 					Logger::debug("from_tag: {$msg->from_tag} != remote_tag: {$sess->remote_tag}");
 					continue;
 				}
-				if($msg->method !== 'INVITE'){ // 重传的 INVITE 不带 to_tag
-					if($msg->to_tag !== $sess->local_tag){
-						Logger::debug("to_tag: {$msg->to_tag} != local_tag: {$sess->local_tag}");
-						continue;
-					}
-				}
-				
+			
 				// TODO: 验证 address 时，不能简单的文本比较，要解析之后比较
 				if($msg->from !== $sess->remote){
 					Logger::debug("from: {$msg->from} != remote: {$sess->remote}");
@@ -49,42 +73,13 @@ abstract class SipModule
 					Logger::debug("to: {$msg->to} != local: {$sess->local}");
 					continue;
 				}
-			}else{
-				if($msg->branch !== $sess->branch){
-					Logger::debug("branch: {$msg->branch} != branch: {$sess->branch}");
-					continue;
-				}
 
+			}else{
 				if($msg->from_tag !== $sess->local_tag){
 					Logger::debug("from_tag: {$msg->from_tag} != local_tag: {$sess->local_tag}");
 					continue;
 				}
-				if($sess->remote_tag){
-					if($msg->to_tag !== $sess->remote_tag){
-						Logger::debug("to_tag: {$msg->to_tag} != remote_tag: {$sess->remote_tag}");
-						continue;
-					}
-				}
-				
-				// 对于会话中的 OPTIONS/INFO，响应的 cseq 不会变化。
-				if($msg->cseq_method == 'OPTIONS'){
-					if($msg->cseq !== $sess->options_cseq){
-						Logger::debug("cseq: {$msg->cseq} != options_cseq: {$sess->options_cseq}");
-						continue;
-					}
-				}else if($msg->cseq_method == 'INFO'){
-					if($msg->cseq !== $sess->info_cseq){
-						Logger::debug("cseq: {$msg->cseq} != info_cseq: {$sess->info_cseq}");
-						continue;
-					}
-					//$sess->close(); return true;
-				}else{
-					if($msg->cseq !== $sess->cseq){
-						Logger::debug("cseq: {$msg->cseq} != cseq: {$sess->cseq}");
-						continue;
-					}
-				}
-
+	
 				// TODO: 验证 address 时，不能简单的文本比较，要解析之后比较
 				if($msg->from !== $sess->local){
 					Logger::debug("from: {$msg->from} != local: {$sess->local}");
@@ -95,41 +90,41 @@ abstract class SipModule
 					continue;
 				}
 			}
-
-			if($this->before_sess_recv_msg($sess, $msg) !== false){
-				// Logger::debug($sess->role_name() . " process msg");
-				$s1 = ($sess->state == SIP::COMPLETED || $sess->renew);
-				$sess->incoming($msg);
-				$s2 = ($sess->state == SIP::COMPLETED);
-				if(!$s1 && $s2){
-					$this->complete_session($sess);
-				}
-			}
-			return true;
+			
+			return $sess;
 		}
 		return false;
 	}
 	
-	private function before_sess_recv_msg($sess, $msg){
-		if($msg->is_request()){
-			#$sess->uri = $msg->uri; // will uri be updated during session?
-			$sess->branch = $msg->branch;
-			$sess->cseq = $msg->cseq;
-		}else{
-			if($msg->code >= 200){
-				$sess->branch = SIP::new_branch();
-				$sess->remote_tag = $msg->to_tag;
-				$sess->cseq ++;
+	private function find_transaction_for_msg($msg, $sess){
+		foreach($sess->transactions as $trans){
+			if($msg->is_request()){
+				if($trans->local_tag){
+					if($msg->to_tag !== $trans->local_tag){
+						Logger::debug("to_tag: {$msg->to_tag} != local_tag: {$trans->local_tag}");
+						continue;
+					}
+				}
+			}else{
+				if($trans->remote_tag){
+					if($msg->to_tag !== $trans->remote_tag){
+						Logger::debug("to_tag: {$msg->to_tag} != remote_tag: {$trans->remote_tag}");
+						continue;
+					}
+				}
+
+				if($msg->branch !== $trans->branch){
+					Logger::debug("branch: {$msg->branch} != branch: {$trans->branch}");
+					continue;
+				}
+				if($msg->cseq !== $trans->cseq){
+					Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					continue;
+				}
 			}
+			return $trans;
 		}
-		
-		// TODO:
-		if(!$sess->remote_allow){
-			$str = $msg->get_header('Allow');
-			if($str){
-				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
-			}
-		}
+		return false;
 	}
 	
 	/*
@@ -139,35 +134,13 @@ abstract class SipModule
 	function outgoing($time, $timespan){
 		$ret = array();
 		foreach($this->sessions as $index=>$sess){
-			if($sess->timers){
-				$sess->timers[0] -= $timespan;
-				if($sess->timers[0] <= 0){
-					array_shift($sess->timers);
-					if(count($sess->timers) == 0){
-						if($sess->state == SIP::FIN_WAIT || $sess->state == SIP::CLOSE_WAIT){
-							Logger::debug("close session " . $sess->role_name() . ' gracefully');
-							$sess->terminate();
-						}else{
-							// transaction timeout
-							Logger::debug("transaction timeout");
-							$sess->close();
-						}
-					}else{
-						// re/transmission timer trigger
-						$s1 = ($sess->state == SIP::COMPLETED || $sess->renew);
-						$msg = $sess->outgoing();
-						$s2 = ($sess->state == SIP::COMPLETED);
-						if(!$s1 && $s2){
-							$this->complete_session($sess);
-						}
-						if($msg){
-							$this->before_sess_send_msg($sess, $msg);
-							$ret[] = $msg;
-						}
-					}
-				}
+			$s1 = $sess->state == SIP::COMPLETED;
+			$msgs = $this->proc_trans($sess, $time, $timespan);
+			$ret += $msgs;
+			$s2 = $sess->state == SIP::COMPLETED;
+			if(!$s1 && $s2){
+				$this->complete_session($sess);
 			}
-
 			if($sess->state == SIP::CLOSED){
 				$this->del_session($sess);
 			}
@@ -175,7 +148,38 @@ abstract class SipModule
 		return $ret;
 	}
 	
-	private function before_sess_send_msg($sess, $msg){
+	private function proc_trans($sess, $time, $timespan){
+		$ret = array();
+		foreach($sess->transactions as $trans){
+			$trans->timers[0] -= $timespan;
+			if($trans->timers[0] <= 0){
+				array_shift($trans->timers);
+				if(count($trans->timers) == 0){
+					if($trans->state == SIP::FIN_WAIT || $trans->state == SIP::CLOSE_WAIT){
+						Logger::debug("close transaction " . $sess->role_name() . ' gracefully');
+					}else{
+						// transaction timeout
+						Logger::debug("transaction timeout");
+					}
+				}else{
+					$msg = $sess->outgoing($trans);
+					if($msg){
+						$this->before_sess_send_msg($sess, $trans, $msg);
+						$ret[] = $msg;
+					}
+				}
+			}
+			if(!$trans->timers){
+				$sess->del_transaction($trans);
+			}
+		}
+		if(!$sess->transactions){
+			$sess->terminate();
+		}
+		return $ret;
+	}
+	
+	private function before_sess_send_msg($sess, $trans, $msg){
 		$msg->src_ip = $sess->local_ip;
 		$msg->src_port = $sess->local_port;
 		$msg->dst_ip = $sess->remote_ip;
@@ -183,26 +187,20 @@ abstract class SipModule
 
 		$msg->uri = $sess->uri;
 		$msg->call_id = $sess->call_id;
-		$msg->branch = $sess->branch;
-		$msg->cseq = $sess->cseq;
+		$msg->branch = $trans->branch;
+		$msg->cseq = $trans->cseq;
 		if($msg->is_request()){
 			$msg->from = $sess->local;
-			$msg->from_tag = $sess->local_tag;
+			$msg->from_tag = $trans->local_tag;
 			$msg->to = $sess->remote;
-			$msg->to_tag = $sess->remote_tag;
+			$msg->to_tag = $trans->remote_tag;
 		}else{
 			$msg->from = $sess->remote;
-			$msg->from_tag = $sess->remote_tag;
+			$msg->from_tag = $trans->remote_tag;
 			$msg->to = $sess->local;
-			$msg->to_tag = $sess->local_tag;
+			$msg->to_tag = $trans->local_tag;
 		}
 		$msg->contact = $sess->contact;
-		if($msg->method == 'INFO'){
-			$msg->cseq = $sess->info_cseq;
-		}
-		if($msg->method == 'OPTIONS'){
-			$msg->cseq = $sess->options_cseq;
-		}
 	}
 	
 	function add_session($sess){

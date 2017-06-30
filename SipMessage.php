@@ -43,8 +43,7 @@ class SipMessage
 				$cmd .= ' OK';
 			}
 		}
-		$cmd = str_pad($cmd, 8, '.');
-		$ret = sprintf('%s %d c:%s b:%s', $cmd, $this->cseq, $this->call_id, $this->branch);
+		$ret = sprintf('%-8s %3d %s %s', $cmd, $this->cseq, $this->call_id, $this->branch);
 		return $ret;
 	}
 	
