@@ -32,18 +32,18 @@ class SIP
 	const CALLER      = 3;
 	const CALLEE      = 4;
 
-	const KEEPALIVE   = 90;
 	const TRYING      = 100;
 	const RINGING     = 180;
 	const COMPLETED   = 200;
-	const COMPLETING  = 201;
 	const AUTHING     = 401;
 	const NOT_FOUND   = 404;
 
 	// state
 	const CLOSED      = 0;
-	const FIN_WAIT    = 2; // 主动关闭
-	const CLOSE_WAIT  = 3; // 被动关闭
+	const FIN_WAIT    = 2;  // 主动关闭
+	const CLOSE_WAIT  = 3;  // 被动关闭
+	const KEEPALIVE   = 10; //
+	const COMPLETING  = 11; // 
 
 	private static $call_id_prefix = 'c';
 	private static $tag_prefix = 't';

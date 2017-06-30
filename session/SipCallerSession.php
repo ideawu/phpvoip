@@ -14,6 +14,16 @@ class SipCallerSession extends SipBaseCallSession
 		
 		$this->new_transaction(SIP::TRYING, self::$call_timers);
 	}
+	
+	function del_transaction($trans){
+		parent::del_transaction($trans);
+		if($trans->state == SIP::COMPLETING){
+			Logger::debug("caller completed.");
+			$new = $this->new_transaction(SIP::KEEPALIVE);
+			$new->remote_tag = $this->remote_tag;
+			$new->refresh();
+		}
+	}
 
 	function incoming($msg, $trans){
 		// $ret = parent::incoming($msg);
@@ -26,17 +36,10 @@ class SipCallerSession extends SipBaseCallSession
 				$this->remote_tag = $msg->to_tag;
 				$this->complete();
 
-				// completing
+				// completing, 等 completed 再赋值 remote_tag
 				Logger::debug("recv OK, send ACK");
 				$trans->state = SIP::COMPLETING;
 				$trans->timers = array(0, 5);
-				
-				// completing 结束后再开始 keepalive? 不创建新的 transaction？
-				// new keepalive transaction
-				$new = $this->new_transaction(SIP::KEEPALIVE);
-				$new->cseq = $trans->cseq;
-				$new->branch = $trans->branch;
-				$new->refresh();
 
 				return true;
 			}
@@ -46,10 +49,8 @@ class SipCallerSession extends SipBaseCallSession
 				array_unshift($trans->timers, 0);
 				return true;
 			}
-		}
-		
-		// TODO:...
-		if($trans->state == SIP::KEEPALIVE){
+		}else if($trans->state == SIP::KEEPALIVE){
+			Logger::debug("");
 			$trans->refresh();
 		}
 	}
@@ -79,7 +80,7 @@ class SipCallerSession extends SipBaseCallSession
 		}else if($trans->state == SIP::COMPLETING){
 			static $i = 0;
 			if($i++%2 == 0){
-				Logger::debug("drop outgoing msg");
+				Logger::debug("manually drop outgoing msg");
 				return;
 			}
 			$msg = new SipMessage();
