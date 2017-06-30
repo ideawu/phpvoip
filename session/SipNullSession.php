@@ -14,8 +14,10 @@ class SipNullSession extends SipSession
 	private $count = 0;
 
 	function outgoing(){
-		$this->timers = array(1, 0);
-		if(++$this->count == 3){
+		if($this->state == SIP::COMPLETED || $this->state == SIP::TRYING){
+			$this->timers = array(1, 0);
+		}
+		if(++$this->count == 5){
 			$this->complete();
 		}
 		return null;

@@ -102,7 +102,7 @@ abstract class SipModule
 				$sess->incoming($msg);
 				$s2 = ($sess->state == SIP::COMPLETED);
 				if(!$s1 && $s2){
-					$this->up_session($sess);
+					$this->complete_session($sess);
 				}
 			}
 			return true;
@@ -158,7 +158,7 @@ abstract class SipModule
 						$msg = $sess->outgoing();
 						$s2 = ($sess->state == SIP::COMPLETED);
 						if(!$s1 && $s2){
-							$this->up_session($sess);
+							$this->complete_session($sess);
 						}
 						if($msg){
 							$this->before_sess_send_msg($sess, $msg);
@@ -227,7 +227,7 @@ abstract class SipModule
 		}
 	}
 	
-	function up_session($sess){
+	function complete_session($sess){
 		Logger::debug("UP session " . $sess->role_name() . ", {$sess->local} => {$sess->remote}");
 	}
 }

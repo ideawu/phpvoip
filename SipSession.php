@@ -19,6 +19,7 @@ abstract class SipSession
 	protected $expires = 60;
 	protected static $reg_timers = array(0, 0.5, 1, 2, 4, 2);
 	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
+	protected static $ring_timers = array(0, 3, 3, 3, 3, 3);
 	protected static $refresh_timers = array(5, 3, 1, 1);
 	protected static $closing_timers = array(0, 5);
 	protected static $now_timers = array(0, 0);
@@ -55,7 +56,7 @@ abstract class SipSession
 		}else if($this->role == SIP::CALLEE){
 			return 'CALLEE';
 		}else{
-			return 'NULL';
+			return 'NONE';
 		}
 	}
 	

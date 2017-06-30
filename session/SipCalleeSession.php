@@ -44,6 +44,16 @@ class SipCalleeSession extends SipBaseCallSession
 		}
 	}
 	
+	function ring(){
+		$this->state = SIP::RINGING;
+		$this->timers = self::$ring_timers;
+	}
+	
+	function accept(){
+		$this->state = SIP::TRYING;
+		$this->timers = self::$call_timers;
+	}
+	
 	function outgoing(){
 		$msg = parent::outgoing();
 		if($msg){
@@ -54,6 +64,12 @@ class SipCalleeSession extends SipBaseCallSession
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';
+			$msg->cseq_method = 'INVITE';
+			return $msg;
+		}else if($this->state == SIP::RINGING){
+			$msg = new SipMessage();
+			$msg->code = 180;
+			$msg->reason = 'Ringing';
 			$msg->cseq_method = 'INVITE';
 			return $msg;
 		}

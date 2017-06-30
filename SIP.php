@@ -32,6 +32,7 @@ class SIP
 	const CALLEE      = 4;
 
 	const TRYING      = 100;
+	const RINGING     = 180;
 	const COMPLETED   = 200;
 	const COMPLETING  = 201;
 	const AUTHING     = 401;

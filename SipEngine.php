@@ -49,7 +49,7 @@ class SipEngine
 	
 		$ret = @socket_select($read, $write, $except, 0, 20*1000);
 		// 如下代码实现引擎慢速响应
-		$pause = 0.6;
+		$pause = 0.3;
 		static $stime = 0;
 		$ts = microtime(1) - $stime;
 		$sleep = min($pause, max(0, $pause - $ts));

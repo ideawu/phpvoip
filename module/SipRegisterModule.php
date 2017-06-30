@@ -56,8 +56,8 @@ class SipRegisterModule extends SipModule
 		}
 	}
 	
-	function up_session($sess){
-		parent::up_session($sess);
+	function complete_session($sess){
+		parent::complete_session($sess);
 		
 		// // // TESTING
 		// if($sess->role != SIP::REGISTER){
