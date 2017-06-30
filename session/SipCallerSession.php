@@ -31,7 +31,7 @@ class SipCallerSession extends SipBaseCallSession
 				$trans->state = SIP::COMPLETING;
 				$trans->timers = array(0, 5);
 				
-				// completing 结束后再开始 keepalive?
+				// completing 结束后再开始 keepalive? 不创建新的 transaction？
 				// new keepalive transaction
 				$new = $this->new_transaction(SIP::KEEPALIVE);
 				$new->cseq = $trans->cseq;
@@ -47,6 +47,7 @@ class SipCallerSession extends SipBaseCallSession
 				return true;
 			}
 		}
+		
 		// TODO:...
 		if($trans->state == SIP::KEEPALIVE){
 			$trans->refresh();
