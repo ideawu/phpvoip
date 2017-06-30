@@ -156,10 +156,10 @@ abstract class SipModule
 				array_shift($trans->timers);
 				if(count($trans->timers) == 0){
 					if($trans->state == SIP::FIN_WAIT || $trans->state == SIP::CLOSE_WAIT){
-						Logger::debug("close transaction " . $sess->role_name() . ' gracefully');
+						Logger::debug($sess->role_name() . " {$trans->state} close transaction gracefully");
 					}else{
 						// transaction timeout
-						Logger::debug("transaction timeout");
+						Logger::debug($sess->role_name() . " {$trans->state} transaction timeout");
 					}
 				}else{
 					$msg = $sess->outgoing($trans);

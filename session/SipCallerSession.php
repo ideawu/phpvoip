@@ -13,33 +13,41 @@ class SipCallerSession extends SipBaseCallSession
 		$this->cseq = mt_rand(1, 10000);
 		
 		$this->new_transaction(SIP::TRYING, self::$call_timers);
+		// TODO: 实现 INVITE 超时后，放送 BYE/CANCEL
 	}
 	
 	function del_transaction($trans){
 		parent::del_transaction($trans);
-		if($trans->state == SIP::COMPLETING){
-			Logger::debug("caller completed.");
-			$new = $this->new_transaction(SIP::KEEPALIVE);
-			$new->remote_tag = $this->remote_tag;
-			$new->refresh();
+		if($this->state == SIP::TRYING){
+			if(!$this->transactions){
+				$new = $this->new_transaction(SIP::TRYING);
+				$new->close(); // TODO: 应该用 cancel？
+			}
 		}
 	}
 
 	function incoming($msg, $trans){
-		// $ret = parent::incoming($msg);
-		// if($ret === true){
-		// 	return true;
-		// }
+		if($msg->code >= 180){
+			$this->remote_tag = $msg->to_tag;
+		}
+		
+		$ret = parent::incoming($msg, $trans);
+		if($ret === true){
+			return true;
+		}
 		
 		if($trans->state == SIP::TRYING){
 			if($msg->code == 200){
-				$this->remote_tag = $msg->to_tag;
 				$this->complete();
 
-				// completing, 等 completed 再赋值 remote_tag
 				Logger::debug("recv OK, send ACK");
 				$trans->state = SIP::COMPLETING;
-				$trans->timers = array(0, 5);
+				$trans->timers = array(0, 10);
+
+				$new = $this->new_transaction(SIP::KEEPALIVE);
+				$new->branch = $trans->branch;
+				$new->remote_tag = $this->remote_tag;
+				$new->refresh();
 
 				return true;
 			}
@@ -49,27 +57,12 @@ class SipCallerSession extends SipBaseCallSession
 				array_unshift($trans->timers, 0);
 				return true;
 			}
-		}else if($trans->state == SIP::KEEPALIVE){
-			Logger::debug("");
-			$trans->refresh();
 		}
 	}
 	
 	function outgoing($trans){
-		// $msg = parent::outgoing();
-		// if($msg){
-		// 	return $msg;
-		// }
-		if($trans->state == SIP::KEEPALIVE){
-			Logger::debug("refresh " . $this->role_name() . " session {$this->call_id}");
-
-			$msg = new SipMessage();
-			if(in_array('INFO', $this->remote_allow)){
-				$msg->method = 'INFO';
-				$msg->add_header('Content-Type', 'application/msml+xml');
-			}else{
-				$msg->method = 'OPTIONS';
-			}
+		$msg = parent::outgoing($trans);
+		if($msg){
 			return $msg;
 		}
 		

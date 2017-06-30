@@ -17,16 +17,13 @@ abstract class SipSession
 
 	protected $expires = 60;
 	protected static $reg_timers = array(0, 0.5, 1, 2, 3, 2);
-	protected static $call_timers = array(0, 0.5, 1, 2, 4, 2);
+	protected static $call_timers = array(0, 0.5, 1, 2, 2, 2);
 	protected static $ring_timers = array(0, 3, 3, 3, 3, 3);
 	protected static $now_timers = array(0, 0);
 	
 	public $call_id; // session id
-	public $branch;  // transaction id
 	// local_cseq remote_cseq
 	public $cseq;    // command/transaction seq
-	public $options_cseq; // 用于 OPTIONS
-	public $info_cseq; // 用于 INFO
 	
 	public $uri;
 	
@@ -67,6 +64,19 @@ abstract class SipSession
 	function close(){
 		foreach($this->transactions as $trans){
 			$trans->close();
+			$this->transactions = array($trans);
+			return;
+		}
+	}
+	
+	function onclose($msg){
+		foreach($this->transactions as $trans){
+			$trans->onclose();
+			$trans->branch = $msg->branch;
+			$trans->remote_tag = $msg->from_tag;
+			$trans->cseq = $msg->cseq;
+			$this->transactions = array($trans);
+			return;
 		}
 	}
 	
