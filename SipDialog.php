@@ -14,7 +14,7 @@ class SipDialog
 	function __construct($sess1, $sess2){
 		$this->callee = $sess1;
 		$this->caller = $sess2;
-		$this->callee->ring();
+		$this->callee->ringing();
 		$this->add_session($sess1);
 		$this->add_session($sess2);
 	}
@@ -51,8 +51,8 @@ class SipDialog
 			if($tmp === $sess){
 				if($sess === $this->caller){
 					if($this->callee){
-						Logger::debug("caller completed, accept callee");
-						$this->callee->accept();
+						Logger::debug("caller completed, completing callee");
+						$this->callee->completing();
 					}
 				}
 				break;

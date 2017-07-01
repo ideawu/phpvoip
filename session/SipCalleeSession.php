@@ -1,6 +1,8 @@
 <?php
 class SipCalleeSession extends SipBaseCallSession
 {
+	private $remote_branch;
+	
 	function __construct($msg){
 		parent::__construct();
 		
@@ -14,8 +16,10 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->remote = $msg->from;
 		$this->remote_tag = $msg->from_tag;
 		$this->contact = $msg->contact;
+		
+		$this->remote_branch = $msg->branch;
 	
-		$new = $this->new_response();
+		$new = $this->new_response($this->remote_branch);
 		$new->trying();
 		
 		if(!$this->remote_allow){
@@ -27,24 +31,25 @@ class SipCalleeSession extends SipBaseCallSession
 	}
 	
 	function ringing(){
-		$this->local_tag = SIP::new_tag();
+		// 在这里也可以生成 local_tag?
 		$this->state = SIP::RINGING;
 		
 		$this->transactions = array();
-		$new = $this->new_response();
+		$new = $this->new_response($this->remote_branch);
 		$new->ringing();
 	}
 	
 	function completing(){
+		$this->local_tag = SIP::new_tag();
 		$this->state = SIP::COMPLETING;
 		
 		$this->transactions = array();
-		$new = $this->new_response();
+		$new = $this->new_response($this->remote_branch);
 		$new->completing();
 	}
 	
 	function incoming($msg, $trans){
-		$ret = parent::incoming($msg);
+		$ret = parent::incoming($msg, $trans);
 		if($ret === true){
 			return true;
 		}
@@ -56,7 +61,7 @@ class SipCalleeSession extends SipBaseCallSession
 				$this->del_transaction($trans);
 				
 				$new = $this->new_request();
-				$new->branch = $trans->branch;
+				$new->branch = $trans->branch; // 
 				$new->remote_tag = $this->remote_tag;
 				$new->keepalive();
 				
@@ -70,7 +75,7 @@ class SipCalleeSession extends SipBaseCallSession
 	}
 	
 	function outgoing($trans){
-		$msg = parent::outgoing();
+		$msg = parent::outgoing($trans);
 		if($msg){
 			return $msg;
 		}

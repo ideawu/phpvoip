@@ -12,7 +12,7 @@ class SipRouter extends SipModule
 		// TODO: 在此进行路由转换
 		
 		// TESTING:
-		if(0){
+		if(1){
 			$remote_ip = '127.0.0.1';
 			$remote_port = 5060;
 			$local_ip = $this->engine->local_ip;

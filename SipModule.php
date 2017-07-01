@@ -142,7 +142,7 @@ abstract class SipModule
 		
 		if($msg->is_request()){
 			Logger::debug("create new response");
-			$new = $sess->new_response($msg);
+			$new = $sess->new_response($msg->branch);
 			$new->trying();
 			return $new;
 		}

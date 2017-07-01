@@ -13,10 +13,10 @@ class SipTransaction
 	
 	protected static $calling_timers = array(0, 0.5, 0.5, 2, 3, 3, 3, 3);
 	protected static $trying_timers = array(0, 1, 1, 1);
-	protected static $ring_timers = array(0, 3, 3, 3, 3, 3);
+	protected static $ringing_timers = array(0, 3, 3, 3, 3, 3);
 	protected static $completing_timers = array(0, 5);
 	
-	protected static $keepalive_timers = array(5, 3, 1, 1);
+	protected static $keepalive_timers = array(10, 3, 1, 1);
 	protected static $closing_timers = array(0, 1, 2, 2, 0);
 	protected static $onclose_timers = array(0, 5);
 		

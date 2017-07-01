@@ -67,7 +67,7 @@ abstract class SipSession
 	
 	function onclose($msg){
 		$this->transactions = array();
-		$new = $this->new_response($msg);
+		$new = $this->new_response($msg->branch);
 		$new->onclose();
 	}
 	
@@ -81,18 +81,18 @@ abstract class SipSession
 		
 		$trans = new SipTransaction();
 		$trans->branch = SIP::new_branch();
-		$trans->remote_tag = $this->remote_tag;
 		$trans->local_tag = $this->local_tag;
+		$trans->remote_tag = $this->remote_tag;
 		$trans->cseq = $this->local_cseq;
 		$this->add_transaction($trans);
 		return $trans;
 	}
 	
-	function new_response($msg){
+	function new_response($branch){
 		$trans = new SipTransaction();
-		$trans->branch = $msg->branch;
-		$trans->remote_tag = $msg->from_tag;
+		$trans->branch = $branch; //
 		$trans->local_tag = $this->local_tag;
+		$trans->remote_tag = $this->remote_tag;
 		$trans->cseq = $this->remote_cseq;
 		$this->add_transaction($trans);
 		return $trans;

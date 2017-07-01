@@ -64,7 +64,7 @@ class SipRegisterModule extends SipModule
 		if($sess->role !== SIP::REGISTER){
 			return;
 		}
-		if(1){
+		if(0){
 			$remote_ip = '127.0.0.1';
 			$remote_port = 5060;
 			$local_ip = $this->engine->local_ip;
