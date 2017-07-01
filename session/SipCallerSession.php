@@ -10,7 +10,8 @@ class SipCallerSession extends SipBaseCallSession
 		$this->call_id = SIP::new_call_id();
 		$this->local_tag = SIP::new_tag();
 		
-		$this->new_transaction(SIP::CALLING, self::$call_timers);
+		$new = $this->new_request();
+		$new->calling();
 	}
 
 	function del_transaction($trans){
@@ -22,10 +23,6 @@ class SipCallerSession extends SipBaseCallSession
 	}
 
 	function incoming($msg, $trans){
-		if($msg->code >= 180){
-			$this->remote_tag = $msg->to_tag;
-		}
-		
 		$ret = parent::incoming($msg, $trans);
 		if($ret === true){
 			return true;
@@ -35,14 +32,12 @@ class SipCallerSession extends SipBaseCallSession
 			if($msg->code == 200){
 				$this->complete();
 
-				Logger::debug("recv OK, send ACK");
-				$trans->state = SIP::COMPLETING;
-				$trans->timers = array(0, 10);
+				$trans->completing();
 
-				$new = $this->new_transaction(SIP::KEEPALIVE);
+				$new = $this->new_request();
 				$new->branch = $trans->branch;
 				$new->remote_tag = $this->remote_tag;
-				$new->refresh();
+				$new->keepalive();
 
 				return true;
 			}

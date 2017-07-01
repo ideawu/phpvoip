@@ -24,6 +24,19 @@ abstract class SipModule
 		if(!$sess){
 			return false;
 		}
+
+		if($msg->is_request() && !$sess->remote_cseq){
+			Logger::debug("init remote_cseq={$msg->cseq}");
+			$sess->remote_cseq = $msg->cseq;
+		}
+		if($msg->is_request() && $msg->cseq == $sess->remote_cseq + 1){
+			$sess->remote_cseq ++;
+			Logger::debug("set remote_cseq {$msg->cseq}");
+		}
+		if($msg->code >= 180 && !$sess->remote_tag && $msg->to_tag){
+			Logger::debug("set remote_tag={$msg->to_tag}");
+			$sess->remote_tag = $msg->to_tag;
+		}
 		
 		$trans = $this->find_transaction_for_msg($msg, $sess);
 		if(!$trans){
@@ -73,7 +86,6 @@ abstract class SipModule
 					Logger::debug("to: {$msg->to} != local: {$sess->local}");
 					continue;
 				}
-
 			}else{
 				if($msg->from_tag !== $sess->local_tag){
 					Logger::debug("from_tag: {$msg->from_tag} != local_tag: {$sess->local_tag}");
@@ -98,6 +110,11 @@ abstract class SipModule
 	
 	private function find_transaction_for_msg($msg, $sess){
 		foreach($sess->transactions as $trans){
+			if($msg->cseq !== $trans->cseq){
+				#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+				continue;
+			}
+
 			if($msg->is_request()){
 				if($trans->local_tag){
 					if($msg->to_tag !== $trans->local_tag){
@@ -106,23 +123,6 @@ abstract class SipModule
 					}
 				}
 				
-				// 验证 remote_cseq
-				if(!$this->remote_cseq){
-					Logger::debug("initialize remote_cseq {$msg->cseq}");
-					$this->remote_cseq = $msg->cseq;
-				}else{
-					if($msg->cseq == $this->remote_cseq){
-						// 重传
-						Logger::debug("recv retrans request {$msg->cseq}");
-					}else if($msg->cseq == $this->remote_cseq + 1){
-						$this->remote_cseq ++;
-						Logger::debug("recv new request {$msg->cseq}");
-					}else if($msg->cseq < $this->remote_cseq){
-						// 过期，drop
-						Logger::debug("drop old request {$msg->cseq}, should be >= {$this->remote_cseq}");
-						continue;
-					}
-				}
 			}else{
 				if($trans->remote_tag){
 					if($msg->to_tag !== $trans->remote_tag){
@@ -132,11 +132,6 @@ abstract class SipModule
 				}
 				if($msg->branch !== $trans->branch){
 					Logger::debug("branch: {$msg->branch} != branch: {$trans->branch}");
-					continue;
-				}
-
-				if($msg->cseq !== $trans->cseq){
-					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
 			}

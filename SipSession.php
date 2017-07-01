@@ -17,10 +17,6 @@ abstract class SipSession
 	public $remote_allow = array();
 
 	protected $expires = 60;
-	protected static $reg_timers = array(0, 0.5, 1, 2, 3, 2);
-	protected static $call_timers = array(0, 0.5, 1, 2, 2, 2);
-	protected static $ring_timers = array(0, 3, 3, 3, 3, 3);
-	protected static $now_timers = array(0, 0);
 	
 	public $call_id; // session id
 	public $local_cseq;
@@ -65,16 +61,13 @@ abstract class SipSession
 	
 	function close(){
 		$this->transactions = array();
-		$new = $this->new_transaction();
+		$new = $this->new_request();
 		$new->close();
 	}
 	
 	function onclose($msg){
 		$this->transactions = array();
-		$new = $this->new_transaction();
-		$new->branch = $msg->branch;
-		$new->remote_tag = $msg->from_tag;
-		$new->cseq = $msg->cseq;
+		$new = $this->new_response($msg);
 		$new->onclose();
 	}
 	
@@ -83,17 +76,24 @@ abstract class SipSession
 		$this->transactions = array();
 	}
 	
-	function new_transaction($state=SIP::CLOSED, $timers=array()){
+	function new_request(){
 		$this->local_cseq ++;
 		
 		$trans = new SipTransaction();
-		$trans->state = $state;
-		$trans->timers = $timers;
-		$trans->branch = $this->branch;
-		$trans->local_tag = $this->local_tag;
-		$trans->remote_tag = $this->remote_tag;
-		$trans->cseq = $this->local_cseq;
 		$trans->branch = SIP::new_branch();
+		$trans->remote_tag = $this->remote_tag;
+		$trans->local_tag = $this->local_tag;
+		$trans->cseq = $this->local_cseq;
+		$this->add_transaction($trans);
+		return $trans;
+	}
+	
+	function new_response($msg){
+		$trans = new SipTransaction();
+		$trans->branch = $msg->branch;
+		$trans->remote_tag = $msg->from_tag;
+		$trans->local_tag = $this->local_tag;
+		$trans->cseq = $this->remote_cseq;
 		$this->add_transaction($trans);
 		return $trans;
 	}

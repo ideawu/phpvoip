@@ -8,7 +8,7 @@ abstract class SipBaseCallSession extends SipSession
 	function incoming($msg, $trans){
 		if($trans->state == SIP::KEEPALIVE){
 			if($msg->code == 200 || $msg->code == 415){ // 415 Unsupported Media Type
-				$trans->refresh();
+				$trans->keepalive();
 				return true;
 			}
 		}else if($trans->state == SIP::FIN_WAIT){

@@ -33,39 +33,41 @@ class SipRegisterSession extends SipSession
 		$this->call_id = SIP::new_call_id();
 		$this->local_tag = SIP::new_tag();
 
-		$this->new_transaction(SIP::TRYING, self::$reg_timers);
+		$new = $this->new_request();
+		$new->register();
 	}
 	
 	function incoming($msg, $trans){
-		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
-			if($msg->code == 100){
-				// 收到 100 更新重传定时器
-				$trans->timers[0] += 0.5;
-			}else if($msg->code == 200){
+		if($trans->state == SIP::TRYING){
+			if($msg->code == 200){
 				$this->auth = null;
 				if($this->state == SIP::COMPLETED){
 					Logger::debug("REGISTER {$this->local} renewed");
 				}else{
 					Logger::debug("REGISTER {$this->local} registered");
-					$this->remote_tag = $msg->to_tag;
 					$this->complete();
 				}
+
+				$expires = min($this->expires, max($this->expires, $msg->expires)) - 5;
+				Logger::debug("expires: $expires");
 				
 				$this->del_transaction($trans);
-				$expires = min($this->expires, max($this->expires, $msg->expires)) - 5;
-				// $expires = 5;
-				Logger::debug("expires: $expires");
-				$new = $this->new_transaction(SIP::TRYING);
+				
+				$new = $this->new_request();
+				$new->register();
 				$new->wait($expires);
 			}else if($msg->code == 401){
 				$this->auth = $this->www_auth($msg->auth);
 				
 				$this->del_transaction($trans);
-				$new = $this->new_transaction(SIP::AUTHING, self::$reg_timers);
-				if($trans->state == SIP::AUTHING){
+				
+				$new = $this->new_request();
+				$new->register();
+				if($this->state == SIP::AUTHING){
 					Logger::error("{$this->local} auth failed");
 					$new->wait(3);
 				}else{
+					$this->state = SIP::AUTHING;
 					Logger::debug("{$this->local} auth");
 				}
 			}else if($msg->code == 423){
@@ -74,18 +76,19 @@ class SipRegisterSession extends SipSession
 				if($v){
 					$this->expires = max($this->expires, intval($v));
 				}
-				$this->new_transaction(SIP::TRYING, self::$reg_timers);
+				$new = $this->new_request();
+				$new->register();
 			}
 		}
 	}
 	
 	// 返回要发送的消息
 	function outgoing($trans){
-		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
+		if($trans->state == SIP::TRYING){
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
 			$msg->expires = $this->expires;
-			if($trans->state == SIP::AUTHING){
+			if($this->auth){
 				$msg->add_header('Authorization', $this->auth);
 			}
 			$msg->username = $this->username;
