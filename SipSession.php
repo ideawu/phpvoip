@@ -23,8 +23,8 @@ abstract class SipSession
 	protected static $now_timers = array(0, 0);
 	
 	public $call_id; // session id
-	// local_cseq remote_cseq
-	public $cseq;    // command/transaction seq
+	public $local_cseq;
+	public $remote_cseq;
 	
 	public $uri;
 	
@@ -36,7 +36,7 @@ abstract class SipSession
 	protected $auth;
 	
 	function __construct(){
-		$this->cseq = mt_rand(100, 1000);
+		$this->local_cseq = mt_rand(100, 1000);
 	}
 	
 	abstract function incoming($msg, $trans);
@@ -84,7 +84,7 @@ abstract class SipSession
 	}
 	
 	function new_transaction($state=SIP::CLOSED, $timers=array()){
-		$this->cseq ++;
+		$this->local_cseq ++;
 		
 		$trans = new SipTransaction();
 		$trans->state = $state;
@@ -92,7 +92,7 @@ abstract class SipSession
 		$trans->branch = $this->branch;
 		$trans->local_tag = $this->local_tag;
 		$trans->remote_tag = $this->remote_tag;
-		$trans->cseq = $this->cseq;
+		$trans->cseq = $this->local_cseq;
 		$trans->branch = SIP::new_branch();
 		$this->add_transaction($trans);
 		return $trans;

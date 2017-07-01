@@ -57,7 +57,7 @@ abstract class SipBaseCallSession extends SipSession
 			$msg = new SipMessage();
 			if(in_array('INFO', $this->remote_allow)){
 				$msg->method = 'INFO';
-				$msg->add_header('Content-Type', 'application/msml+xml');
+				$msg->add_header('Content-Type', 'application/sdp');
 			}else{
 				$msg->method = 'OPTIONS';
 			}

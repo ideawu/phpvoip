@@ -10,7 +10,6 @@ class SipRegistrarSession extends SipSession
 		
 		$this->role = SIP::REGISTRAR;
 		$this->state = SIP::TRYING;
-		$this->timers = self::$reg_timers;
 
 	}
 	

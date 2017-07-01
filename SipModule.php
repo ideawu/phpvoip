@@ -105,6 +105,24 @@ abstract class SipModule
 						continue;
 					}
 				}
+				
+				// 验证 remote_cseq
+				if(!$this->remote_cseq){
+					Logger::debug("initialize remote_cseq {$msg->cseq}");
+					$this->remote_cseq = $msg->cseq;
+				}else{
+					if($msg->cseq == $this->remote_cseq){
+						// 重传
+						Logger::debug("recv retrans request {$msg->cseq}");
+					}else if($msg->cseq == $this->remote_cseq + 1){
+						$this->remote_cseq ++;
+						Logger::debug("recv new request {$msg->cseq}");
+					}else if($msg->cseq < $this->remote_cseq){
+						// 过期，drop
+						Logger::debug("drop old request {$msg->cseq}, should be >= {$this->remote_cseq}");
+						continue;
+					}
+				}
 			}else{
 				if($trans->remote_tag){
 					if($msg->to_tag !== $trans->remote_tag){
@@ -112,13 +130,13 @@ abstract class SipModule
 						continue;
 					}
 				}
-
 				if($msg->branch !== $trans->branch){
 					Logger::debug("branch: {$msg->branch} != branch: {$trans->branch}");
 					continue;
 				}
+
 				if($msg->cseq !== $trans->cseq){
-					Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
 			}
@@ -188,13 +206,16 @@ abstract class SipModule
 		$msg->uri = $sess->uri;
 		$msg->call_id = $sess->call_id;
 		$msg->branch = $trans->branch;
-		$msg->cseq = $trans->cseq;
 		if($msg->is_request()){
+			$msg->cseq = $trans->cseq;
+			
 			$msg->from = $sess->local;
 			$msg->from_tag = $trans->local_tag;
 			$msg->to = $sess->remote;
 			$msg->to_tag = $trans->remote_tag;
 		}else{
+			$msg->cseq = $trans->remote_cseq;
+			
 			$msg->from = $sess->remote;
 			$msg->from_tag = $trans->remote_tag;
 			$msg->to = $sess->local;

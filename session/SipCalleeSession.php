@@ -6,12 +6,10 @@ class SipCalleeSession extends SipBaseCallSession
 		
 		$this->role = SIP::CALLEE;
 		$this->state = SIP::TRYING;
-		$this->timers = self::$call_timers;
 
 		$this->uri = $msg->uri;
 		$this->call_id = $msg->call_id;
-		$this->branch = $msg->branch;
-		$this->cseq = $msg->cseq;
+		$this->remote_cseq = $msg->cseq;
 		$this->local = $msg->to;
 		$this->local_tag = SIP::new_tag();
 		$this->remote = $msg->from;
@@ -27,7 +25,7 @@ class SipCalleeSession extends SipBaseCallSession
 		}
 	}
 	
-	function incoming($msg){
+	function incoming($msg, $trans){
 		$ret = parent::incoming($msg);
 		if($ret === true){
 			return true;
@@ -54,7 +52,7 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->timers = self::$call_timers;
 	}
 	
-	function outgoing(){
+	function outgoing($trans){
 		$msg = parent::outgoing();
 		if($msg){
 			return $msg;
