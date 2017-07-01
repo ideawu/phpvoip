@@ -5,6 +5,9 @@ class SipRegisterSession extends SipSession
 	public $password;
 	public $domain;
 
+	private $auth;
+	private $expires = 60;
+	
 	function __construct($username, $password, $remote_ip, $remote_port){
 		parent::__construct();
 
@@ -17,7 +20,7 @@ class SipRegisterSession extends SipSession
 		}
 		
 		$this->role = SIP::REGISTER;
-		$this->state = SIP::TRYING;
+		$this->set_state(SIP::TRYING);
 		
 		$this->remote_ip = $remote_ip;
 		$this->remote_port = $remote_port;
@@ -41,7 +44,7 @@ class SipRegisterSession extends SipSession
 		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
 			if($msg->code == 200){
 				$this->auth = null;
-				if($this->state == SIP::COMPLETED){
+				if($this->is_state(SIP::COMPLETED)){
 					Logger::debug("REGISTER {$this->local} renewed");
 				}else{
 					Logger::debug("REGISTER {$this->local} registered");

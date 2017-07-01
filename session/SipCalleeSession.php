@@ -7,7 +7,7 @@ class SipCalleeSession extends SipBaseCallSession
 		parent::__construct();
 		
 		$this->role = SIP::CALLEE;
-		$this->state = SIP::TRYING;
+		$this->set_state(SIP::TRYING);
 
 		$this->uri = $msg->uri;
 		$this->call_id = $msg->call_id;
@@ -29,10 +29,17 @@ class SipCalleeSession extends SipBaseCallSession
 			}
 		}
 	}
+
+	function del_transaction($trans){
+		parent::del_transaction($trans);
+		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			$this->close();
+		}
+	}
 	
 	function ringing(){
 		// 在这里也可以生成 local_tag?
-		$this->state = SIP::RINGING;
+		$this->set_state(SIP::RINGING);
 		
 		$this->transactions = array();
 		$new = $this->new_response($this->remote_branch);
@@ -41,7 +48,7 @@ class SipCalleeSession extends SipBaseCallSession
 	
 	function completing(){
 		$this->local_tag = SIP::new_tag();
-		$this->state = SIP::COMPLETING;
+		$this->set_state(SIP::COMPLETING);
 		
 		$this->transactions = array();
 		$new = $this->new_response($this->remote_branch);

@@ -5,7 +5,7 @@ class SipCallerSession extends SipBaseCallSession
 		parent::__construct();
 		
 		$this->role = SIP::CALLER;
-		$this->state = SIP::CALLING;
+		$this->set_state(SIP::CALLING);
 		
 		$this->call_id = SIP::new_call_id();
 		$this->local_tag = SIP::new_tag();
@@ -16,7 +16,7 @@ class SipCallerSession extends SipBaseCallSession
 
 	function del_transaction($trans){
 		parent::del_transaction($trans);
-		if($trans->state == SIP::CALLING){
+		if($this->is_state(SIP::CALLING) || $this->is_state(SIP::RINGING)){
 			$this->close();
 		}
 	}

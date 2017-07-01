@@ -29,7 +29,6 @@ abstract class SipBaseCallSession extends SipSession
 				$this->terminate();
 				return true;
 			}
-			return false;
 		}
 		
 		///////////////////////////////////////////
@@ -45,6 +44,10 @@ abstract class SipBaseCallSession extends SipSession
 		// 486 Busy Here
 		// 487 Request Terminated
 		
+		if($msg->code == 180 && ($this->is_state(SIP::CALLING) || $this->is_state(SIP::TRYING))){
+			$this->set_state(SIP::RINGING);
+			return true;
+		}
 		if($msg->code >= 300 && $msg->code < 400){
 			// ...
 			Logger::info("nothing to do with {$msg->code}");
@@ -70,7 +73,7 @@ abstract class SipBaseCallSession extends SipSession
 			return $msg;
 		}else if($trans->state == SIP::FIN_WAIT){
 			$msg = new SipMessage();
-			if($this->state == SIP::COMPLETED){
+			if($this->is_state(SIP::COMPLETED)){
 				$msg->method = 'BYE';
 			}else{
 				$msg->method = 'CANCEL';
@@ -87,7 +90,7 @@ abstract class SipBaseCallSession extends SipSession
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';
-			if($this->state == SIP::COMPLETED){
+			if($this->is_state(SIP::COMPLETED)){
 				$msg->cseq_method = 'BYE';
 			}else{
 				$msg->cseq_method = 'CANCEL';

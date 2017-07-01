@@ -9,7 +9,7 @@ class SipRegistrarSession extends SipSession
 		parent::__construct();
 		
 		$this->role = SIP::REGISTRAR;
-		$this->state = SIP::TRYING;
+		$this->set_state(SIP::TRYING);
 
 	}
 	

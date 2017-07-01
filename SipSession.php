@@ -1,13 +1,8 @@
 <?php
 abstract class SipSession
 {
-	// 指向本 Session 所属的 module。
-	public $module;
-	// 最多存2个。第1个要么处于重传态，要么完成态。第2个要么处于完成态，要么关闭态。
-	public $transactions = array();
-	
 	public $role;
-	public $state = 0;
+	private $state = 0;
 
 	public $local_ip;
 	public $local_port;
@@ -16,20 +11,19 @@ abstract class SipSession
 	
 	public $remote_allow = array();
 
-	protected $expires = 60;
-	
 	public $call_id; // session id
+	public $local_tag;
+	public $remote_tag;
 	public $local_cseq;
 	public $remote_cseq;
+	public $local;
+	public $remote;
 	
 	public $uri;
+	// 最多存2个。第1个要么处于重传态，要么完成态。第2个要么处于完成态，要么关闭态。
+	public $transactions = array();
 	
-	public $local;
-	public $local_tag;
-	public $remote;
-	public $remote_tag;
-	
-	protected $auth;
+	private $callback;
 	
 	function __construct(){
 		$this->local_cseq = mt_rand(100, 1000);
@@ -37,6 +31,26 @@ abstract class SipSession
 	
 	abstract function incoming($msg, $trans);
 	abstract function outgoing($trans);
+	
+	function set_callback($callback){
+		$this->callback = $callback;
+	}
+	
+	function state(){
+		return $this->state;
+	}
+	
+	function is_state($state){
+		return $this->state === $state;
+	}
+	
+	function set_state($new){
+		$old = $this->state;
+		$this->state = $new;
+		if(!$old !== $new && $this->callback){
+			call_user_func($this->callback, $this);
+		}
+	}
 	
 	function role_name(){
 		if($this->role == SIP::REGISTER){
@@ -56,23 +70,25 @@ abstract class SipSession
 		if($this->state != SIP::COMPLETED){
 			Logger::debug($this->role_name() . " session {$this->call_id} established");
 		}
-		$this->state = SIP::COMPLETED;
+		$this->set_state(SIP::COMPLETED);
 	}
 	
 	function close(){
+		// TODO: $this->set_state(SIP::CLOSING);
 		$this->transactions = array();
 		$new = $this->new_request();
 		$new->close();
 	}
 	
 	function onclose($msg){
+		// TODO: $this->set_state(SIP::CLOSING);
 		$this->transactions = array();
 		$new = $this->new_response($msg->branch);
 		$new->onclose();
 	}
 	
 	function terminate(){
-		$this->state = SIP::CLOSED;
+		$this->set_state(SIP::CLOSED);
 		$this->transactions = array();
 	}
 	

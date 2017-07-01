@@ -3,7 +3,7 @@ class SipNullSession extends SipSession
 {
 	function __construct(){
 		$this->role = SIP::NONE;
-		$this->state = SIP::TRYING;
+		$this->set_state(SIP::TRYING);
 		
 		$new = $this->new_request();
 		$new->trying();

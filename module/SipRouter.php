@@ -50,17 +50,9 @@ class SipRouter extends SipModule
 	
 	function del_session($sess){
 		parent::del_session($sess);
-		// 通知所属的 dialog 做后续处理
-		foreach($this->dialogs as $dia){
-			$dia->del_session($sess);
-		}
 	}
 	
 	function complete_session($sess){
 		parent::complete_session($sess);
-		// 通知所属的 dialog 做后续处理
-		foreach($this->dialogs as $dia){
-			$dia->complete_session($sess);
-		}
 	}
 }

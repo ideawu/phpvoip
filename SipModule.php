@@ -52,9 +52,9 @@ abstract class SipModule
 		}
 
 		// Logger::debug($sess->role_name() . " process msg");
-		$s1 = $sess->state == SIP::COMPLETED;
+		$s1 = $sess->is_state(SIP::COMPLETED);
 		$sess->incoming($msg, $trans);
-		$s2 = $sess->state == SIP::COMPLETED;
+		$s2 = $sess->is_state(SIP::COMPLETED);
 		if(!$s1 && $s2){
 			$this->complete_session($sess);
 		}
@@ -156,14 +156,14 @@ abstract class SipModule
 	function outgoing($time, $timespan){
 		$ret = array();
 		foreach($this->sessions as $index=>$sess){
-			$s1 = $sess->state == SIP::COMPLETED;
+			$s1 = $sess->is_state(SIP::COMPLETED);
 			$msgs = $this->proc_trans($sess, $time, $timespan);
 			$ret += $msgs;
-			$s2 = $sess->state == SIP::COMPLETED;
+			$s2 = $sess->is_state(SIP::COMPLETED);
 			if(!$s1 && $s2){
 				$this->complete_session($sess);
 			}
-			if($sess->state == SIP::CLOSED){
+			if($sess->is_state(SIP::CLOSED)){
 				$this->del_session($sess);
 			}
 		}
