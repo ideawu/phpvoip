@@ -6,26 +6,32 @@ abstract class SipBaseCallSession extends SipSession
 	}
 	
 	function incoming($msg, $trans){
+		if($msg->method == 'BYE'){
+			if($trans->state == SIP::FIN_WAIT){
+				Logger::debug($this->role_name() . " {$this->call_id} FIN_WAIT => CLOSE_WAIT");
+				$this->onclose($msg);
+				return true;
+			}
+			if($trans->state == SIP::CLOSE_WAIT){
+				Logger::debug("recv BYE while CLOSE_WAIT");
+				array_unshift($trans->timers, 0);
+				return true;
+			}
+			
+			Logger::debug($this->role_name() . " {$this->call_id} close by BYE");
+			$this->onclose($msg);
+			return true;
+		}
+		
 		if($trans->state == SIP::KEEPALIVE){
 			if($msg->code == 200 || $msg->code == 415){ // 415 Unsupported Media Type
 				$trans->keepalive();
 				return true;
 			}
 		}else if($trans->state == SIP::FIN_WAIT){
-			if($msg->code == 200 || $msg->code == 481){
+			if($msg->code == 200){
 				Logger::info("recv {$msg->code} {$msg->reason}, finish CLOSE_WAIT " . $this->role_name());
 				$this->terminate();
-				return true;
-			}else if($msg->method == 'BYE'){
-				Logger::debug($this->role_name() . " {$this->call_id} FIN_WAIT => CLOSE_WAIT");
-				$this->onclose($msg);
-				return true;
-			}
-			return false;
-		}else if($trans->state == SIP::CLOSE_WAIT){
-			if($msg->method == 'BYE'){
-				Logger::debug("recv BYE while CLOSE_WAIT");
-				array_unshift($trans->timers, 0);
 				return true;
 			}
 			return false;
@@ -33,11 +39,7 @@ abstract class SipBaseCallSession extends SipSession
 
 		// 481 Call/Transaction Does Not Exist
 		// 487 Request Terminated
-		if($msg->method == 'BYE'){
-			Logger::debug($this->role_name() . " {$this->call_id} close by BYE");
-			$this->onclose($msg);
-			return true;
-		}else if($msg->code >= 300 && $msg->code < 400){
+		if($msg->code >= 300 && $msg->code < 400){
 			// ...
 			Logger::info("nothing to do with {$msg->code}");
 		}else if($msg->code >= 400){

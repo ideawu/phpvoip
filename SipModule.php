@@ -110,20 +110,22 @@ abstract class SipModule
 	
 	private function find_transaction_for_msg($msg, $sess){
 		foreach($sess->transactions as $trans){
-			if($msg->cseq !== $trans->cseq){
-				#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
-				continue;
-			}
-
 			if($msg->is_request()){
+				if($msg->cseq !== $trans->cseq){
+					Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					continue;
+				}
 				if($trans->local_tag){
 					if($msg->to_tag !== $trans->local_tag){
 						Logger::debug("to_tag: {$msg->to_tag} != local_tag: {$trans->local_tag}");
 						continue;
 					}
 				}
-				
 			}else{
+				if($msg->cseq !== $trans->cseq){
+					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					continue;
+				}
 				if($trans->remote_tag){
 					if($msg->to_tag !== $trans->remote_tag){
 						Logger::debug("to_tag: {$msg->to_tag} != remote_tag: {$trans->remote_tag}");
@@ -136,6 +138,13 @@ abstract class SipModule
 				}
 			}
 			return $trans;
+		}
+		
+		if($msg->is_request()){
+			Logger::debug("create new response");
+			$new = $sess->new_response($msg);
+			$new->trying();
+			return $new;
 		}
 		return false;
 	}
@@ -201,16 +210,13 @@ abstract class SipModule
 		$msg->uri = $sess->uri;
 		$msg->call_id = $sess->call_id;
 		$msg->branch = $trans->branch;
+		$msg->cseq = $trans->cseq;
 		if($msg->is_request()){
-			$msg->cseq = $trans->cseq;
-			
 			$msg->from = $sess->local;
 			$msg->from_tag = $trans->local_tag;
 			$msg->to = $sess->remote;
 			$msg->to_tag = $trans->remote_tag;
 		}else{
-			$msg->cseq = $trans->remote_cseq;
-			
 			$msg->from = $sess->remote;
 			$msg->from_tag = $trans->remote_tag;
 			$msg->to = $sess->local;
