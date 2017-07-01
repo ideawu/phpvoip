@@ -112,7 +112,7 @@ abstract class SipModule
 		foreach($sess->transactions as $trans){
 			if($msg->is_request()){
 				if($msg->cseq !== $trans->cseq){
-					Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
 				if($trans->local_tag){
