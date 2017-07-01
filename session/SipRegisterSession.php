@@ -38,7 +38,7 @@ class SipRegisterSession extends SipSession
 	}
 	
 	function incoming($msg, $trans){
-		if($trans->state == SIP::TRYING){
+		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
 			if($msg->code == 200){
 				$this->auth = null;
 				if($this->state == SIP::COMPLETED){
@@ -63,12 +63,12 @@ class SipRegisterSession extends SipSession
 				
 				$new = $this->new_request();
 				$new->register();
-				if($this->state == SIP::AUTHING){
+				if($trans->state == SIP::AUTHING){
 					Logger::error("{$this->local} auth failed");
 					$new->wait(3);
 				}else{
-					$this->state = SIP::AUTHING;
 					Logger::debug("{$this->local} auth");
+					$new->state = SIP::AUTHING;
 				}
 			}else if($msg->code == 423){
 				// 423 Interval Too Brief
@@ -84,7 +84,7 @@ class SipRegisterSession extends SipSession
 	
 	// 返回要发送的消息
 	function outgoing($trans){
-		if($trans->state == SIP::TRYING){
+		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
 			$msg->expires = $this->expires;

@@ -11,13 +11,14 @@ class SipTransaction
 
 	protected static $register_timers = array(0, 0.5, 1, 2, 3, 2);
 	
-	protected static $calling_timers = array(0, 0.5, 1, 2, 2, 2);
+	protected static $calling_timers = array(0, 0.5, 0.5, 2, 3, 3, 3, 3);
 	protected static $trying_timers = array(0, 1, 1, 1);
 	protected static $ring_timers = array(0, 3, 3, 3, 3, 3);
 	protected static $completing_timers = array(0, 5);
 	
 	protected static $keepalive_timers = array(5, 3, 1, 1);
-	protected static $closing_timers = array(0, 5);
+	protected static $closing_timers = array(0, 1, 2, 2, 0);
+	protected static $onclose_timers = array(0, 5);
 		
 	function __construct(){
 	}
@@ -69,6 +70,6 @@ class SipTransaction
 	// 被动关闭
 	function onclose(){
 		$this->state = SIP::CLOSE_WAIT;
-		$this->timers = self::$closing_timers;
+		$this->timers = self::$onclose_timers;
 	}
 }

@@ -17,7 +17,6 @@ class SipCallerSession extends SipBaseCallSession
 	function del_transaction($trans){
 		parent::del_transaction($trans);
 		if($trans->state == SIP::CALLING){
-			// 实现 cancel
 			$this->close();
 		}
 	}

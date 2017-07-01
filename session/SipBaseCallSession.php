@@ -12,7 +12,7 @@ abstract class SipBaseCallSession extends SipSession
 				return true;
 			}
 		}else if($trans->state == SIP::FIN_WAIT){
-			if($msg->code == 200){
+			if($msg->code == 200 || $msg->code == 481){
 				Logger::info("recv {$msg->code} {$msg->reason}, finish CLOSE_WAIT " . $this->role_name());
 				$this->terminate();
 				return true;
@@ -31,13 +31,11 @@ abstract class SipBaseCallSession extends SipSession
 			return false;
 		}
 
+		// 481 Call/Transaction Does Not Exist
+		// 487 Request Terminated
 		if($msg->method == 'BYE'){
 			Logger::debug($this->role_name() . " {$this->call_id} close by BYE");
 			$this->onclose($msg);
-			return true;
-		}else if($msg->code == 481 || $msg->code >= 500){ // Call/Transaction Does Not Exist
-			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
-			$this->terminate();
 			return true;
 		}else if($msg->code >= 300 && $msg->code < 400){
 			// ...
@@ -68,6 +66,8 @@ abstract class SipBaseCallSession extends SipSession
 				$msg->method = 'BYE';
 			}else{
 				$msg->method = 'CANCEL';
+				// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
+				// 然后回复 OK 给 CANCEL
 			}
 			return $msg;
 		}else if($trans->state == SIP::CLOSE_WAIT){
