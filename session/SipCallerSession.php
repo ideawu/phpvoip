@@ -5,24 +5,19 @@ class SipCallerSession extends SipBaseCallSession
 		parent::__construct();
 		
 		$this->role = SIP::CALLER;
-		$this->state = SIP::TRYING;
+		$this->state = SIP::CALLING;
 		
 		$this->call_id = SIP::new_call_id();
-		$this->branch = SIP::new_branch();
 		$this->local_tag = SIP::new_tag();
-		$this->cseq = mt_rand(1, 10000);
 		
-		$this->new_transaction(SIP::TRYING, self::$call_timers);
-		// TODO: 实现 INVITE 超时后，放送 BYE/CANCEL
+		$this->new_transaction(SIP::CALLING, self::$call_timers);
 	}
-	
+
 	function del_transaction($trans){
 		parent::del_transaction($trans);
-		if($this->state == SIP::TRYING){
-			if(!$this->transactions){
-				$new = $this->new_transaction(SIP::TRYING);
-				$new->close(); // TODO: 应该用 cancel？
-			}
+		if($trans->state == SIP::CALLING){
+			// 实现 cancel
+			$this->close();
 		}
 	}
 
@@ -36,7 +31,7 @@ class SipCallerSession extends SipBaseCallSession
 			return true;
 		}
 		
-		if($trans->state == SIP::TRYING){
+		if($trans->state == SIP::CALLING){
 			if($msg->code == 200){
 				$this->complete();
 
@@ -66,14 +61,14 @@ class SipCallerSession extends SipBaseCallSession
 			return $msg;
 		}
 		
-		if($trans->state == SIP::TRYING){
+		if($trans->state == SIP::CALLING){
 			$msg = new SipMessage();
 			$msg->method = 'INVITE';
 			return $msg;
 		}else if($trans->state == SIP::COMPLETING){
 			static $i = 0;
 			if($i++%2 == 0){
-				Logger::debug("manually drop outgoing msg");
+				Logger::debug("manually drop outgoing msg ACK");
 				return;
 			}
 			$msg = new SipMessage();

@@ -42,12 +42,39 @@ class SIP
 	const CLOSED      = 0;
 	const FIN_WAIT    = 2;  // 主动关闭
 	const CLOSE_WAIT  = 3;  // 被动关闭
+	const CALLING     = 5;
 	const KEEPALIVE   = 10; //
 	const COMPLETING  = 11; // 
 
 	private static $call_id_prefix = 'c';
 	private static $tag_prefix = 't';
 	private static $branch_prefix = 'z9hG4bK_';
+	
+	static function state_text($state){
+		if($state == self::TRYING){
+			return 'TRYING';
+		}else if($state == self::RINGING){
+			return 'RINGING';
+		}else if($state == self::COMPLETED){
+			return 'COMPLETED';
+		}else if($state == self::AUTHING){
+			return 'AUTHING';
+		}else if($state == self::NOT_FOUND){
+			return 'NOT_FOUND';
+		}else if($state == self::FIN_WAIT){
+			return 'FIN_WAIT';
+		}else if($state == self::CLOSE_WAIT){
+			return 'CLOSE_WAIT';
+		}else if($state == self::CALLING){
+			return 'CALLING';
+		}else if($state == self::KEEPALIVE){
+			return 'KEEPALIVE';
+		}else if($state == self::COMPLETING){
+			return 'COMPLETING';
+		}else{
+			return 'NONE';
+		}
+	}
 
 	static function token(){
 		static $seq = -1;

@@ -3,6 +3,7 @@ abstract class SipSession
 {
 	// 指向本 Session 所属的 module。
 	public $module;
+	// 最多存2个。第1个要么处于重传态，要么完成态。第2个要么处于完成态，要么关闭态。
 	public $transactions = array();
 	
 	public $role;
@@ -35,6 +36,7 @@ abstract class SipSession
 	protected $auth;
 	
 	function __construct(){
+		$this->cseq = mt_rand(100, 1000);
 	}
 	
 	abstract function incoming($msg, $trans);
@@ -55,29 +57,25 @@ abstract class SipSession
 	}
 	
 	function complete(){
-		if($this->state != SIP::COMPLETED && !$this->renew){
+		if($this->state != SIP::COMPLETED){
 			Logger::debug($this->role_name() . " session {$this->call_id} established");
 		}
 		$this->state = SIP::COMPLETED;
 	}
 	
 	function close(){
-		foreach($this->transactions as $trans){
-			$trans->close();
-			$this->transactions = array($trans);
-			return;
-		}
+		$this->transactions = array();
+		$new = $this->new_transaction();
+		$new->close();
 	}
 	
 	function onclose($msg){
-		foreach($this->transactions as $trans){
-			$trans->onclose();
-			$trans->branch = $msg->branch;
-			$trans->remote_tag = $msg->from_tag;
-			$trans->cseq = $msg->cseq;
-			$this->transactions = array($trans);
-			return;
-		}
+		$this->transactions = array();
+		$new = $this->new_transaction();
+		$new->branch = $msg->branch;
+		$new->remote_tag = $msg->from_tag;
+		$new->cseq = $msg->cseq;
+		$new->onclose();
 	}
 	
 	function terminate(){
@@ -85,7 +83,7 @@ abstract class SipSession
 		$this->transactions = array();
 	}
 	
-	function new_transaction($state, $timers=array()){
+	function new_transaction($state=SIP::CLOSED, $timers=array()){
 		$this->cseq ++;
 		
 		$trans = new SipTransaction();

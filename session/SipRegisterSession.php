@@ -32,7 +32,6 @@ class SipRegisterSession extends SipSession
 		
 		$this->call_id = SIP::new_call_id();
 		$this->local_tag = SIP::new_tag();
-		$this->cseq = mt_rand(100, 1000);
 
 		$this->new_transaction(SIP::TRYING, self::$reg_timers);
 	}

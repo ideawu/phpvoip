@@ -31,7 +31,11 @@ abstract class SipBaseCallSession extends SipSession
 			return false;
 		}
 
-		if($msg->code == 481 || $msg->code >= 500){ // Call/Transaction Does Not Exist
+		if($msg->method == 'BYE'){
+			Logger::debug($this->role_name() . " {$this->call_id} close by BYE");
+			$this->onclose($msg);
+			return true;
+		}else if($msg->code == 481 || $msg->code >= 500){ // Call/Transaction Does Not Exist
 			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
 			$this->terminate();
 			return true;
@@ -42,10 +46,6 @@ abstract class SipBaseCallSession extends SipSession
 			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
 			$this->terminate();
 			return true;
-		}else if($msg->method == 'BYE'){
-			Logger::debug($this->role_name() . " {$this->call_id} close by BYE");
-			$this->onclose($msg);
-			return true;
 		}
 	}
 	
@@ -53,6 +53,7 @@ abstract class SipBaseCallSession extends SipSession
 		if($trans->state == SIP::KEEPALIVE){
 			Logger::debug("refresh " . $this->role_name() . " session {$this->call_id}");
 
+			// 某些 PBX 没有检测客户端异常，所以 keepalive 未必有效。
 			$msg = new SipMessage();
 			if(in_array('INFO', $this->remote_allow)){
 				$msg->method = 'INFO';
@@ -63,12 +64,16 @@ abstract class SipBaseCallSession extends SipSession
 			return $msg;
 		}else if($trans->state == SIP::FIN_WAIT){
 			$msg = new SipMessage();
-			$msg->method = 'BYE';
+			if($this->state == SIP::COMPLETED){
+				$msg->method = 'BYE';
+			}else{
+				$msg->method = 'CANCEL';
+			}
 			return $msg;
 		}else if($trans->state == SIP::CLOSE_WAIT){
 			static $i = 0;
 			if($i++%2 == 0){
-				Logger::debug("manually drop outgoing msg");
+				Logger::debug("manually drop outgoing msg 200 BYE");
 				return;
 			}
 			$msg = new SipMessage();
