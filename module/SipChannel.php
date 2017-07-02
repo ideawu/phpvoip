@@ -1,6 +1,6 @@
 <?php
 /*
-SipChannel 将向其它 Server 注册自己。
+SipChannel 将向上级(对局) Server 注册自己。 Channel 是 NAT 网关。
 */
 class SipChannel extends SipModule
 {
