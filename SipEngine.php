@@ -8,14 +8,13 @@ class SipEngine
 	private $modules = array();
 	private $router;
 	
+	private $inited = false;
+	
 	private function __construct(){
 		$this->time = microtime(1);
 		
 		$this->router = new SipRouter();
 		$this->add_module($this->router, INT_MAX); // 路由模块必须放在所有模块的前面
-		
-		$mod = new SipRobotModule();
-		$this->add_module($mod, -1);
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
@@ -24,6 +23,13 @@ class SipEngine
 		$ret->local_ip = $ret->link->local_ip;
 		$ret->local_port = $ret->link->local_port;
 		return $ret;
+	}
+	
+	function init(){
+		$this->inited = true;
+		foreach($this->modules as $index=>$mi){
+			$mi['module']->init();
+		}
 	}
 	
 	function add_module($mod, $weight=0){
@@ -43,6 +49,10 @@ class SipEngine
 	}
 
 	function loop(){
+		if(!$this->inited){
+			throw new Exception('not init');
+		}
+
 		$read = array($this->link->sock);
 		$write = array();
 		$except = array();
@@ -77,22 +87,12 @@ class SipEngine
 		
 		if($msg->method == 'INVITE'){
 			$callee = $this->callin($msg);
-			if(!$callee){
-				Logger::debug("403 Forbidden");
-				// TODO: send error response
-				return;
-			}
-		
 			$caller = $this->callout($msg);
-			if(!$caller){
-				Logger::debug("404 Not Found");
-				// TODO: send error response
-				return;
-			}
-		
 			// 创建路由记录
-			$this->router->add_route($callee, $caller);
-			return true;
+			if($callee && $caller){
+				$this->router->add_route($callee, $caller);
+				return true;
+			}
 		}
 		
 		Logger::debug("drop msg");
@@ -118,6 +118,10 @@ class SipEngine
 				return $sess;
 			}
 		}
+		
+		Logger::debug("403 Forbidden");
+		// TODO: send error response
+		return;
 		return null;
 	}
 	
@@ -130,6 +134,10 @@ class SipEngine
 				return $sess;
 			}
 		}
+
+		Logger::debug("404 Not Found");
+		// TODO: send error response
+		return;
 		return null;
 	}
 	

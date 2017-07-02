@@ -1,4 +1,7 @@
 <?php
+/*
+如果做地址转换，则类似 NAT。如果不做地址转换，则是纯路由器。
+*/
 class SipRouter extends SipModule
 {
 	// 记录 session 间的关系。

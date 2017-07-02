@@ -17,10 +17,8 @@ include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
 include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
 
 include_once(dirname(__FILE__) . '/module/SipRouter.php');
+include_once(dirname(__FILE__) . '/module/SipChannel.php');
 include_once(dirname(__FILE__) . '/module/SipRobotModule.php');
-include_once(dirname(__FILE__) . '/module/SipRegistrarModule.php');
-include_once(dirname(__FILE__) . '/module/SipRegisterModule.php');
-include_once(dirname(__FILE__) . '/module/SipConferenceModule.php');
 
 
 class SIP

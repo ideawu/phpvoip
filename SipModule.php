@@ -18,6 +18,9 @@ abstract class SipModule
 	则创建一个 caller 返回。
 	*/
 	abstract function callout($msg);
+	
+	function init(){
+	}
 
 	function incoming($msg){
 		$sess = $this->find_session_for_msg($msg);
