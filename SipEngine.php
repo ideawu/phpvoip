@@ -87,12 +87,20 @@ class SipEngine
 		
 		if($msg->method == 'INVITE'){
 			$callee = $this->callin($msg);
-			$caller = $this->callout($msg);
-			// 创建路由记录
-			if($callee && $caller){
-				$this->router->add_route($callee, $caller);
-				return true;
+			if(!$callee){
+				return;
 			}
+			
+			// 在此对 $msg 做地址转换
+			
+			$caller = $this->callout($msg);
+			if(!$caller){
+				return;
+			}
+
+			// 创建路由记录
+			$this->router->add_route($callee, $caller);
+			return true;
 		}
 		
 		Logger::debug("drop msg");
