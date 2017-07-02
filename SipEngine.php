@@ -63,63 +63,74 @@ class SipEngine
 		}
 		
 		if($read){
-			$this->proc_recv();
+			$msg = $this->link->recv();
+			$this->proc_recv($msg);
 		}
 		$this->proc_send();
 	}
 	
-	private function proc_recv(){
-		$msg = $this->link->recv();
-		foreach($this->modules as $mi){
-			$module = $mi['module'];
-			$ret = $module->incoming($msg);
-			if($ret === true){
-				return;
-			}
+	private function proc_recv($msg){
+		$ret = $this->incoming($msg);
+		if($ret){
+			return true;
 		}
 		
 		if($msg->method == 'INVITE'){
-			if($this->proc_invite($msg) == true){
+			$callee = $this->callin($msg);
+			if(!$callee){
+				Logger::debug("403 Forbidden");
+				// TODO: send error response
 				return;
 			}
+		
+			$caller = $this->callout($msg);
+			if(!$caller){
+				Logger::debug("404 Not Found");
+				// TODO: send error response
+				return;
+			}
+		
+			// 创建路由记录
+			$this->router->add_route($callee, $caller);
+			return true;
 		}
 		
 		Logger::debug("drop msg");
 	}
 	
-	private function proc_invite($msg){
-		$callee = null;
-		$caller = $null;
+	private function incoming($msg){
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
-			$callee = $module->callin($msg);
-			if($callee){
-				Logger::debug("callin {$callee->call_id}");
-				break;
+			$ret = $module->incoming($msg);
+			if($ret === true){
+				return true;
 			}
 		}
-		if(!$callee){
-			Logger::debug("403 Forbidden");
-			// TODO: send error response
-			return;
-		}
-		
+		return false;
+	}
+	
+	private function callin($msg){
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
-			$caller = $module->callout($msg);
-			if($caller){
-				Logger::debug("callout {$caller->call_id}");
-				break;
+			$sess = $module->callin($msg);
+			if($sess){
+				Logger::debug("callin {$sess->call_id}");
+				return $sess;
 			}
 		}
-		if(!$caller){
-			Logger::debug("404 Not Found");
-			return;
+		return null;
+	}
+	
+	private function callout($msg){
+		foreach($this->modules as $mi){
+			$module = $mi['module'];
+			$sess = $module->callout($msg);
+			if($sess){
+				Logger::debug("callout {$sess->call_id}");
+				return $sess;
+			}
 		}
-		
-		// 创建路由记录
-		$this->router->add_route($callee, $caller);
-		return true;
+		return null;
 	}
 	
 	private $time = 0;
