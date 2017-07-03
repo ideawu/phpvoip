@@ -92,13 +92,14 @@ class SipEngine
 			}
 			
 			// 在此对 $msg 做地址转换
+			$this->router->rewrite($msg);
 			
 			$caller = $this->callout($msg);
 			if(!$caller){
 				return;
 			}
 
-			// 创建路由记录
+			// 创建路由转发记录
 			$this->router->add_route($callee, $caller);
 			return true;
 		}

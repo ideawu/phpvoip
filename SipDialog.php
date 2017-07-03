@@ -31,7 +31,7 @@ class SipDialog
 	public $callee;
 	public $caller;
 	
-	private $sessions = array();
+	public $sessions = array();
 	
 	function __construct($sess1, $sess2){
 		$this->callee = $sess1;
