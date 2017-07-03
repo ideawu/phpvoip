@@ -4,7 +4,7 @@
 */
 class SipRouter extends SipModule
 {
-	// 记录 session 间的关系。
+	// 记录 session 间的关系。mappings?
 	protected $dialogs = array();
 	
 	// 针对 INVITE 消息，如果做地址转换，则直接修改 $msg 对象。

@@ -10,16 +10,8 @@ class SipRegisterSession extends SipSession
 	private $min_expires = 30;
 	private $max_expires = 120;
 	
-	function __construct($username, $password, $remote_ip, $remote_port){
+	function __construct($username, $password, $remote_ip, $remote_port, $domain=null){
 		parent::__construct();
-
-		$ps = explode('@', $username);
-		if(count($ps) > 1){
-			$username = $ps[0];
-			$domain = $ps[1];
-		}else{
-			$domain = $remote_ip;
-		}
 		
 		$this->role = SIP::REGISTER;
 		$this->set_state(SIP::TRYING);
@@ -28,7 +20,7 @@ class SipRegisterSession extends SipSession
 		$this->remote_port = $remote_port;
 		$this->username = $username;
 		$this->password = $password;
-		$this->domain = $domain;
+		$this->domain = $domain? $domain : $this->remote_ip;
 
 		$this->uri = "sip:{$this->domain}";
 		$this->local = "<sip:{$this->username}@{$this->domain}>";

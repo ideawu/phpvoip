@@ -9,14 +9,9 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->role = SIP::CALLEE;
 		$this->set_state(SIP::TRYING);
 
-		$this->uri = $msg->uri;
 		$this->call_id = $msg->call_id;
 		$this->remote_cseq = $msg->cseq;
-		$this->local = $msg->to;
-		$this->remote = $msg->from;
 		$this->remote_tag = $msg->from_tag;
-		$this->contact = $msg->contact;
-		
 		$this->remote_branch = $msg->branch;
 	
 		$new = $this->new_response($this->remote_branch);

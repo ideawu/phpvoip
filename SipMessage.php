@@ -3,18 +3,14 @@ class SipMessage
 {
 	public $src_ip;
 	public $src_port;
-	
 	public $dst_ip;
 	public $dst_port;
 	
-	public $method;
 	public $uri;
 	
+	public $method;
 	public $code;
 	public $reason;
-
-	public $via = null;
-	public $contact = null;
 	
 	public $call_id;
 	public $branch;
@@ -24,7 +20,12 @@ class SipMessage
 	public $to;
 	public $from_tag;
 	public $to_tag;
+	public $from_user;
+	public $to_user;
 	public $content_length = 0;
+
+	public $via = null;
+	public $contact = null;
 	
 	public $expires = null;
 	public $auth;
@@ -175,14 +176,16 @@ class SipMessage
 		$val = trim($ps[1]);
 		// TODO: case insensitive
 		if($key == 'From'){
-			$ret = SIP::parse_address($val);
+			$ret = SIP::parse_contact($val);
 			$this->from = $ret['contact'];
+			$this->from_user = $ret['username'];
 			if(isset($ret['tags']['tag'])){
 				$this->from_tag = $ret['tags']['tag'];
 			}		
 		}else if($key == 'To'){
-			$ret = SIP::parse_address($val);
+			$ret = SIP::parse_contact($val);
 			$this->to = $ret['contact'];
+			$this->to_user = $ret['username'];
 			if(isset($ret['tags']['tag'])){
 				$this->to_tag = $ret['tags']['tag'];
 			}		

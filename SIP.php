@@ -98,33 +98,47 @@ class SIP
 		return self::$tag_prefix . self::token();
 	}
 	
-	static function parse_contact($str){
-		// $addr = substr($kv, 1, strlen($kv) - 2);
-		// $ps = explode('@', $addr, 2);
-		// if(count($ps) == 2){
-		// 	$p_n = $ps[0]; // protocol:username
-		// 	$h_p = $ps[1]; // host:port
-		// 	$ps = explode(':', $p_n);
-		// 	$ret['username'] = $ps[count($ps) - 1];
-		// 	$ps = explode(':', $h_p);
-		// 	$ret['host'] = $ps[0];
-		// 	if(isset($ps[1])){
-		// 		$ret['port'] = $ps[1];
-		// 	}
-		// }
-	}
-
-	// TODO: 解析得更细致
 	static function parse_address($str){
 		$ret = array(
-			'contact' => '',
+			'dispname' => '',
+			'scheme' => '',
+			'username' => null,
+			'domain' => '',
+		);
+		$pos = strpos($str, '<');
+		if(count($pos) !== false){
+			$ret['dispname'] = trim(substr($str, 0, $pos), '" ');
+			$uri = substr($str, $pos);
+		}else{
+			$uri = $str;
+		}
+		$uri = trim($uri, '<>');
+		
+		$ps = preg_split('/[@:]/', $uri);
+		if(count($ps) == 3){
+			$ret['scheme'] = $ps[0];
+			$ret['username'] = $ps[1];
+			$ret['domain'] = $ps[2];
+		}else if(count($ps) == 4){
+			$ret['scheme'] = $ps[0];
+			$ret['username'] = $ps[1];
+			$ret['password'] = $ps[1];
+			$ret['domain'] = $ps[2];
+		}
+		return $ret;
+	}
+
+	static function parse_contact($str){
+		$ret = array(
+			'contact' => '', // 不带属性
 			'tags' => array(),
 		);
 		
-		$attrs = explode(';', $str);
-		$ret['contact'] = $attrs[0];
-		for($i=1; $i<count($attrs); $i++){
-			$p = $attrs[$i];
+		$ps = explode(';', $str);
+		$ret['contact'] = $ps[0];
+		$ret += self::parse_address($ret['contact']);
+		for($i=1; $i<count($ps); $i++){
+			$p = $ps[$i];
 			$kv = explode('=', $p);
 			$ret['tags'][$kv[0]] = isset($kv[1])? $kv[1] : null;
 		}

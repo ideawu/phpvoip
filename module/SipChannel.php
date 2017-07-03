@@ -7,16 +7,29 @@ class SipChannel extends SipModule
 	private $sess;
 	private $username;
 	private $password;
+	private $domain;
 	private $remote_ip;
 	private $remote_port;
 	private $local_ip;
 	private $local_port;
+	private $contact;
 	
-	function __construct($username, $password, $remote_ip, $remote_port){
+	function __construct($user, $password, $remote_ip, $remote_port){
+		$ps = explode('@', $user);
+		if(count($ps) == 2){
+			$username = $ps[0];
+			$domain = $ps[1];
+		}else{
+			$username = $user;
+			$domain = $remote_ip;
+		}
+
 		$this->username = $username;
 		$this->password = $password;
+		$this->domain = $domain;
 		$this->remote_ip = $remote_ip;
 		$this->remote_port = $remote_port;
+		$this->contact = "<sip:{$this->username}@{$this->domain}>";
 	}
 	
 	function init(){
@@ -27,7 +40,7 @@ class SipChannel extends SipModule
 		if($local_ip === '0.0.0.0'){
 			$local_ip = SIP::guess_local_ip($this->remote_ip);
 		}
-		$sess = new SipRegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port);
+		$sess = new SipRegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port, $this->domain);
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
 		$this->add_session($sess);
@@ -40,48 +53,53 @@ class SipChannel extends SipModule
 
 	function callin($msg){
 		$sess = $this->sess;
-		// if not registered return null;
+		if(!$sess->is_state(SIP::COMPLETED)){
+			return null;
+		}
 		
 		if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
-			return;
+			return null;
+		}
+		// TODO: 验证 uri, contact ...
+		if($msg->to_user !== $sess->username){
+			Logger::debug("to_user:{$msg->to_user} != username:{$sess->username}");
+			return null;
 		}
 
 		$call = new SipCalleeSession($msg);
-		$call->local_ip = $sess->local_ip;
-		$call->local_port = $sess->local_port;
-		$call->remote_ip = $sess->remote_ip;
-		$call->remote_port = $sess->remote_port;
+		$call->local_ip = $this->local_ip;
+		$call->local_port = $this->local_port;
+		$call->remote_ip = $this->remote_ip;
+		$call->remote_port = $this->remote_port;
+		$call->uri = $msg->uri;
+		$call->local = $msg->to; // TODO: 可能需要重新生成 local
+		$call->remote = $msg->from;
+		$call->contact = $msg->contact;
 		return $call;
 	}
 
 	function callout($msg){
 		$sess = $this->sess;
-		// if not registered return null;
-
-		$ps1 = explode('@', $msg->to);
-		$ps2 = explode('@', $sess->local);
-		// 只验证 username
-		if($ps1[0] === $ps2[0]){
-			Logger::debug("SipChannel is not UAC, drop msg with to=self");
+		if(!$sess->is_state(SIP::COMPLETED)){
 			return null;
 		}
 
-		$ps1 = explode('@', $msg->from);
-		$ps2 = explode('@', $sess->local);
-		// 只验证 username
-		if($ps1[0] === $ps2[0]){
-			// TODO: 验证 uri, contact ...
-			$caller = new SipCallerSession();
-			$caller->local_ip = $this->local_ip;
-			$caller->local_port = $this->local_port;
-			$caller->remote_ip = $this->remote_ip;
-			$caller->remote_port = $this->remote_port;
-			$caller->uri = $msg->uri;
-			$caller->local = $msg->from;
-			$caller->remote = $msg->to;
-			// 如果要保留原呼叫人，则设为 $msg->contact
-			$caller->contact = $sess->contact;
-			return $caller;
+		if($msg->to_user === $sess->username){
+			Logger::debug("SipChannel is not UAC, drop msg with to=self");
+			return null;
+		}
+		// TODO: 验证 uri, contact ...
+		if($msg->from_user == $sess->username){
+			$call = new SipCallerSession();
+			$call->local_ip = $this->local_ip;
+			$call->local_port = $this->local_port;
+			$call->remote_ip = $this->remote_ip;
+			$call->remote_port = $this->remote_port;
+			$call->uri = $msg->uri;
+			$call->local = $msg->from; // TODO: 可能需要重新生成 local
+			$call->remote = $msg->to;
+			$call->contact = $this->contact; // 如果要保留原呼叫人，则设为 $msg->contact
+			return $call;
 		}
 		
 		return null;
