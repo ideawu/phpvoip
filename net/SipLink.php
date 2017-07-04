@@ -13,10 +13,17 @@ class SipLink
 		$ret->sock = $link->sock;
 		$ret->local_ip = $link->local_ip;
 		$ret->local_port = $link->local_port;
+		$ret->udp->set_nonblock();
 		return $ret;
 	}
 	
 	function send($msg){
+		// 模拟丢包
+		// static $i = 0;
+		// if($i++%2 == 0){
+		// 	echo "drop OK for BYE\n";
+		// 	return null;
+		// }
 		if(!$msg->src_ip || $msg->src_ip === '0.0.0.0'){
 			if($this->local_ip === '0.0.0.0'){
 				$msg->src_ip = SIP::guess_local_ip($msg->dst_ip);
@@ -37,11 +44,14 @@ class SipLink
 	
 	function recv(){
 		$buf = $this->udp->recvfrom($ip, $port);
+		if(!$buf){
+			return null;
+		}
 		// 模拟丢包
 		// static $i = 0;
 		// if($i++%2 == 0){
 		// 	echo "drop OK for BYE\n";
-		// 	return;
+		// 	return null;
 		// }
 			
 		$msg = new SipMessage();

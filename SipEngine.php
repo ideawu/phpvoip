@@ -58,7 +58,7 @@ class SipEngine
 		$except = array();
 	
 		$ret = @socket_select($read, $write, $except, 0, 20*1000);
-		// 如下代码实现引擎慢速响应
+		// TESTING: 如下代码实现引擎慢速响应
 		$pause = 0.3;
 		static $stime = 0;
 		$ts = microtime(1) - $stime;
@@ -73,38 +73,20 @@ class SipEngine
 		}
 		
 		if($read){
-			$msg = $this->link->recv();
-			$this->proc_recv($msg);
+			$this->proc_recv();
 		}
+		
 		$this->proc_send();
 	}
 	
-	private function proc_recv($msg){
-		$ret = $this->incoming($msg);
-		if($ret){
-			return true;
-		}
-		
-		if($msg->method == 'INVITE'){
-			$callee = $this->callin($msg);
-			if(!$callee){
-				return;
+	private function proc_recv(){
+		while(1){
+			$msg = $this->link->recv();
+			if(!$msg){
+				break;
 			}
-			
-			// 在此对 $msg 做地址转换
-			$this->router->rewrite($msg);
-			
-			$caller = $this->callout($msg);
-			if(!$caller){
-				return;
-			}
-
-			// 创建路由转发记录
-			$this->router->add_route($callee, $caller);
-			return true;
+			$this->incoming($msg);
 		}
-		
-		Logger::debug("drop msg");
 	}
 	
 	private function incoming($msg){
@@ -115,6 +97,27 @@ class SipEngine
 				return true;
 			}
 		}
+
+		if($msg->method == 'INVITE'){
+			$callee = $this->callin($msg);
+			if(!$callee){
+				return false;
+			}
+			
+			// 在此对 $msg 做地址转换
+			$this->router->rewrite($msg);
+			
+			$caller = $this->callout($msg);
+			if(!$caller){
+				return false;
+			}
+
+			// 创建路由转发记录
+			$this->router->add_route($callee, $caller);
+			return true;
+		}
+		
+		Logger::debug("drop msg");
 		return false;
 	}
 	
@@ -130,7 +133,6 @@ class SipEngine
 		
 		Logger::debug("403 Forbidden");
 		// TODO: send error response
-		return;
 		return null;
 	}
 	
