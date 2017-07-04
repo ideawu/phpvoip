@@ -40,7 +40,7 @@ class SipMessage
 				$cmd .= ' OK';
 			}
 		}
-		$ret = sprintf('%-8s %3d %s %s', $cmd, $this->cseq, $this->call_id, $this->branch);
+		$ret = sprintf('%-8s %3d %s=>%s', $cmd, $this->cseq, $this->from->address(), $this->to->address());
 		return $ret;
 	}
 	

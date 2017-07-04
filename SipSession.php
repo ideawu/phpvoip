@@ -72,7 +72,7 @@ abstract class SipSession
 	}
 	
 	function brief(){
-		return $this->role_name() .' '. $this->local->address() .' => '. $this->remote->address();
+		return $this->role_name() .' '. $this->local->address() .'=>'. $this->remote->address();
 	}
 	
 	function complete(){

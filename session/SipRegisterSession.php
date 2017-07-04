@@ -6,9 +6,9 @@ class SipRegisterSession extends SipSession
 	public $domain;
 
 	private $auth;
-	private $expires = 60;
-	private $min_expires = 30;
-	private $max_expires = 120;
+	const MIN_EXPIRES = 60;
+	const MAX_EXPIRES = 120;
+	private $expires = self::MIN_EXPIRES;
 	
 	function __construct($username, $password, $remote_ip, $remote_port, $domain=null){
 		parent::__construct();
@@ -45,7 +45,7 @@ class SipRegisterSession extends SipSession
 					$this->complete();
 				}
 
-				$expires = min($this->max_expires, $this->expires - 5);
+				$expires = min(self::MAX_EXPIRES, $this->expires - 5);
 				Logger::debug("expires: $expires");
 				
 				$this->del_transaction($trans);
@@ -71,7 +71,7 @@ class SipRegisterSession extends SipSession
 				// 423 Interval Too Brief
 				$v = $msg->get_header('Min-Expires');
 				if($v){
-					$this->expires = max($this->min_expires, intval($v));
+					$this->expires = max(self::MIN_EXPIRES, intval($v));
 				}
 				$this->del_transaction($trans);
 				

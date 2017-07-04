@@ -35,7 +35,6 @@ class SIP
 	const RINGING     = 180;
 	const COMPLETED   = 200;
 	const AUTHING     = 401;
-	const NOT_FOUND   = 404;
 
 	// state
 	const CLOSED      = 0;
@@ -58,8 +57,8 @@ class SIP
 			return 'COMPLETED';
 		}else if($state == self::AUTHING){
 			return 'AUTHING';
-		}else if($state == self::NOT_FOUND){
-			return 'NOT_FOUND';
+		}else if($state == self::CLOSED){
+			return 'CLOSED';
 		}else if($state == self::FIN_WAIT){
 			return 'FIN_WAIT';
 		}else if($state == self::CLOSE_WAIT){
