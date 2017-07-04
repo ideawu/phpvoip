@@ -29,7 +29,6 @@ class SipChannel extends SipModule
 		$this->domain = $domain;
 		$this->remote_ip = $remote_ip;
 		$this->remote_port = $remote_port;
-		$this->contact = "<sip:{$this->username}@{$this->domain}>";
 	}
 	
 	function init(){
@@ -40,14 +39,17 @@ class SipChannel extends SipModule
 		if($local_ip === '0.0.0.0'){
 			$local_ip = SIP::guess_local_ip($this->remote_ip);
 		}
+		$this->local_ip = $local_ip;
+		$this->local_port = $local_port;
+		$this->contact = "<sip:{$this->username}@{$this->local_ip}:{$this->local_port}>";
+
 		$sess = new SipRegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port, $this->domain);
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
+		$sess->contact = $this->contact;
 		$this->add_session($sess);
 		
 		$this->sess = $sess;
-		$this->local_ip = $local_ip;
-		$this->local_port = $local_port;
 		// set_callback
 	}
 
