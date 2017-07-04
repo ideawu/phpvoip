@@ -12,13 +12,11 @@ abstract class SipSession
 	public $remote_allow = array();
 
 	public $call_id; // session id
-	public $local_tag;
-	public $remote_tag;
-	public $local_cseq;
-	public $remote_cseq;
 	public $local;
 	public $remote;
 	public $contact;
+	public $local_cseq;
+	public $remote_cseq;
 	
 	public $uri;
 	// 最多存2个。第1个要么处于重传态，要么完成态。第2个要么处于完成态，要么关闭态。
@@ -27,6 +25,8 @@ abstract class SipSession
 	private $callback;
 	
 	function __construct(){
+		$this->local = new SipContact();
+		$this->remote = new SipContact();
 		$this->local_cseq = mt_rand(100, 1000);
 	}
 	
@@ -67,6 +67,14 @@ abstract class SipSession
 		}
 	}
 	
+	function state_text(){
+		return SIP::state_text($this->state);
+	}
+	
+	function brief(){
+		return $this->role_name() .' '. $this->local->address() .' => '. $this->remote->address();
+	}
+	
 	function complete(){
 		if($this->state != SIP::COMPLETED){
 			Logger::debug($this->role_name() . " session {$this->call_id} established");
@@ -98,8 +106,14 @@ abstract class SipSession
 		
 		$trans = new SipTransaction();
 		$trans->branch = SIP::new_branch();
-		$trans->local_tag = $this->local_tag;
-		$trans->remote_tag = $this->remote_tag;
+		if(!$this->local){
+			$bt = debug_backtrace(false);
+			foreach($bt as $b){
+				echo "{$b['file']} {$b['line']}\n";
+			}
+		}
+		$trans->local_tag = $this->local->tag();
+		$trans->remote_tag = $this->remote->tag();
 		$trans->cseq = $this->local_cseq;
 		$this->add_transaction($trans);
 		return $trans;
@@ -108,8 +122,8 @@ abstract class SipSession
 	function new_response($branch){
 		$trans = new SipTransaction();
 		$trans->branch = $branch; //
-		$trans->local_tag = $this->local_tag;
-		$trans->remote_tag = $this->remote_tag;
+		$trans->local_tag = $this->local->tag();
+		$trans->remote_tag = $this->remote->tag();
 		$trans->cseq = $this->remote_cseq;
 		$this->add_transaction($trans);
 		return $trans;

@@ -10,9 +10,9 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->set_state(SIP::TRYING);
 
 		$this->call_id = $msg->call_id;
-		$this->remote_cseq = $msg->cseq;
-		$this->remote_tag = $msg->from_tag;
+		$this->remote->set_tag($msg->from->tag());
 		$this->remote_branch = $msg->branch;
+		$this->remote_cseq = $msg->cseq;
 	
 		$new = $this->new_response($this->remote_branch);
 		$new->trying();
@@ -33,7 +33,7 @@ class SipCalleeSession extends SipBaseCallSession
 	}
 	
 	function ringing(){
-		// 在这里也可以生成 local_tag?
+		// 在这里也可以生成 local.tag?
 		$this->set_state(SIP::RINGING);
 		
 		$this->transactions = array();
@@ -42,8 +42,8 @@ class SipCalleeSession extends SipBaseCallSession
 	}
 	
 	function completing(){
-		$this->local_tag = SIP::new_tag();
 		$this->set_state(SIP::COMPLETING);
+		$this->local->set_tag(SIP::new_tag());
 		
 		$this->transactions = array();
 		$new = $this->new_response($this->remote_branch);
@@ -64,7 +64,6 @@ class SipCalleeSession extends SipBaseCallSession
 				
 				$new = $this->new_request();
 				$new->branch = $trans->branch; // 
-				$new->remote_tag = $this->remote_tag;
 				$new->keepalive();
 				
 				return true;

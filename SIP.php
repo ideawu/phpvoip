@@ -8,6 +8,7 @@ include_once(dirname(__FILE__) . '/SipMessage.php');
 include_once(dirname(__FILE__) . '/SipSession.php');
 include_once(dirname(__FILE__) . '/SipTransaction.php');
 include_once(dirname(__FILE__) . '/SipDialog.php');
+include_once(dirname(__FILE__) . '/SipContact.php');
 
 include_once(dirname(__FILE__) . '/session/SipNullSession.php');
 include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
@@ -97,54 +98,7 @@ class SIP
 	static function new_tag(){
 		return self::$tag_prefix . self::token();
 	}
-	
-	static function parse_address($str){
-		$ret = array(
-			'dispname' => '',
-			'scheme' => '',
-			'username' => null,
-			'domain' => '',
-		);
-		$pos = strpos($str, '<');
-		if(count($pos) !== false){
-			$ret['dispname'] = trim(substr($str, 0, $pos), '" ');
-			$uri = substr($str, $pos);
-		}else{
-			$uri = $str;
-		}
-		$uri = trim($uri, '<>');
-		
-		$ps = preg_split('/[@:]/', $uri);
-		if(count($ps) == 3){
-			$ret['scheme'] = $ps[0];
-			$ret['username'] = $ps[1];
-			$ret['domain'] = $ps[2];
-		}else if(count($ps) == 4){
-			$ret['scheme'] = $ps[0];
-			$ret['username'] = $ps[1];
-			$ret['password'] = $ps[1];
-			$ret['domain'] = $ps[2];
-		}
-		return $ret;
-	}
 
-	static function parse_contact($str){
-		$ret = array(
-			'contact' => '', // 不带属性
-			'tags' => array(),
-		);
-		
-		$ps = explode(';', $str);
-		$ret['contact'] = $ps[0];
-		$ret += self::parse_address($ret['contact']);
-		for($i=1; $i<count($ps); $i++){
-			$p = $ps[$i];
-			$kv = explode('=', $p);
-			$ret['tags'][$kv[0]] = isset($kv[1])? $kv[1] : null;
-		}
-		return $ret;
-	}
-	
 	static function parse_www_auth($str){
 		$ret = array(
 			'scheme' => '',

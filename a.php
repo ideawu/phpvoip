@@ -10,10 +10,10 @@ $msg->method = 'INFO';
 $msg->method = 'OPTIONS';
 $msg->uri = 'sip:bob.com';
 $msg->branch = SIP::new_branch();
-$msg->from = '<sip:2001@bob.com>';
-$msg->from_tag = mt_rand();
-$msg->to = '<sip:2001@bob.com>';
-$msg->to_tag = mt_rand();
+$msg->from = new SipContact('2001', 'bob.com');
+$msg->to = new SipContact('2001', 'bob.com');
+$msg->from->set_tag(mt_rand());
+$msg->to->set_tag(mt_rand());
 
 $msg->contact = $msg->from;
 $msg->call_id = 'call_1';

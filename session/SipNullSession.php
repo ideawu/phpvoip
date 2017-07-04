@@ -5,6 +5,9 @@ class SipNullSession extends SipSession
 		$this->role = SIP::NONE;
 		$this->set_state(SIP::TRYING);
 		
+		$this->local = new SipContact();
+		$this->remote = new SipContact();
+		
 		$new = $this->new_request();
 		$new->trying();
 		$new->timers = array(1, 1, 1, 1, 1, 1);

@@ -23,12 +23,12 @@ class SipRegisterSession extends SipSession
 		$this->domain = $domain? $domain : $this->remote_ip;
 
 		$this->uri = "sip:{$this->domain}";
-		$this->local = "<sip:{$this->username}@{$this->domain}>";
-		$this->remote = $this->local;
-		$this->contact = $this->local;
+		$this->local = new SipContact($this->username, $this->domain);
+		$this->remote = new SipContact($this->username, $this->domain);
+		$this->contact = new SipContact($this->username, $this->domain);
 		
 		$this->call_id = SIP::new_call_id();
-		$this->local_tag = SIP::new_tag();
+		$this->local->set_tag(SIP::new_tag());
 
 		$new = $this->new_request();
 		$new->register();
@@ -39,9 +39,9 @@ class SipRegisterSession extends SipSession
 			if($msg->code == 200){
 				$this->auth = null;
 				if($this->is_state(SIP::COMPLETED)){
-					Logger::debug("REGISTER {$this->local} renewed");
+					Logger::debug("REGISTER {$this->local->username} renewed");
 				}else{
-					Logger::debug("REGISTER {$this->local} registered");
+					Logger::debug("REGISTER {$this->local->username} registered");
 					$this->complete();
 				}
 
@@ -61,10 +61,10 @@ class SipRegisterSession extends SipSession
 				$new = $this->new_request();
 				$new->register();
 				if($trans->state == SIP::AUTHING){
-					Logger::error("{$this->local} auth failed");
+					Logger::error("{$this->local->username} auth failed");
 					$new->wait(3);
 				}else{
-					Logger::debug("{$this->local} auth");
+					Logger::debug("{$this->local->username} auth");
 					$new->state = SIP::AUTHING;
 				}
 			}else if($msg->code == 423){

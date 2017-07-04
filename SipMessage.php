@@ -16,12 +16,8 @@ class SipMessage
 	public $branch;
 	public $cseq;
 	public $cseq_method;
-	public $from;
-	public $to;
-	public $from_tag;
-	public $to_tag;
-	public $from_user;
-	public $to_user;
+	public $from; // Contact
+	public $to; // Contact
 	public $content_length = 0;
 
 	public $via = null;
@@ -86,10 +82,11 @@ class SipMessage
 		}else{
 			$headers[] = "SIP/2.0 {$this->code} {$this->reason}";
 		}
-		$tag = $this->from_tag? ";tag={$this->from_tag}" : '';
-		$headers[] = "From: {$this->from}{$tag}";
-		$tag = $this->to_tag? ";tag={$this->to_tag}" : '';
-		$headers[] = "To: {$this->to}{$tag}";
+		$headers[] = "From: " . $this->from->encode();
+		$headers[] = "To: " . $this->to->encode();
+		if($this->contact){
+			$headers[] = "Contact: " . $this->contact->encode();
+		}
 		$headers[] = "Call-ID: {$this->call_id}";
 		$headers[] = "CSeq: {$this->cseq} " . ($this->cseq_method? $this->cseq_method : $this->method);
 		
@@ -98,7 +95,6 @@ class SipMessage
 		}else{
 			$headers[] = "Via: SIP/2.0/UDP {$this->src_ip}:{$this->src_port};rport;branch={$this->branch}";
 		}
-		$headers[] = "Contact: {$this->contact}";
 
 		foreach($this->headers as $v){
 			$headers[] = "{$v[0]}: {$v[1]}";
@@ -176,19 +172,13 @@ class SipMessage
 		$val = trim($ps[1]);
 		// TODO: case insensitive
 		if($key == 'From'){
-			$ret = SIP::parse_contact($val);
-			$this->from = $ret['contact'];
-			$this->from_user = $ret['username'];
-			if(isset($ret['tags']['tag'])){
-				$this->from_tag = $ret['tags']['tag'];
-			}		
+			$this->from = SipContact::from_str($val);
 		}else if($key == 'To'){
-			$ret = SIP::parse_contact($val);
-			$this->to = $ret['contact'];
-			$this->to_user = $ret['username'];
-			if(isset($ret['tags']['tag'])){
-				$this->to_tag = $ret['tags']['tag'];
-			}		
+			$this->to = SipContact::from_str($val);
+		}else if($key == 'Contact'){
+			// TODO: support contact list
+			$ps = explode(',', $val);
+			$this->contact = SipContact::from_str($ps[0]);
 		}else if($key == 'Call-ID'){
 			$this->call_id = $val;
 		}else if($key == 'CSeq'){
@@ -203,10 +193,6 @@ class SipMessage
 				$this->branch = $ret['tags']['branch'];
 			}
 			$this->via = $val;
-		}else if($key == 'Contact'){
-			// TODO: support contact list
-			$ps = explode(',', $val);
-			$this->contact = trim($ps[0]);
 		}else if($key == 'Expires'){
 			$this->expires = intval($val);
 		}else if($key == 'Content-Length'){

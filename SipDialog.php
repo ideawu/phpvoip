@@ -42,11 +42,11 @@ class SipDialog
 	
 	function add_session($sess){
 		$this->sessions[] = $sess;
-		$sess->set_callback(array($this, 'sess_state_callback'));
+		$sess->set_callback(array($this, 'sess_callback'));
 	}
 	
-	function sess_state_callback($sess){
-		Logger::debug("sess state = " . $sess->state());
+	function sess_callback($sess){
+		Logger::debug($sess->brief() . " state = " . $sess->state_text());
 		if($sess === $this->caller){
 			if($sess->is_state(SIP::RINGING)){
 				Logger::debug("caller ringing, callee ringing");

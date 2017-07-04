@@ -123,7 +123,7 @@ class SipEngine
 			$module = $mi['module'];
 			$sess = $module->callin($msg);
 			if($sess){
-				Logger::debug("callin {$sess->call_id}");
+				Logger::debug("callin " . $sess->brief());
 				return $sess;
 			}
 		}
@@ -139,7 +139,7 @@ class SipEngine
 			$module = $mi['module'];
 			$sess = $module->callout($msg);
 			if($sess){
-				Logger::debug("callout {$sess->call_id}");
+				Logger::debug("callout " . $sess->brief());
 				return $sess;
 			}
 		}

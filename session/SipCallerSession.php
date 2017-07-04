@@ -8,7 +8,7 @@ class SipCallerSession extends SipBaseCallSession
 		$this->set_state(SIP::CALLING);
 		
 		$this->call_id = SIP::new_call_id();
-		$this->local_tag = SIP::new_tag();
+		$this->local->set_tag(SIP::new_tag());
 		
 		$new = $this->new_request();
 		$new->calling();
@@ -35,7 +35,6 @@ class SipCallerSession extends SipBaseCallSession
 
 				$new = $this->new_request();
 				$new->branch = $trans->branch;
-				$new->remote_tag = $this->remote_tag;
 				$new->keepalive();
 
 				return true;

@@ -27,7 +27,6 @@ abstract class SipModule
 		if(!$sess){
 			return false;
 		}
-
 		if($msg->is_request() && !$sess->remote_cseq){
 			Logger::debug("init remote_cseq={$msg->cseq}");
 			$sess->remote_cseq = $msg->cseq;
@@ -36,21 +35,25 @@ abstract class SipModule
 			$sess->remote_cseq ++;
 			Logger::debug("set remote_cseq {$msg->cseq}");
 		}
-		if($msg->code >= 180 && !$sess->remote_tag && $msg->to_tag){
-			Logger::debug("set remote_tag={$msg->to_tag}");
-			$sess->remote_tag = $msg->to_tag;
+		if($msg->code >= 180 && !$sess->remote->tag() && $msg->to->tag()){
+			Logger::debug("set remote.tag=" . $msg->to->tag());
+			$sess->remote->set_tag($msg->to->tag());
 		}
-		
-		$trans = $this->find_transaction_for_msg($msg, $sess);
-		if(!$trans){
-			return false;
-		}
-		
-		// TODO:
 		if(!$sess->remote_allow){
 			$str = $msg->get_header('Allow');
 			if($str){
 				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
+			}
+		}
+
+		$trans = $this->find_transaction_for_msg($msg, $sess);
+		if(!$trans){
+			if($msg->is_request()){
+				Logger::debug("create new response");
+				$trans = $sess->new_response($msg->branch);
+				$trans->trying();
+			}else{
+				return false;
 			}
 		}
 
@@ -75,34 +78,30 @@ abstract class SipModule
 			}
 			
 			if($msg->is_request()){
-				if($msg->from_tag !== $sess->remote_tag){
-					Logger::debug("from_tag: {$msg->from_tag} != remote_tag: {$sess->remote_tag}");
+				if(!$msg->from->equals($sess->remote)){
+					Logger::debug("from: " . $msg->from->encode() . " != remote: " . $sess->remote->encode());
 					continue;
 				}
-			
-				// TODO: 验证 address 时，不能简单的文本比较，要解析之后比较
-				if($msg->from !== $sess->remote){
-					Logger::debug("from: {$msg->from} != remote: {$sess->remote}");
-					continue;
-				}
-				if($msg->to !== $sess->local){
-					Logger::debug("to: {$msg->to} != local: {$sess->local}");
+				if(!$msg->to->equals($sess->local)){
+					Logger::debug("to: " . $msg->to->encode() . " != local: " . $sess->local->encode());
 					continue;
 				}
 			}else{
-				if($msg->from_tag !== $sess->local_tag){
-					Logger::debug("from_tag: {$msg->from_tag} != local_tag: {$sess->local_tag}");
+				if(!$msg->from->equals($sess->local)){
+					Logger::debug("from: " . $msg->from->encode() . " != local: " . $sess->local->encode());
 					continue;
 				}
-	
-				// TODO: 验证 address 时，不能简单的文本比较，要解析之后比较
-				if($msg->from !== $sess->local){
-					Logger::debug("from: {$msg->from} != local: {$sess->local}");
+				// 发起会话或注册时，request.to.tag 为空，需要设为 response.to.tag
+				// 若此种情况，只验证 username，不验证 tag
+				if($msg->to->username !== $sess->remote->username){
+					Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
 					continue;
 				}
-				if($msg->to !== $sess->remote){
-					Logger::debug("to: {$msg->to} != remote: {$sess->remote}");
-					continue;
+				if($sess->remote->tag()){
+					if($msg->to->tag() !== $sess->remote->tag()){
+						Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
+						continue;
+					}
 				}
 			}
 			
@@ -119,8 +118,8 @@ abstract class SipModule
 					continue;
 				}
 				if($trans->local_tag){
-					if($msg->to_tag !== $trans->local_tag){
-						Logger::debug("to_tag: {$msg->to_tag} != local_tag: {$trans->local_tag}");
+					if($msg->to->tag() !== $trans->local_tag){
+						Logger::debug("to.tag: ". $msg->to->tag() . " != local_tag: {$trans->local_tag}");
 						continue;
 					}
 				}
@@ -130,8 +129,8 @@ abstract class SipModule
 					continue;
 				}
 				if($trans->remote_tag){
-					if($msg->to_tag !== $trans->remote_tag){
-						Logger::debug("to_tag: {$msg->to_tag} != remote_tag: {$trans->remote_tag}");
+					if($msg->to->tag() !== $trans->remote_tag){
+						Logger::debug("to.tag: " . $msg->to->tag() . " != remote_tag: {$trans->remote_tag}");
 						continue;
 					}
 				}
@@ -141,13 +140,6 @@ abstract class SipModule
 				}
 			}
 			return $trans;
-		}
-		
-		if($msg->is_request()){
-			Logger::debug("create new response");
-			$new = $sess->new_response($msg->branch);
-			$new->trying();
-			return $new;
 		}
 		return false;
 	}
@@ -216,26 +208,22 @@ abstract class SipModule
 		$msg->cseq = $trans->cseq;
 		if($msg->is_request()){
 			$msg->from = $sess->local;
-			$msg->from_tag = $trans->local_tag;
 			$msg->to = $sess->remote;
-			$msg->to_tag = $trans->remote_tag;
 		}else{
 			$msg->from = $sess->remote;
-			$msg->from_tag = $trans->remote_tag;
 			$msg->to = $sess->local;
-			$msg->to_tag = $trans->local_tag;
 		}
 		$msg->contact = $sess->contact;
 	}
 	
 	function add_session($sess){
-		Logger::debug("NEW session " . $sess->role_name() . ", {$sess->local} => {$sess->remote}");
+		Logger::debug("NEW session " . $sess->brief());
 		$sess->module = $this;
 		$this->sessions[] = $sess;
 	}
 
 	function del_session($sess){
-		Logger::debug("DEL session " . $sess->role_name() . ", {$sess->local} => {$sess->remote}");
+		Logger::debug("DEL session " . $sess->brief());
 		foreach($this->sessions as $index=>$tmp){
 			if($tmp !== $sess){
 				continue;
@@ -251,6 +239,6 @@ abstract class SipModule
 	}
 	
 	function complete_session($sess){
-		Logger::debug("UP session " . $sess->role_name() . ", {$sess->local} => {$sess->remote}");
+		Logger::debug("COMPLETE session " . $sess->brief());
 	}
 }
