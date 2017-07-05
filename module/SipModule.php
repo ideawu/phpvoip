@@ -3,6 +3,7 @@ abstract class SipModule
 {
 	// 指向引擎
 	public $engine;
+	public $domain;
 	
 	// session 存储在 sessions 列表中。
 	protected $sessions = array();
@@ -20,6 +21,9 @@ abstract class SipModule
 	abstract function callout($msg);
 	
 	function init(){
+		if(!$this->domain){
+			$this->domain = $this->engine->local_ip;
+		}
 	}
 
 	function incoming($msg){
@@ -209,8 +213,6 @@ abstract class SipModule
 
 		$msg->uri = $sess->uri;
 		$msg->call_id = $sess->call_id;
-		$msg->branch = $trans->branch;
-		$msg->cseq = $trans->cseq;
 		if($msg->is_request()){
 			$msg->from = $sess->local;
 			$msg->to = $sess->remote;
@@ -219,16 +221,18 @@ abstract class SipModule
 			$msg->to = $sess->local;
 		}
 		$msg->contact = $sess->contact;
+		$msg->branch = $trans->branch;
+		$msg->cseq = $trans->cseq;
 	}
 	
 	function add_session($sess){
-		Logger::debug("NEW session " . $sess->brief());
+		Logger::debug("NEW " . $sess->brief());
 		$sess->module = $this;
 		$this->sessions[] = $sess;
 	}
 
 	function del_session($sess){
-		Logger::debug("DEL session " . $sess->brief());
+		Logger::debug("DEL " . $sess->brief());
 		foreach($this->sessions as $index=>$tmp){
 			if($tmp !== $sess){
 				continue;
@@ -244,6 +248,6 @@ abstract class SipModule
 	}
 	
 	function complete_session($sess){
-		Logger::debug("COMPLETE session " . $sess->brief());
+		Logger::debug("COMPLETE " . $sess->brief());
 	}
 }

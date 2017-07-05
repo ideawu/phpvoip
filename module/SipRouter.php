@@ -16,19 +16,16 @@ class SipRouter extends SipModule
 			$f2 = '2005';
 			$t2 = '1001';
 			Logger::debug("rewrite {$f1}->{$t1} => {$f2}->{$t2}");
-		
-			$local_ip = $msg->dst_ip;
-			$local_port = $msg->dst_port;
 			
 			$msg = new SipMessage();
 			$msg->method = 'INVITE';
 			$msg->uri = "sip:{$t2}@{$local_ip}";
-			$msg->from = new SipContact($f2, $local_ip);
+			$msg->from = new SipContact($f2, $this->domain);
 			$msg->from->set_tag(SIP::new_tag());
-			$msg->to = new SipContact($t2, $local_ip);
+			$msg->to = new SipContact($t2, $this->domain);
 			$msg->call_id = SIP::new_call_id();
 			$msg->cseq = SIP::new_cseq();
-			$msg->contact = new SipContact($f2, $local_ip);
+			$msg->contact = new SipContact($f2, $this->domain);
 			$msg->branch = SIP::new_branch();
 			return $msg;
 		}

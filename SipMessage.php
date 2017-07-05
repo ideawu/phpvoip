@@ -84,9 +84,6 @@ class SipMessage
 		}
 		$headers[] = "From: " . $this->from->encode();
 		$headers[] = "To: " . $this->to->encode();
-		if($this->contact){
-			$headers[] = "Contact: " . $this->contact->encode();
-		}
 		$headers[] = "Call-ID: {$this->call_id}";
 		$headers[] = "CSeq: {$this->cseq} " . ($this->cseq_method? $this->cseq_method : $this->method);
 		
@@ -94,6 +91,9 @@ class SipMessage
 			$headers[] = "Via: {$this->via}";
 		}else{
 			$headers[] = "Via: SIP/2.0/UDP {$this->src_ip}:{$this->src_port};rport;branch={$this->branch}";
+		}
+		if($this->contact){
+			$headers[] = "Contact: " . $this->contact->encode();
 		}
 
 		foreach($this->headers as $v){

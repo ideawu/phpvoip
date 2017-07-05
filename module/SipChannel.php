@@ -7,7 +7,6 @@ class SipChannel extends SipModule
 	private $sess;
 	private $username;
 	private $password;
-	private $domain;
 	private $remote_ip;
 	private $remote_port;
 	private $local_ip;
@@ -41,12 +40,11 @@ class SipChannel extends SipModule
 		}
 		$this->local_ip = $local_ip;
 		$this->local_port = $local_port;
-		$this->contact = new SipContact($this->username, "{$this->local_ip}:{$this->local_port}");
+		$this->contact = new SipContact($this->username, "{$this->domain}");
 
 		$sess = new SipRegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port, $this->domain);
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
-		$sess->contact = clone $this->contact;
 		$this->add_session($sess);
 		
 		$this->sess = $sess;
@@ -56,7 +54,6 @@ class SipChannel extends SipModule
 	function sess_callback($sess){
 		if($sess->is_state(SIP::COMPLETED)){
 			Logger::debug("channel connected, " . $sess->contact->encode());
-			$this->contact = clone $sess->contact;
 		}
 	}
 
@@ -80,6 +77,7 @@ class SipChannel extends SipModule
 		$call->local_port = $this->local_port;
 		$call->remote_ip = $this->remote_ip;
 		$call->remote_port = $this->remote_port;
+		// TODO: 可能需要修改地址中的 domain
 		$call->uri = $msg->uri;
 		$call->local = clone $msg->to; // TODO: 可能需要重新生成 local
 		$call->remote = clone $msg->from;

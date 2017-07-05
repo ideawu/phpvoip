@@ -24,17 +24,6 @@ class SipLink
 		// 	echo "drop OK for BYE\n";
 		// 	return null;
 		// }
-		if(!$msg->src_ip || $msg->src_ip === '0.0.0.0'){
-			if($this->local_ip === '0.0.0.0'){
-				$msg->src_ip = SIP::guess_local_ip($msg->dst_ip);
-				Logger::info("Guest local ip {$msg->src_ip} to send to {$msg->dst_ip}");
-			}else{
-				$msg->src_ip = $this->local_ip;
-			}
-		}
-		if(!$msg->src_port){
-			$msg->src_port = $this->local_port;
-		}
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
@@ -58,14 +47,14 @@ class SipLink
 		$msg->src_ip = $ip;
 		$msg->src_port = $port;
 		
-		// TODO:
-		if($this->local_ip === '0.0.0.0'){
-			$msg->dst_ip = SIP::guess_local_ip($msg->src_ip);
-			Logger::info("Guest local ip {$msg->dst_ip} for recvfrom {$msg->src_ip}");
-		}else{
-			$msg->dst_ip = $this->local_ip;
-		}
-		$msg->dst_port = $this->local_port;
+		// // TODO:
+		// if($this->local_ip === '0.0.0.0'){
+		// 	$msg->dst_ip = SIP::guess_local_ip($msg->src_ip);
+		// 	Logger::info("Guest local ip {$msg->dst_ip} for recvfrom {$msg->src_ip}");
+		// }else{
+		// 	$msg->dst_ip = $this->local_ip;
+		// }
+		// $msg->dst_port = $this->local_port;
 
 		if($msg->decode($buf) <= 0){
 			Logger::error("bad SIP packet");

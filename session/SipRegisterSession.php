@@ -38,15 +38,13 @@ class SipRegisterSession extends SipSession
 		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
 			if($msg->code == 200){
 				$this->auth = null;
+				$expires = min(self::MAX_EXPIRES, $this->expires - 5);
 				if($this->is_state(SIP::COMPLETED)){
-					Logger::debug("REGISTER {$this->local->username} renewed");
+					Logger::debug("REGISTER " .$this->local->address(). " renewed, expires: $expires");
 				}else{
-					Logger::debug("REGISTER {$this->local->username} registered");
+					Logger::debug("REGISTER " .$this->local->address(). " registered, expires: $expires");
 					$this->complete();
 				}
-
-				$expires = min(self::MAX_EXPIRES, $this->expires - 5);
-				Logger::debug("expires: $expires");
 				
 				$this->del_transaction($trans);
 				
@@ -64,7 +62,7 @@ class SipRegisterSession extends SipSession
 					Logger::error("{$this->local->username} auth failed");
 					$new->wait(3);
 				}else{
-					Logger::debug("{$this->local->username} auth");
+					#Logger::debug("{$this->local->username} auth");
 					$new->state = SIP::AUTHING;
 				}
 			}else if($msg->code == 423){
