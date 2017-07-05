@@ -88,19 +88,16 @@ class SipCalleeSession extends SipBaseCallSession
 		if($trans->state == SIP::TRYING){
 			$msg = new SipMessage();
 			$msg->code = 100;
-			$msg->reason = 'Trying';
 			$msg->cseq_method = 'INVITE';
 			return $msg;
 		}else if($trans->state == SIP::RINGING){
 			$msg = new SipMessage();
 			$msg->code = 180;
-			$msg->reason = 'Ringing';
 			$msg->cseq_method = 'INVITE';
 			return $msg;
 		}else if($trans->state == SIP::COMPLETING){
 			$msg = new SipMessage();
 			$msg->code = 200;
-			$msg->reason = 'OK';
 			$msg->cseq_method = 'INVITE';
 			
 			// TODO: TESTING

@@ -76,6 +76,16 @@ class SipMessage
 	}
 	
 	function encode(){
+		if($this->code > 0 && strlen($this->reason) == 0){
+			if($this->code == 100){
+				$this->reason = 'Trying';
+			}else if($this->code == 180){
+				$this->reason = 'Ringing';
+			}else if($this->code == 200){
+				$this->reason = 'OK';
+			}
+		}
+		
 		$headers = array();
 		if($this->is_request()){
 			$headers[] = "{$this->method} {$this->uri} SIP/2.0";

@@ -84,7 +84,6 @@ abstract class SipBaseCallSession extends SipSession
 		}else if($trans->state == SIP::CLOSE_WAIT){
 			$msg = new SipMessage();
 			$msg->code = 200;
-			$msg->reason = 'OK';
 			if($this->is_state(SIP::COMPLETED)){
 				$msg->cseq_method = 'BYE';
 			}else{
