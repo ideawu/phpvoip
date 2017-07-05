@@ -20,7 +20,7 @@ class SipNullSession extends SipSession
 	private $count = 0;
 
 	function outgoing($trans){
-		if(++$this->count == 3){
+		if(++$this->count == 2){
 			$this->complete();
 			$trans->wait(999);
 		}

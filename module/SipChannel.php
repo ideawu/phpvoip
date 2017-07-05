@@ -79,7 +79,7 @@ class SipChannel extends SipModule
 		$call->remote_port = $this->remote_port;
 		// TODO: 可能需要修改地址中的 domain
 		$call->uri = $msg->uri;
-		$call->local = clone $msg->to; // TODO: 可能需要重新生成 local
+		$call->local = clone $msg->to;
 		$call->remote = clone $msg->from;
 		$call->contact = clone $msg->contact;
 		return $call;
@@ -104,7 +104,8 @@ class SipChannel extends SipModule
 			$call->remote_ip = $this->remote_ip;
 			$call->remote_port = $this->remote_port;
 			$call->uri = $msg->uri;
-			$call->local = clone $msg->from; // TODO: 可能需要重新生成 local
+			// TODO: 可能需要修改地址中的 domain
+			$call->local = clone $msg->from;
 			$call->remote = clone $msg->to;
 			$call->contact = clone $this->contact; // 如果要保留原呼叫人，则设为 $msg->contact
 			return $call;

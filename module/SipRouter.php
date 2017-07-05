@@ -9,12 +9,13 @@ class SipRouter extends SipModule
 	
 	// 针对 INVITE 消息，如果做地址转换，则返回地址转换后的 msg。
 	function rewrite($msg){
+		return;
 		// TESTING: 收到 *->2005 时，转换成 2005->1001
-		if($msg->to->username === '2005'){
+		$f2 = '2005';
+		$t2 = '1001';
+		if($msg->to->username === $f2){
 			$f1 = $msg->from->username;
 			$t1 = $msg->to->username;
-			$f2 = '2005';
-			$t2 = '1001';
 			Logger::debug("rewrite {$f1}->{$t1} => {$f2}->{$t2}");
 			
 			$msg = new SipMessage();
@@ -29,7 +30,27 @@ class SipRouter extends SipModule
 			$msg->branch = SIP::new_branch();
 			return $msg;
 		}
+		
 		// TESTING: 收到 *->221 时，转换成 221->231
+		$f2 = '221';
+		$t2 = '231';
+		if($msg->to->username === $f2){
+			$f1 = $msg->from->username;
+			$t1 = $msg->to->username;
+			Logger::debug("rewrite {$f1}->{$t1} => {$f2}->{$t2}");
+			
+			$msg = new SipMessage();
+			$msg->method = 'INVITE';
+			$msg->uri = "sip:{$t2}@{$local_ip}";
+			$msg->from = new SipContact($f2, $this->domain);
+			$msg->from->set_tag(SIP::new_tag());
+			$msg->to = new SipContact($t2, $this->domain);
+			$msg->call_id = SIP::new_call_id();
+			$msg->cseq = SIP::new_cseq();
+			$msg->contact = new SipContact($f2, $this->domain);
+			$msg->branch = SIP::new_branch();
+			return $msg;
+		}
 	}
 	
 	function callin($msg){

@@ -76,9 +76,9 @@ abstract class SipSession
 	}
 	
 	function complete(){
-		if($this->state != SIP::COMPLETED){
-			Logger::debug($this->brief() . " established");
-		}
+		// if($this->state != SIP::COMPLETED){
+		// 	Logger::debug($this->brief() . " established");
+		// }
 		$this->set_state(SIP::COMPLETED);
 	}
 	
