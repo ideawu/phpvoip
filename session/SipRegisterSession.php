@@ -25,7 +25,6 @@ class SipRegisterSession extends SipSession
 		$this->uri = "sip:{$this->domain}";
 		$this->local = new SipContact($this->username, $this->domain);
 		$this->remote = new SipContact($this->username, $this->domain);
-		$this->contact = new SipContact($this->username, $this->domain);
 		
 		$this->call_id = SIP::new_call_id();
 		$this->local->set_tag(SIP::new_tag());

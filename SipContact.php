@@ -84,16 +84,18 @@ class SipContact
 		}
 		$uri = trim($uri, '<>');
 		
-		$ps = preg_split('/[@:]/', $uri);
-		if(count($ps) == 3){
-			$this->scheme = $ps[0];
-			$this->username = $ps[1];
-			$this->domain = $ps[2];
-		}else if(count($ps) == 4){
-			$this->scheme = $ps[0];
-			$this->username = $ps[1];
-			$this->password = $ps[1];
-			$this->domain = $ps[2];
+		$ts = explode('@', $uri);
+		if(count($ts) == 2){
+			$this->domain = $ts[1]; // 可能包含 port
+			$ps = explode(':', $ts[0]);
+			if(count($ps) == 2){
+				$this->scheme = $ps[0];
+				$this->username = $ps[1];
+			}else if(count($ts) == 3){
+				$this->scheme = $ps[0];
+				$this->username = $ps[1];
+				$this->password = $ps[2];
+			}
 		}
 	}
 }

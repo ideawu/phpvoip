@@ -37,7 +37,7 @@ class SipCalleeSession extends SipBaseCallSession
 	}
 	
 	function ringing(){
-		// 在这里也可以生成 local.tag?
+		// 不能在 100 响应中返回 totag，所以这里不生成 local tag
 		$this->set_state(SIP::RINGING);
 		
 		$this->transactions = array();
@@ -102,6 +102,24 @@ class SipCalleeSession extends SipBaseCallSession
 			$msg->code = 200;
 			$msg->reason = 'OK';
 			$msg->cseq_method = 'INVITE';
+			
+			// TODO: TESTING
+			$msg->add_header('Content-Type', 'application/sdp');
+			$msg->content = <<<TEXT
+v=0
+o=- 1499249814 256447 IN IP4 172.16.10.100
+s=-
+c=IN IP4 172.16.10.100
+t=0 0
+m=audio 10040 RTP/AVP 0 8 101
+a=ptime:20
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-15
+TEXT;
+			$msg->content = trim($msg->content);
+			
 			return $msg;
 		}
 	}

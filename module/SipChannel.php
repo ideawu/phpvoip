@@ -40,11 +40,12 @@ class SipChannel extends SipModule
 		}
 		$this->local_ip = $local_ip;
 		$this->local_port = $local_port;
-		$this->contact = new SipContact($this->username, "{$this->domain}");
+		$this->contact = new SipContact($this->username, "{$this->local_ip}");
 
 		$sess = new SipRegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port, $this->domain);
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
+		$sess->contact = $this->contact;
 		$this->add_session($sess);
 		
 		$this->sess = $sess;
@@ -81,7 +82,7 @@ class SipChannel extends SipModule
 		$call->uri = $msg->uri;
 		$call->local = clone $msg->to;
 		$call->remote = clone $msg->from;
-		$call->contact = clone $msg->contact;
+		$call->contact = clone $this->contact;
 		return $call;
 	}
 

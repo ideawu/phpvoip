@@ -7,8 +7,9 @@ include_once(dirname(__FILE__) . '/SipMessage.php');
 include_once(dirname(__FILE__) . '/SipTransaction.php');
 include_once(dirname(__FILE__) . '/SipDialog.php');
 include_once(dirname(__FILE__) . '/SipContact.php');
+include_once(dirname(__FILE__) . '/SipModule.php');
+include_once(dirname(__FILE__) . '/SipSession.php');
 
-include_once(dirname(__FILE__) . '/session/SipSession.php');
 include_once(dirname(__FILE__) . '/session/SipNullSession.php');
 include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
 // include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
@@ -16,7 +17,6 @@ include_once(dirname(__FILE__) . '/session/SipBaseCallSession.php');
 include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
 include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
 
-include_once(dirname(__FILE__) . '/module/SipModule.php');
 include_once(dirname(__FILE__) . '/module/SipRouter.php');
 include_once(dirname(__FILE__) . '/module/SipChannel.php');
 include_once(dirname(__FILE__) . '/module/SipRobotModule.php');

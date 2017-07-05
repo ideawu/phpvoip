@@ -9,7 +9,6 @@ class SipRouter extends SipModule
 	
 	// 针对 INVITE 消息，如果做地址转换，则返回地址转换后的 msg。
 	function rewrite($msg){
-		return;
 		// TESTING: 收到 *->2005 时，转换成 2005->1001
 		$f2 = '2005';
 		$t2 = '1001';
