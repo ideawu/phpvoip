@@ -37,13 +37,12 @@ class SipCallerSession extends SipBaseCallSession
 				$new = $this->new_request();
 				$new->branch = $trans->branch;
 				$new->keepalive();
-
 				return true;
 			}
 		}else if($trans->state == SIP::COMPLETING){
 			if($msg->code == 200){
 				Logger::debug("duplicated OK, resend ACK");
-				array_unshift($trans->timers, 0);
+				$trans->nowait();
 				return true;
 			}
 		}

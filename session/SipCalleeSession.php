@@ -74,7 +74,7 @@ class SipCalleeSession extends SipBaseCallSession
 				return true;
 			}else if($msg->method == 'INVITE'){
 				Logger::debug("recv duplicated INVITE, resend OK");
-				array_unshift($trans->timers, 0);
+				$trans->nowait();
 				if($msg->content){
 					$this->remote_sdp = $msg->content;
 				}

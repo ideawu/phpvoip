@@ -17,7 +17,7 @@ abstract class SipBaseCallSession extends SipSession
 			}
 			if($trans->state == SIP::CLOSE_WAIT){
 				Logger::debug("recv " . $msg->method . " while CLOSE_WAIT");
-				array_unshift($trans->timers, 0);
+				$trans->nowait();
 				return true;
 			}
 			

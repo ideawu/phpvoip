@@ -80,7 +80,6 @@ class SipEngine
 	}
 	
 	private function proc_recv(){
-		// TODO: 在一轮 net recv 中，如果收到多个相同的报文，应该只保留第一个，忽略到后续的。
 		while(1){
 			$msg = $this->link->recv();
 			if(!$msg){

@@ -23,6 +23,14 @@ class SipTransaction
 	function __construct(){
 	}
 	
+	function nowait(){
+		if($this->timers && $this->timers <= 0.002){
+			return;
+		}else{
+			array_unshift($this->timers, 0);
+		}
+	}
+	
 	function wait($seconds){
 		if($this->timers){
 			$this->timers[0] += $seconds;
