@@ -16,10 +16,10 @@ class SipRouter extends SipModule
 			$f1 = $msg->from->username;
 			$t1 = $msg->to->username;
 			Logger::debug("rewrite {$f1}->{$t1} => {$f2}->{$t2}");
-			
+
 			$msg = new SipMessage();
 			$msg->method = 'INVITE';
-			$msg->uri = "sip:{$t2}@{$local_ip}";
+			$msg->uri = "sip:{$t2}@{$this->domain}";
 			$msg->from = new SipContact($f2, $this->domain);
 			$msg->from->set_tag(SIP::new_tag());
 			$msg->to = new SipContact($t2, $this->domain);
@@ -40,7 +40,7 @@ class SipRouter extends SipModule
 			
 			$msg = new SipMessage();
 			$msg->method = 'INVITE';
-			$msg->uri = "sip:{$t2}@{$local_ip}";
+			$msg->uri = "sip:{$t2}@{$this->domain}";
 			$msg->from = new SipContact($f2, $this->domain);
 			$msg->from->set_tag(SIP::new_tag());
 			$msg->to = new SipContact($t2, $this->domain);

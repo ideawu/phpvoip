@@ -72,7 +72,7 @@ class SipChannel extends SipModule
 			Logger::debug("to.username:{$msg->to->username} != username:{$sess->username}");
 			return null;
 		}
-
+		
 		$call = new SipCalleeSession($msg);
 		$call->local_ip = $this->local_ip;
 		$call->local_port = $this->local_port;

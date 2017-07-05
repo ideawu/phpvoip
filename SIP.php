@@ -31,18 +31,19 @@ class SIP
 	const CALLER      = 3;
 	const CALLEE      = 4;
 
-	const TRYING      = 100;
-	const RINGING     = 180;
-	const COMPLETED   = 200;
-	const AUTHING     = 401;
-
 	// state
 	const CLOSED      = 0;
-	const FIN_WAIT    = 2;  // 主动关闭
-	const CLOSE_WAIT  = 3;  // 被动关闭
+	const CLOSING     = 1;
 	const CALLING     = 5;
-	const KEEPALIVE   = 10; //
-	const COMPLETING  = 11; // 
+	const TRYING      = 100;
+	const RINGING     = 180;
+	const COMPLETING  = 199; // 
+	const COMPLETED   = 200;
+	
+	const KEEPALIVE   = 19; //
+	const FIN_WAIT    = 20;  // 主动关闭
+	const CLOSE_WAIT  = 21;  // 被动关闭
+	const AUTHING     = 401;
 
 	private static $call_id_prefix = 'c';
 	private static $tag_prefix = 't';
@@ -57,8 +58,10 @@ class SIP
 			return 'COMPLETED';
 		}else if($state == self::AUTHING){
 			return 'AUTHING';
-		}else if($state == self::CLOSED){
+		}else if($state == self::CLOSING){
 			return 'CLOSED';
+		}else if($state == self::CLOSED){
+			return 'CLOSING';
 		}else if($state == self::FIN_WAIT){
 			return 'FIN_WAIT';
 		}else if($state == self::CLOSE_WAIT){

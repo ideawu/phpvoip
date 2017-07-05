@@ -99,6 +99,11 @@ class SipEngine
 		}
 
 		if($msg->method == 'INVITE'){
+			if($msg->to->username === $msg->from->username){
+				Logger::info("invalid INVITE, from == to, {$msg->from->username}");
+				return false;
+			}
+
 			$callee = $this->callin($msg);
 			if(!$callee){
 				return false;

@@ -59,11 +59,6 @@ class SipCallerSession extends SipBaseCallSession
 			$msg->method = 'INVITE';
 			return $msg;
 		}else if($trans->state == SIP::COMPLETING){
-			static $i = 0;
-			if($i++%2 == 0){
-				Logger::debug("manually drop outgoing msg ACK");
-				return;
-			}
 			$msg = new SipMessage();
 			$msg->method = 'ACK';
 			return $msg;

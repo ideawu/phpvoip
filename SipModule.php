@@ -185,7 +185,7 @@ abstract class SipModule
 						Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " close transaction gracefully");
 					}else{
 						// transaction timeout
-						Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " transaction timeout");
+						#Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " transaction timeout");
 					}
 				}else{
 					$msg = $sess->outgoing($trans);

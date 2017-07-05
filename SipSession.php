@@ -83,14 +83,24 @@ abstract class SipSession
 	}
 	
 	function close(){
-		// TODO: $this->set_state(SIP::CLOSING);
+		// 主动关闭只执行一次
+		if($this->is_state(SIP::CLOSING)){
+			return;
+		}
+		$this->set_state(SIP::CLOSING);
 		$this->transactions = array();
 		$new = $this->new_request();
 		$new->close();
 	}
 	
 	function onclose($msg){
-		// TODO: $this->set_state(SIP::CLOSING);
+		foreach($this->transactions as $trans){
+			// 如果是在被动关闭，就让现有的关闭流程继续，否则将从主动关闭转为被动关闭
+			if($trans->state == SIP::CLOSE_WAIT){
+				return;
+			}
+		}
+		$this->set_state(SIP::CLOSING);
 		$this->transactions = array();
 		$new = $this->new_response($msg->branch);
 		$new->onclose();

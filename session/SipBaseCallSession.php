@@ -82,11 +82,6 @@ abstract class SipBaseCallSession extends SipSession
 			}
 			return $msg;
 		}else if($trans->state == SIP::CLOSE_WAIT){
-			static $i = 0;
-			if($i++%2 == 0){
-				Logger::debug("manually drop outgoing msg 200 BYE");
-				return;
-			}
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->reason = 'OK';
