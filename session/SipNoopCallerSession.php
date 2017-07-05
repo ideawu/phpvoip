@@ -1,8 +1,8 @@
 <?php
-class SipNullSession extends SipSession
+class SipNoopCallerSession extends SipSession
 {
 	function __construct(){
-		$this->role = SIP::NONE;
+		$this->role = SIP::NOOP;
 		$this->set_state(SIP::TRYING);
 		
 		$this->local = new SipContact();

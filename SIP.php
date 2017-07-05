@@ -4,18 +4,18 @@ include_once(dirname(__FILE__) . '/net/SipLink.php');
 
 include_once(dirname(__FILE__) . '/SipEngine.php');
 include_once(dirname(__FILE__) . '/SipMessage.php');
-include_once(dirname(__FILE__) . '/SipTransaction.php');
 include_once(dirname(__FILE__) . '/SipDialog.php');
 include_once(dirname(__FILE__) . '/SipContact.php');
 include_once(dirname(__FILE__) . '/SipModule.php');
 include_once(dirname(__FILE__) . '/SipSession.php');
 
-include_once(dirname(__FILE__) . '/session/SipNullSession.php');
+include_once(dirname(__FILE__) . '/session/SipTransaction.php');
 include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
 // include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
 include_once(dirname(__FILE__) . '/session/SipBaseCallSession.php');
 include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
 include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
+include_once(dirname(__FILE__) . '/session/SipNoopCallerSession.php');
 
 include_once(dirname(__FILE__) . '/module/SipRouter.php');
 include_once(dirname(__FILE__) . '/module/SipChannel.php');
@@ -25,14 +25,15 @@ include_once(dirname(__FILE__) . '/module/SipRobotModule.php');
 class SIP
 {
 	// role
-	const NONE        = 0;
+	const NOOP        = 0;
 	const REGISTER    = 1;
 	const REGISTRAR   = 2;
 	const CALLER      = 3;
 	const CALLEE      = 4;
 
 	// state
-	const CLOSED      = 0;
+	const NONE        = 0;
+	const CLOSED      = -1;
 	const CLOSING     = 1;
 	const CALLING     = 5;
 	const TRYING      = 100;

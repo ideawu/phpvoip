@@ -29,6 +29,7 @@ class SipCallerSession extends SipBaseCallSession
 		
 		if($trans->state == SIP::CALLING){
 			if($msg->code == 200){
+				$this->remote_sdp = $msg->content;
 				$this->complete();
 
 				$trans->completing();
@@ -57,6 +58,10 @@ class SipCallerSession extends SipBaseCallSession
 		if($trans->state == SIP::CALLING){
 			$msg = new SipMessage();
 			$msg->method = 'INVITE';
+			$msg->add_header('Content-Type', 'application/sdp');
+			if($this->local_sdp){
+				$msg->content = $this->local_sdp;
+			}
 			return $msg;
 		}else if($trans->state == SIP::COMPLETING){
 			$msg = new SipMessage();

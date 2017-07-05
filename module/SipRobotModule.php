@@ -10,7 +10,7 @@ class SipRobotModule extends SipModule
 	}
 	
 	function callout($msg){
-		$sess = new SipNullSession();
+		$sess = new SipNoopCallerSession();
 		return $sess;
 	}
 }

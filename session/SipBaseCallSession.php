@@ -1,6 +1,9 @@
 <?php
 abstract class SipBaseCallSession extends SipSession
 {
+	public $local_sdp;
+	public $remote_sdp;
+	
 	function __construct(){
 		parent::__construct();
 	}

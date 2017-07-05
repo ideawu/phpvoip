@@ -13,6 +13,7 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->remote->set_tag($msg->from->tag());
 		$this->remote_branch = $msg->branch;
 		$this->remote_cseq = $msg->cseq;
+		$this->remote_sdp = $msg->content;
 	
 		$new = $this->new_response($this->remote_branch);
 		$new->trying();
@@ -74,6 +75,9 @@ class SipCalleeSession extends SipBaseCallSession
 			}else if($msg->method == 'INVITE'){
 				Logger::debug("recv duplicated INVITE, resend OK");
 				array_unshift($trans->timers, 0);
+				if($msg->content){
+					$this->remote_sdp = $msg->content;
+				}
 				return true;
 			}
 		}
@@ -100,23 +104,10 @@ class SipCalleeSession extends SipBaseCallSession
 			$msg->code = 200;
 			$msg->cseq_method = 'INVITE';
 			
-			// TODO: TESTING
 			$msg->add_header('Content-Type', 'application/sdp');
-			$msg->content = <<<TEXT
-v=0
-o=- 1499249814 256447 IN IP4 172.16.10.100
-s=-
-c=IN IP4 172.16.10.100
-t=0 0
-m=audio 10040 RTP/AVP 0 8 101
-a=ptime:20
-a=rtpmap:0 PCMU/8000
-a=rtpmap:8 PCMA/8000
-a=rtpmap:101 telephone-event/8000
-a=fmtp:101 0-15
-TEXT;
-			$msg->content = trim($msg->content);
-			
+			if($this->local_sdp){
+				$msg->content = $this->local_sdp;
+			}
 			return $msg;
 		}
 	}
