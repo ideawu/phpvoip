@@ -97,6 +97,7 @@ class SipChannel extends SipModule
 			Logger::error("SipChannel is not UAC, drop msg with to=self");
 			return null;
 		}
+
 		// TODO: 验证 uri, contact ...
 		if($msg->from->username == $sess->username){
 			$call = new SipCallerSession();

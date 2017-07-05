@@ -82,7 +82,7 @@ class SIP
 		$seq = ($seq + 1) % 1000;
 		$num = sprintf('%03d', $seq);
 		$time = substr(sprintf('%.3f', microtime(1)), 2);
-		return $num .'_'. $time;
+		return $time.'_'.$num;
 	}
 
 	
@@ -96,6 +96,10 @@ class SIP
 	
 	static function new_tag(){
 		return self::$tag_prefix . self::token();
+	}
+
+	static function new_cseq(){
+		return mt_rand(100, 1000);
 	}
 
 	static function parse_www_auth($str){

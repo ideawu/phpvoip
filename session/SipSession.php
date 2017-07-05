@@ -27,7 +27,7 @@ abstract class SipSession
 	function __construct(){
 		$this->local = new SipContact();
 		$this->remote = new SipContact();
-		$this->local_cseq = mt_rand(100, 1000);
+		$this->local_cseq = SIP::new_cseq();
 	}
 	
 	abstract function incoming($msg, $trans);

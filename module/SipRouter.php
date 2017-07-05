@@ -7,10 +7,32 @@ class SipRouter extends SipModule
 	// 记录 session 间的关系。mappings?
 	protected $dialogs = array();
 	
-	// 针对 INVITE 消息，如果做地址转换，则直接修改 $msg 对象。
+	// 针对 INVITE 消息，如果做地址转换，则返回地址转换后的 msg。
 	function rewrite($msg){
 		// TESTING: 收到 *->2005 时，转换成 2005->1001
-		// TESTING: 收到 *->221 时，转换成 2005->1001
+		if($msg->to->username === '2005'){
+			$f1 = $msg->from->username;
+			$t1 = $msg->to->username;
+			$f2 = '2005';
+			$t2 = '1001';
+			Logger::debug("rewrite {$f1}->{$t1} => {$f2}->{$t2}");
+		
+			$local_ip = $msg->dst_ip;
+			$local_port = $msg->dst_port;
+			
+			$msg = new SipMessage();
+			$msg->method = 'INVITE';
+			$msg->uri = "sip:{$t2}@{$local_ip}";
+			$msg->from = new SipContact($f2, $local_ip);
+			$msg->from->set_tag(SIP::new_tag());
+			$msg->to = new SipContact($t2, $local_ip);
+			$msg->call_id = SIP::new_call_id();
+			$msg->cseq = SIP::new_cseq();
+			$msg->contact = new SipContact($f2, $local_ip);
+			$msg->branch = SIP::new_branch();
+			return $msg;
+		}
+		// TESTING: 收到 *->221 时，转换成 221->231
 	}
 	
 	function callin($msg){

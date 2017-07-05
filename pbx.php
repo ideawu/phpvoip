@@ -14,8 +14,8 @@ $sip->add_module($mod);
 $mod = new SipChannel('221', '123456', '172.16.10.100', 5060);
 $sip->add_module($mod);
 		
-$mod = new SipRobotModule();
-$sip->add_module($mod, -1);
+// $mod = new SipRobotModule();
+// $sip->add_module($mod, -1);
 
 $sip->init();
 while(1){

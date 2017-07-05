@@ -61,6 +61,7 @@ class SipContact
 	}
 	
 	function decode($str){
+		// TODO: <> 里可能有分号
 		$ps = explode(';', $str);
 		$this->parse_address($ps[0]);
 		

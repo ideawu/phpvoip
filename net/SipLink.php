@@ -38,7 +38,7 @@ class SipLink
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
-		Logger::debug("send " . $msg->brief());
+		Logger::debug("send " . $msg->brief() . " to '{$msg->dst_ip}:{$msg->dst_port}'");
 		#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 	}
 	
@@ -57,11 +57,21 @@ class SipLink
 		$msg = new SipMessage();
 		$msg->src_ip = $ip;
 		$msg->src_port = $port;
+		
+		// TODO:
+		if($this->local_ip === '0.0.0.0'){
+			$msg->dst_ip = SIP::guess_local_ip($msg->src_ip);
+			Logger::info("Guest local ip {$msg->dst_ip} for recvfrom {$msg->src_ip}");
+		}else{
+			$msg->dst_ip = $this->local_ip;
+		}
+		$msg->dst_port = $this->local_port;
+
 		if($msg->decode($buf) <= 0){
 			Logger::error("bad SIP packet");
 			return;
 		}
-		Logger::debug("recv " . $msg->brief());
+		Logger::debug("recv " . $msg->brief() . " from '{$msg->src_ip}:{$msg->src_port}'");
 		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 		return $msg;
 	}

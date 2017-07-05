@@ -24,6 +24,10 @@ class SipCalleeSession extends SipBaseCallSession
 			}
 		}
 	}
+	
+	function brief(){
+		return $this->role_name() .' '. $this->remote->address() .'=>'. $this->local->address();
+	}
 
 	function del_transaction($trans){
 		parent::del_transaction($trans);

@@ -105,7 +105,10 @@ class SipEngine
 			}
 			
 			// 在此对 $msg 做地址转换
-			$this->router->rewrite($msg);
+			$ret = $this->router->rewrite($msg);
+			if($ret){
+				$msg = $ret;
+			}
 			
 			$caller = $this->callout($msg);
 			if(!$caller){

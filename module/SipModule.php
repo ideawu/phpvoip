@@ -69,7 +69,9 @@ abstract class SipModule
 	}
 	
 	private function find_session_for_msg($msg){
+		#echo "{$msg->call_id}\n";
 		foreach($this->sessions as $sess){
+			#echo "    {$sess->call_id}\n";
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
 			}
@@ -113,6 +115,9 @@ abstract class SipModule
 	private function find_transaction_for_msg($msg, $sess){
 		foreach($sess->transactions as $trans){
 			if($msg->is_request()){
+				// 观察到 Yate Client 会在连接成功之后，再发送新的 INVITE，
+				// fromtag, totag(不为空), callid 相同，branch, cseq 不同。
+				// uri 也不同。
 				if($msg->cseq !== $trans->cseq){
 					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
