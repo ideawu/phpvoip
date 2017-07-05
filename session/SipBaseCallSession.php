@@ -37,12 +37,14 @@ abstract class SipBaseCallSession extends SipSession
 		///////////////////////////////////////////
 		
 		if($trans->state == SIP::KEEPALIVE){
+			// TODO: 415 不一定正确
 			if($msg->code == 200 || $msg->code == 415){ // 415 Unsupported Media Type
 				$trans->keepalive();
 				return true;
 			}
 		}
 
+		// 415 Unsupported Media Type
 		// 481 Call/Transaction Does Not Exist
 		// 486 Busy Here
 		// 487 Request Terminated
@@ -76,22 +78,14 @@ abstract class SipBaseCallSession extends SipSession
 			return $msg;
 		}else if($trans->state == SIP::FIN_WAIT){
 			$msg = new SipMessage();
-			if($this->is_state(SIP::COMPLETED)){
-				$msg->method = 'BYE';
-			}else{
-				$msg->method = 'CANCEL';
-				// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
-				// 然后回复 OK 给 CANCEL，目前的实现会 drop 487
-			}
+			$msg->method = $trans->method;
+			// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
+			// 然后回复 OK 给 CANCEL，目前的实现会 drop 487
 			return $msg;
 		}else if($trans->state == SIP::CLOSE_WAIT){
 			$msg = new SipMessage();
 			$msg->code = 200;
-			if($this->is_state(SIP::COMPLETED)){
-				$msg->cseq_method = 'BYE';
-			}else{
-				$msg->cseq_method = 'CANCEL';
-			}
+			$msg->cseq_method = $trans->method;
 			return $msg;
 		}
 	}

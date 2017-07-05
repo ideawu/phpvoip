@@ -87,10 +87,23 @@ abstract class SipSession
 		if($this->is_state(SIP::CLOSING)){
 			return;
 		}
+		if($this->is_state(SIP::COMPLETED) || $this->is_state(SIP::COMPLETING)){
+			$method = 'BYE';
+		}else{
+			$method = 'CANCEL';
+		}
 		$this->set_state(SIP::CLOSING);
 		$this->transactions = array();
 		$new = $this->new_request();
+		$new->method = $method;
 		$new->close();
+		// foreach($this->transactions as $trans){
+		// 	$this->transactions = array();
+		// 	$new = $this->new_request($trans->branch);
+		// 	$new->close();
+		// 	break;
+		// 	// $trans->close();
+		// }
 	}
 	
 	function onclose($msg){
@@ -103,6 +116,7 @@ abstract class SipSession
 		$this->set_state(SIP::CLOSING);
 		$this->transactions = array();
 		$new = $this->new_response($msg->branch);
+		$new->method = $msg->method;
 		$new->onclose();
 	}
 	
@@ -111,11 +125,11 @@ abstract class SipSession
 		$this->transactions = array();
 	}
 	
-	function new_request(){
+	function new_request($branch=null){
 		$this->local_cseq ++;
 		
 		$trans = new SipTransaction();
-		$trans->branch = SIP::new_branch();
+		$trans->branch = ($branch===null)? SIP::new_branch() : $branch;
 		if(!$this->local){
 			$bt = debug_backtrace(false);
 			foreach($bt as $b){

@@ -67,8 +67,7 @@ class SipCalleeSession extends SipBaseCallSession
 				
 				$this->del_transaction($trans);
 				
-				$new = $this->new_request();
-				$new->branch = $trans->branch; // 
+				$new = $this->new_request($trans->branch);
 				$new->keepalive();
 				
 				return true;

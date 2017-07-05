@@ -34,8 +34,7 @@ class SipCallerSession extends SipBaseCallSession
 
 				$trans->completing();
 
-				$new = $this->new_request();
-				$new->branch = $trans->branch;
+				$new = $this->new_request($trans->branch);
 				$new->keepalive();
 				return true;
 			}
