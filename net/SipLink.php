@@ -36,6 +36,7 @@ class SipLink
 		if(!$buf){
 			return null;
 		}
+		
 		// 模拟丢包
 		// static $i = 0;
 		// if($i++%2 == 0){
@@ -55,9 +56,9 @@ class SipLink
 		// 	$msg->dst_ip = $this->local_ip;
 		// }
 		// $msg->dst_port = $this->local_port;
-
+		
 		if($msg->decode($buf) <= 0){
-			Logger::error("bad SIP packet: " . $buf);
+			Logger::error("bad SIP packet: " . json_encode($buf));
 			return;
 		}
 		Logger::debug("recv " . $msg->brief() . " from '{$msg->src_ip}:{$msg->src_port}'");

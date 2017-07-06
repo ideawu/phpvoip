@@ -46,10 +46,10 @@ class SipRegistrar extends SipModule
 
 				$this->add_session($sess);
 				
-				$sess->set_callback(array($this, 'sess_callback'));
 				$sess->init();
 				// 未来应该在请求外部系统返回时，调用 auth()
 				$sess->auth();
+				$sess->set_callback(array($this, 'sess_callback'));
 				return true;
 			}
 			
@@ -60,7 +60,16 @@ class SipRegistrar extends SipModule
 	
 	function sess_callback($sess){
 		Logger::debug($sess->brief() . " state = " . $sess->state_text());
-		// debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+		if($sess->is_state(SIP::COMPLETED)){
+			if($sess->expres == 0){
+				// 用户 logout
+			}else{
+				// 将同用户不同 call_id 的会话清除，处理逻辑1
+				// 将同用户同 call_id 的会话清除，处理逻辑2
+			}
+		}
+		if($sess->is_state(SIP::CLOSED)){
+		}
 	}
 	
 	function callin($msg){

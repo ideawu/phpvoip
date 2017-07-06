@@ -84,6 +84,10 @@ class SipRegistrarSession extends SipSession
 					$this->complete();
 				}
 				
+				if($msg->expires <= 0){
+					$this->expires = 0;
+				}
+				
 				// 清除全部事务
 				$this->transactions = array();
 				
@@ -120,7 +124,11 @@ class SipRegistrarSession extends SipSession
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->cseq_method = 'REGISTER';
+			$msg->expires = $this->expires;
 			return $msg;
+		}else if($trans->state == SIP::KEEPALIVE){
+			Logger::debug("session expires, terminate");
+			$this->terminate();
 		}
 	}
 }
