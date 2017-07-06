@@ -97,7 +97,6 @@ class SipChannel extends SipModule
 			return null;
 		}
 
-		// TODO: 验证 uri, contact ...
 		if($msg->from->username == $sess->username){
 			$call = new SipCallerSession();
 			$call->local_ip = $this->local_ip;
@@ -105,10 +104,12 @@ class SipChannel extends SipModule
 			$call->remote_ip = $this->remote_ip;
 			$call->remote_port = $this->remote_port;
 			$call->uri = $msg->uri;
+			
+			$call->local = clone $this->contact;
 			// TODO: 可能需要修改地址中的 domain
-			$call->local = clone $msg->from;
 			$call->remote = clone $msg->to;
-			$call->contact = clone $this->contact; // 如果要保留原呼叫人，则设为 $msg->contact
+			// 如果要保留原呼叫人，则设为 $msg->contact
+			$call->contact = clone $this->contact;
 			return $call;
 		}
 		

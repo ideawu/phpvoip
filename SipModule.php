@@ -21,9 +21,6 @@ abstract class SipModule
 	abstract function callout($msg);
 	
 	function init(){
-		if(!$this->domain){
-			$this->domain = $this->engine->local_ip;
-		}
 	}
 
 	function incoming($msg){

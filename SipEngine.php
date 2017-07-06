@@ -7,6 +7,7 @@ class SipEngine
 	
 	private $modules = array();
 	private $router;
+	private $mixer;
 	
 	private $inited = false;
 	
@@ -14,7 +15,9 @@ class SipEngine
 		$this->time = microtime(1);
 		
 		$this->router = new SipRouter();
-		$this->add_module($this->router, INT_MAX); // 路由模块必须放在所有模块的前面
+		
+		$this->mixer = new SipMixer();
+		$this->add_module($this->mixer, INT_MAX); // Mixer模块放在所有模块的前面
 	}
 	
 	static function create($local_ip='127.0.0.1', $local_port=0){
@@ -26,9 +29,15 @@ class SipEngine
 	}
 	
 	function init(){
+		if($this->inited){
+			return;
+		}
 		$this->inited = true;
 		foreach($this->modules as $index=>$mi){
 			$mi['module']->init();
+			if(!$mi['module']->domain){
+				$mi['module']->domain = $this->local_ip;
+			}
 		}
 	}
 	
@@ -109,19 +118,14 @@ class SipEngine
 				return false;
 			}
 			
-			// 在此对 $msg 做地址转换
-			$ret = $this->router->rewrite($msg);
-			if($ret){
-				$msg = $ret;
-			}
+			$msg = $this->router->route($msg);
 			
 			$caller = $this->callout($msg);
 			if(!$caller){
 				return false;
 			}
 
-			// 创建路由转发记录
-			$this->router->add_route($callee, $caller);
+			$this->mixer->add_dialog($callee, $caller);
 			return true;
 		}
 		
