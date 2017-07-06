@@ -17,43 +17,43 @@ class SipRegistrar extends SipModule
 		// 新的 REGISTER
 		if($msg->method === 'REGISTER'){
 			$username = $msg->from->username;
-			if(isset($this->users[$username])){
-				// TODO: 验证 contact
-				$password = $this->users[$username];
-				
-				$local_ip = $this->engine->local_ip;
-				$local_port = $this->engine->local_port;
-				if($local_ip === '0.0.0.0'){
-					$local_ip = SIP::guess_local_ip($msg->src_ip);
-				}
-
-				$sess = new SipRegistrarSession();
-				$sess->local_ip = $local_ip;
-				$sess->local_port = $local_port;
-				$sess->remote_ip = $msg->src_ip;
-				$sess->remote_port = $msg->src_port;
-
-				$sess->uri = $msg->uri;
-				$sess->call_id = $msg->call_id;
-				$sess->local = clone $msg->to;
-				$sess->remote = clone $msg->from;
-				$sess->contact = clone $msg->contact;
-				$sess->remote_cseq = $msg->cseq;
-				$sess->remote_branch = $msg->branch;
-
-				$sess->username = $username;
-				$sess->password = $password;
-
-				$this->add_session($sess);
-				
-				$sess->init();
-				// 未来应该在请求外部系统返回时，调用 auth()
-				$sess->auth();
-				$sess->set_callback(array($this, 'sess_callback'));
-				return true;
+			if(!isset($this->users[$username])){
+				return false;
 			}
 			
-			// response 401 Unauthorized
+			// TODO: 验证 contact
+			$password = $this->users[$username];
+				
+			$local_ip = $this->engine->local_ip;
+			$local_port = $this->engine->local_port;
+			if($local_ip === '0.0.0.0'){
+				$local_ip = SIP::guess_local_ip($msg->src_ip);
+			}
+
+			$sess = new SipRegistrarSession();
+			$sess->local_ip = $local_ip;
+			$sess->local_port = $local_port;
+			$sess->remote_ip = $msg->src_ip;
+			$sess->remote_port = $msg->src_port;
+
+			$sess->uri = $msg->uri;
+			$sess->call_id = $msg->call_id;
+			$sess->local = clone $msg->to;
+			$sess->remote = clone $msg->from;
+			$sess->contact = clone $msg->contact;
+			$sess->remote_cseq = $msg->cseq;
+			$sess->remote_branch = $msg->branch;
+
+			$sess->username = $username;
+			$sess->password = $password;
+
+			$this->add_session($sess);
+				
+			$sess->init();
+			// 未来应该在请求外部系统返回时，调用 auth()
+			$sess->auth();
+			$sess->set_callback(array($this, 'sess_callback'));
+			return true;
 		}
 		return false;
 	}

@@ -97,7 +97,10 @@ class SipEngine
 				break;
 			}
 			// TODO: 在一次轮次内，相同的两条消息应该丢掉第2条
-			$this->incoming($msg);
+			$ret = $this->incoming($msg);
+			if($ret !== true){
+				$this->error_reply($msg);
+			}
 		}
 	}
 	
@@ -131,8 +134,6 @@ class SipEngine
 			$this->mixer->add_dialog($callee, $caller);
 			return true;
 		}
-		
-		Logger::debug("drop msg");
 		return false;
 	}
 	
@@ -182,5 +183,10 @@ class SipEngine
 				$this->link->send($msg);
 			}
 		}
+	}
+	
+	private function error_reply($msg){
+		Logger::debug("drop msg");
+		// TODO: 在此处根据不同的消息类似创建不同的 ErrorReplySession
 	}
 }
