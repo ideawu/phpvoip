@@ -2,6 +2,14 @@
 class SipRouter
 {
 	public $domain;
+	// 经过预处理的路由表
+	private $table = array(
+		//array(in_from, in_to, out_from, out_to),
+		// TESTING: 收到 *->2005 时，转换成 2005->1001
+		// TESTING: 收到 *->221 时，转换成 221->231
+		array('*', '2005', '2005', '1001'),
+		array('*', '221', '221', '231'),
+	);
 	
 	/*
 	输入一条 INVITE 消息，根据路由表配置，然后返回新的 INVITE 消息。新的消息
@@ -18,33 +26,52 @@ class SipRouter
 		$ret->from->set_tag(SIP::new_tag());
 		$ret->branch = SIP::new_branch();
 		$ret->cseq = SIP::new_cseq();
-
-		// TESTING: 收到 *->2005 时，转换成 2005->1001
-		$f2 = '2005';
-		$t2 = '1001';
-		if($msg->to->username === $f2){
-			$f1 = $msg->from->username;
-			$t1 = $msg->to->username;
-			Logger::debug("rewrite {$f1}->{$t1} => {$f2}->{$t2}");
-
-			$ret->uri = "sip:{$t2}@{$this->domain}";
-			$ret->from = new SipContact($f2, $this->domain);
-			$ret->to = new SipContact($t2, $this->domain);
-		}
 		
-		// TESTING: 收到 *->221 时，转换成 221->231
-		$f2 = '221';
-		$t2 = '231';
-		if($msg->to->username === $f2){
-			$f1 = $msg->from->username;
-			$t1 = $msg->to->username;
-			Logger::debug("rewrite {$f1}->{$t1} => {$f2}->{$t2}");
-			
-			$ret->uri = "sip:{$t2}@{$this->domain}";
-			$ret->from = new SipContact($f2, $this->domain);
-			$ret->to = new SipContact($t2, $this->domain);
+		// 路由表处理
+		$from = $msg->from->username;
+		$to = $msg->to->username;
+		foreach($this->table as $item){
+			if($this->match_route($from, $to, $item)){
+				list($in_from, $in_to, $out_from, $out_to) = $item;
+				Logger::debug("rewrite {$from}->{$to} => {$out_from}->{$out_to}");
+				$ret->uri = "sip:{$out_to}@{$this->domain}";
+				$ret->from = new SipContact($out_from, $this->domain);
+				$ret->to = new SipContact($out_to, $this->domain);
+				break;
+			}
 		}
 		
 		return $ret;
+	}
+	
+	private function match_route($from, $to, $route_item){
+		list($in_from, $in_to, $out_from, $out_to) = $route_item;
+		if(!$this->match_address($from, $in_from)){
+			return false;
+		}
+		if(!$this->match_address($to, $in_to)){
+			return false;
+		}
+		return true;
+	}
+	
+	private function match_address($in, $conf){
+		if($conf === '*'){ // all
+			return true;
+		}
+		$ps = explode(',', $conf); // or
+		if(count($ps) > 1){
+			return in_array($in, $ps, true);
+		}
+		
+		$ps = explode('-', $conf); // range
+		if(count($ps) == 2){
+			$min = intval($ps[0]);
+			$max = intval($ps[0]);
+			$in = intval($in);
+			return ($min<=$in) && ($in<=$max);
+		}
+		
+		return $in === $conf; // equals
 	}
 }
