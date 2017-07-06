@@ -45,6 +45,11 @@ class SipTransaction
 		$this->timers = self::$register_timers;
 	}
 	
+	function auth(){
+		$this->state = SIP::AUTHING;
+		$this->timers = array(0, 5);
+	}
+	
 	function calling(){
 		$this->state = SIP::CALLING;
 		$this->timers = self::$calling_timers;

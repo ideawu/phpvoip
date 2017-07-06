@@ -90,7 +90,10 @@ class SIP
 		$time = substr(sprintf('%.3f', microtime(1)), 2);
 		return $time.'_'.$num;
 	}
-
+	
+	static function long_token(){
+		return md5(mt_rand() . microtime(1));
+	}
 	
 	static function new_call_id(){
 		return self::$call_id_prefix . self::token();
@@ -107,8 +110,19 @@ class SIP
 	static function new_cseq(){
 		return mt_rand(100, 1000);
 	}
+	
+	static function encode_www_auth($auth){
+		$scheme = $auth['scheme'];
+		$arr = array();
+		foreach($auth as $k=>$v){
+			if($k != 'scheme'){
+				$arr[] = "$k=\"$v\"";
+			}
+		}
+		return "$scheme " . join(', ', $arr);
+	}
 
-	static function parse_www_auth($str){
+	static function decode_www_auth($str){
 		$ret = array(
 			'scheme' => '',
 		);
@@ -125,6 +139,25 @@ class SIP
 			$ret[$k] = $v;
 		}
 		return $ret;
+	}
+	
+	static function www_auth($username, $password, $uri, $method, $auth){
+		$scheme = $auth['scheme'];
+		$realm = $auth['realm'];
+		$nonce = $auth['nonce'];
+		if($scheme == 'Digest'){
+			$ha1 = md5($username .':'. $realm .':'. $password);
+		    $ha2 = md5($method .':'. $uri);
+			if(isset($auth['qpop']) && $auth['qpop'] == 'auth'){
+				//MD5(HA1:nonce:nonceCount:cnonce:qop:HA2)
+			}else{
+				$res = md5($ha1 .':'. $nonce .':'. $ha2);
+			}
+			$auth['uri'] = $uri;
+			$auth['username'] = $username;
+			$auth['response'] = $res;
+			return $auth;
+		}
 	}
 	
 	static function guess_local_ip($remote_ip){

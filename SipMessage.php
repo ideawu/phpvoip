@@ -211,6 +211,8 @@ class SipMessage
 			$this->content_length = intval($val);
 		}else if($key == 'WWW-Authenticate'){
 			$this->auth = $val;
+		}else if($key == 'Authorization'){
+			$this->auth = $val;
 		}else{
 			$this->headers[] = array($key, $val);
 		}

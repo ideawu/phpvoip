@@ -57,7 +57,7 @@ class SipLink
 		// $msg->dst_port = $this->local_port;
 
 		if($msg->decode($buf) <= 0){
-			Logger::error("bad SIP packet");
+			Logger::error("bad SIP packet: " . $buf);
 			return;
 		}
 		Logger::debug("recv " . $msg->brief() . " from '{$msg->src_ip}:{$msg->src_port}'");

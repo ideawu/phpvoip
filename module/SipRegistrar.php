@@ -33,6 +33,7 @@ class SipRegistrar extends SipModule
 				$sess->remote_ip = $msg->src_ip;
 				$sess->remote_port = $msg->src_port;
 
+				$sess->uri = $msg->uri;
 				$sess->call_id = $msg->call_id;
 				$sess->local = clone $msg->to;
 				$sess->remote = clone $msg->from;
@@ -47,6 +48,8 @@ class SipRegistrar extends SipModule
 				
 				$sess->set_callback(array($this, 'sess_callback'));
 				$sess->init();
+				// 未来应该在请求外部系统返回时，调用 auth()
+				$sess->auth();
 				return true;
 			}
 			
@@ -57,6 +60,7 @@ class SipRegistrar extends SipModule
 	
 	function sess_callback($sess){
 		Logger::debug($sess->brief() . " state = " . $sess->state_text());
+		// debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 	}
 	
 	function callin($msg){

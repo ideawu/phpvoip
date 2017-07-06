@@ -97,20 +97,8 @@ class SipRegisterSession extends SipSession
 	}
 
 	private function www_auth($str){
-		$auth = SIP::parse_www_auth($str);
-		$scheme = $auth['scheme'];
-		$realm = $auth['realm'];
-		$nonce = $auth['nonce'];
-		if($scheme == 'Digest'){
-			$ha1 = md5($this->username .':'. $realm .':'. $this->password);
-		    $ha2 = md5('REGISTER' .':'. $this->uri);
-			if(isset($auth['qpop']) && $auth['qpop'] == 'auth'){
-				//MD5(HA1:nonce:nonceCount:cnonce:qop:HA2)
-			}else{
-				$res = md5($ha1 .':'. $nonce .':'. $ha2);
-			}
-		    $ret = $scheme . ' username="'.$this->username.'", realm="'.$realm.'", nonce="'.$nonce.'", uri="'.$this->uri.'", response="'.$res.'", algorithm=MD5';
-			return $ret;
-		}
+		$auth = SIP::decode_www_auth($str);
+		$auth = SIP::www_auth($this->username, $this->password, $this->uri, 'REGISTER', $auth);
+		return self::encode_www_auth($auth);
 	}
 }

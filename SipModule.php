@@ -52,7 +52,6 @@ abstract class SipModule
 			if($msg->is_request()){
 				Logger::debug("create new response");
 				$trans = $sess->new_response($msg->branch);
-				$trans->trying();
 			}else{
 				return false;
 			}
@@ -184,7 +183,7 @@ abstract class SipModule
 						Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " close transaction gracefully");
 					}else{
 						// transaction timeout
-						#Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " transaction timeout");
+						Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " transaction end");
 					}
 				}else{
 					$msg = $sess->outgoing($trans);
@@ -199,6 +198,7 @@ abstract class SipModule
 			}
 		}
 		if(!$sess->transactions){
+			Logger::debug("terminate session with no transactions");
 			$sess->terminate();
 		}
 		return $ret;
