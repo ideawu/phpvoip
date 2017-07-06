@@ -42,6 +42,17 @@ abstract class SipBaseCallSession extends SipSession
 				$trans->keepalive();
 				return true;
 			}
+			// 有些 pbx 不能很好地处理 INFO，降级使用 OPTIONS
+			if($msg->code == 500 && in_array('INFO', $this->remote_allow)){
+				Logger::debug("INFO response 500, use OPTIONS instead");
+				foreach($this->remote_allow as $index=>$cmd){
+					if($cmd === 'INFO'){
+						unset($this->remote_allow[$index]);
+						break;
+					}
+				}
+				return true;
+			}
 		}
 
 		// 415 Unsupported Media Type
@@ -56,7 +67,7 @@ abstract class SipBaseCallSession extends SipSession
 		if($msg->code >= 300 && $msg->code < 400){
 			// ...
 			Logger::info("nothing to do with {$msg->code}");
-		}else if($msg->code >= 400){
+		}else if($msg->code == 404 || $msg->code == 481){
 			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
 			$this->terminate();
 			return true;
