@@ -3,9 +3,8 @@ class SipCallerSession extends SipBaseCallSession
 {
 	function __construct(){
 		parent::__construct();
-		
 		$this->role = SIP::CALLER;
-		$this->set_state(SIP::CALLING);
+		$this->set_state(SIP::NONE);
 	}
 
 	function del_transaction($trans){
@@ -15,7 +14,8 @@ class SipCallerSession extends SipBaseCallSession
 		}
 	}
 	
-	function trying(){
+	function init(){
+		$this->set_state(SIP::CALLING);
 		$new = $this->new_request();
 		$new->calling();
 	}

@@ -5,9 +5,8 @@ class SipCalleeSession extends SipBaseCallSession
 	
 	function __construct(){
 		parent::__construct();
-		
 		$this->role = SIP::CALLEE;
-		$this->set_state(SIP::TRYING);
+		$this->set_state(SIP::NONE);
 	}
 	
 	function brief(){
@@ -21,7 +20,8 @@ class SipCalleeSession extends SipBaseCallSession
 		}
 	}
 	
-	function trying(){
+	function init(){
+		$this->set_state(SIP::TRYING);
 		$new = $this->new_response($this->remote_branch);
 		$new->trying();
 	}

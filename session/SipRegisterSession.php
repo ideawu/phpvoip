@@ -12,9 +12,8 @@ class SipRegisterSession extends SipSession
 	
 	function __construct($username, $password, $remote_ip, $remote_port, $domain=null){
 		parent::__construct();
-		
 		$this->role = SIP::REGISTER;
-		$this->set_state(SIP::TRYING);
+		$this->set_state(SIP::NONE);
 		
 		$this->remote_ip = $remote_ip;
 		$this->remote_port = $remote_port;
@@ -29,6 +28,10 @@ class SipRegisterSession extends SipSession
 		$this->call_id = SIP::new_call_id();
 		$this->local->set_tag(SIP::new_tag());
 
+	}
+	
+	function init(){
+		$this->set_state(SIP::TRYING);
 		$new = $this->new_request();
 		$new->register();
 	}

@@ -46,10 +46,12 @@ class SipChannel extends SipModule
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
 		$sess->contact = $this->contact;
+
 		$this->add_session($sess);
-		
 		$this->sess = $sess;
-		$this->sess->set_callback(array($this, 'sess_callback'));
+		
+		$sess->set_callback(array($this, 'sess_callback'));
+		$sess->init();
 	}
 	
 	function sess_callback($sess){
@@ -96,7 +98,7 @@ class SipChannel extends SipModule
 			}
 		}
 
-		$call->trying();
+		$call->init();
 
 		return $call;
 	}
@@ -126,7 +128,7 @@ class SipChannel extends SipModule
 			$call->remote = clone $msg->to; // TODO: 可能需要修改地址中的 domain
 			$call->contact = clone $this->contact; // 如果要保留原呼叫人，则设为 $msg->contact
 			
-			$call->trying();
+			$call->init();
 			return $call;
 		}
 		

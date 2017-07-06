@@ -2,6 +2,7 @@
 class SipNoopCallerSession extends SipSession
 {
 	function __construct(){
+		parent::__construct();
 		$this->role = SIP::NOOP;
 		$this->set_state(SIP::TRYING);
 		

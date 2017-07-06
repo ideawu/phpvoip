@@ -30,6 +30,7 @@ abstract class SipSession
 		$this->local_cseq = SIP::new_cseq();
 	}
 	
+	// abstract function init();
 	abstract function incoming($msg, $trans);
 	abstract function outgoing($trans);
 	

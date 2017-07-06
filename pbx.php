@@ -7,10 +7,11 @@ Logger::showip(false);
 include_once('SIP.php');
 
 $ip = '0.0.0.0';
-$sip = SipEngine::create($ip);
+$port = 5070;
+$sip = SipEngine::create($ip, $port);
 
 $mod = new SipChannel('2005@carol.com', '1000', '127.0.0.1', 5060);
-$sip->add_module($mod);
+#$sip->add_module($mod);
 $mod = new SipChannel('221', '123456', '172.16.10.100', 5060);
 #$sip->add_module($mod);
 
