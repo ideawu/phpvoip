@@ -96,6 +96,7 @@ class SipEngine
 			if(!$msg){
 				break;
 			}
+			// TODO: 在一次轮次内，相同的两条消息应该丢掉第2条
 			$this->incoming($msg);
 		}
 	}

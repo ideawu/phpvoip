@@ -5,17 +5,21 @@ class SipRegistrarSession extends SipSession
 	public $password;
 	public $domain;
 
-	function __construct($msg){
+	function __construct(){
 		parent::__construct();
 		
 		$this->role = SIP::REGISTRAR;
 		$this->set_state(SIP::TRYING);
-
 	}
 	
-	function incoming($msg){
+	function trying(){
+		$new = $this->new_response($msg->branch);
+		$new->trying();
 	}
 	
-	function outgoing(){
+	function incoming($msg, $trans){
+	}
+	
+	function outgoing($trans){
 	}
 }

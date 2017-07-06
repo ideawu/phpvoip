@@ -73,16 +73,31 @@ class SipChannel extends SipModule
 			return null;
 		}
 		
-		$call = new SipCalleeSession($msg);
+		$call = new SipCalleeSession();
 		$call->local_ip = $this->local_ip;
 		$call->local_port = $this->local_port;
 		$call->remote_ip = $this->remote_ip;
 		$call->remote_port = $this->remote_port;
+		
 		// TODO: 可能需要修改地址中的 domain
 		$call->uri = $msg->uri;
+		$call->call_id = $msg->call_id;
 		$call->local = clone $msg->to;
 		$call->remote = clone $msg->from;
 		$call->contact = clone $this->contact;
+		$call->remote_branch = $msg->branch;
+		$call->remote_cseq = $msg->cseq;
+		$call->remote_sdp = $msg->content;
+
+		if(!$call->remote_allow){
+			$str = $msg->get_header('Allow');
+			if($str){
+				$call->remote_allow = preg_split('/[, ]+/', trim($str));
+			}
+		}
+
+		$call->trying();
+
 		return $call;
 	}
 
@@ -103,13 +118,15 @@ class SipChannel extends SipModule
 			$call->local_port = $this->local_port;
 			$call->remote_ip = $this->remote_ip;
 			$call->remote_port = $this->remote_port;
-			$call->uri = $msg->uri;
 			
+			$call->uri = $msg->uri; // TODO: 可能需要修改地址中的 domain
+			$call->call_id = SIP::new_call_id();
 			$call->local = clone $this->contact;
-			// TODO: 可能需要修改地址中的 domain
-			$call->remote = clone $msg->to;
-			// 如果要保留原呼叫人，则设为 $msg->contact
-			$call->contact = clone $this->contact;
+			$call->local->set_tag(SIP::new_tag());
+			$call->remote = clone $msg->to; // TODO: 可能需要修改地址中的 domain
+			$call->contact = clone $this->contact; // 如果要保留原呼叫人，则设为 $msg->contact
+			
+			$call->trying();
 			return $call;
 		}
 		

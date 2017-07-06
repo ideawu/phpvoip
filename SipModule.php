@@ -74,9 +74,11 @@ abstract class SipModule
 		foreach($this->sessions as $sess){
 			#echo "    {$sess->call_id}\n";
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+				// Logger::debug("{$msg->src_ip} {$sess->remote_ip} {$msg->src_port} {$sess->remote_port}");
 				continue;
 			}
 			if($msg->call_id !== $sess->call_id){
+				// Logger::debug("{$msg->call_id} $sess->call_id");
 				continue;
 			}
 			
@@ -120,7 +122,7 @@ abstract class SipModule
 				// fromtag, totag(不为空), callid 相同，branch, cseq 不同。
 				// uri 也不同。
 				if($msg->cseq !== $trans->cseq){
-					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					// Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
 				if($trans->local_tag){
@@ -131,7 +133,7 @@ abstract class SipModule
 				}
 			}else{
 				if($msg->cseq !== $trans->cseq){
-					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					// Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
 				if($trans->remote_tag){

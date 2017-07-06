@@ -3,27 +3,11 @@ class SipCalleeSession extends SipBaseCallSession
 {
 	private $remote_branch;
 	
-	function __construct($msg){
+	function __construct(){
 		parent::__construct();
 		
 		$this->role = SIP::CALLEE;
 		$this->set_state(SIP::TRYING);
-
-		$this->call_id = $msg->call_id;
-		$this->remote->set_tag($msg->from->tag());
-		$this->remote_branch = $msg->branch;
-		$this->remote_cseq = $msg->cseq;
-		$this->remote_sdp = $msg->content;
-	
-		$new = $this->new_response($this->remote_branch);
-		$new->trying();
-		
-		if(!$this->remote_allow){
-			$str = $msg->get_header('Allow');
-			if($str){
-				$this->remote_allow = preg_split('/[, ]+/', trim($str));
-			}
-		}
 	}
 	
 	function brief(){
@@ -35,6 +19,11 @@ class SipCalleeSession extends SipBaseCallSession
 		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 			$this->close();
 		}
+	}
+	
+	function trying(){
+		$new = $this->new_response($this->remote_branch);
+		$new->trying();
 	}
 	
 	function ringing(){
