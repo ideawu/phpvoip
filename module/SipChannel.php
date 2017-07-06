@@ -87,8 +87,8 @@ class SipChannel extends SipModule
 		$call->local = clone $msg->to;
 		$call->remote = clone $msg->from;
 		$call->contact = clone $this->contact;
-		$call->remote_branch = $msg->branch;
 		$call->remote_cseq = $msg->cseq;
+		$call->remote_branch = $msg->branch;
 		$call->remote_sdp = $msg->content;
 
 		if(!$call->remote_allow){

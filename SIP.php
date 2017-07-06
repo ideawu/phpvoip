@@ -130,9 +130,11 @@ class SIP
 	static function guess_local_ip($remote_ip){
 		$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 		if(!@socket_connect($sock, $remote_ip, 8888)){
+			socket_close($sock);
 			return false;
 		}
 		if(!socket_getsockname($sock, $ip, $port)){
+			socket_close($sock);
 			return false;
 		}
 		socket_close($sock);

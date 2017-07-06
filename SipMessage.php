@@ -83,6 +83,8 @@ class SipMessage
 				$this->reason = 'Ringing';
 			}else if($this->code == 200){
 				$this->reason = 'OK';
+			}else if($this->code == 401){
+				$this->reason = 'Unauthorized';
 			}
 		}
 		

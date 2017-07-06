@@ -34,7 +34,7 @@ abstract class SipModule
 		}
 		if($msg->is_request() && $msg->cseq == $sess->remote_cseq + 1){
 			$sess->remote_cseq ++;
-			Logger::debug("set remote_cseq {$msg->cseq}");
+			Logger::debug("update remote_cseq {$msg->cseq}");
 		}
 		if($msg->code >= 180 && !$sess->remote->tag() && $msg->to->tag()){
 			Logger::debug("set remote.tag=" . $msg->to->tag());
