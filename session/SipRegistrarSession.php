@@ -70,6 +70,10 @@ class SipRegistrarSession extends SipSession
 					$trans->nowait();
 					return true;
 				}
+				if($msg->expires <= 0){
+					Logger::debug("client logout");
+					$this->terminate();
+				}
 				if($trans->state == SIP::COMPLETING){
 					Logger::debug("recv duplicated REGISTER");
 					$trans->nowait();
@@ -82,10 +86,6 @@ class SipRegistrarSession extends SipSession
 					Logger::debug("REGISTRAR " . $msg->from->address() . " registered");
 					$this->local->set_tag(SIP::new_tag());
 					$this->complete();
-				}
-				
-				if($msg->expires <= 0){
-					$this->expires = 0;
 				}
 				
 				// 清除全部事务
