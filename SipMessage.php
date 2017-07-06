@@ -69,7 +69,7 @@ class SipMessage
 		$ret = array();
 		foreach($this->headers as $v){
 			if($key === $v[0]){
-				$ret[] = $v;
+				$ret[] = $v[1];
 			}
 		}
 		return $ret;
