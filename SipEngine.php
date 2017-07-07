@@ -181,7 +181,7 @@ class SipEngine
 	}
 	
 	private function error_reply($msg, $code=0){
-		if($msg->is_response()){
+		if($msg->is_response() || $msg->method === 'ACK'){
 			Logger::debug("drop msg");
 			return;
 		}
