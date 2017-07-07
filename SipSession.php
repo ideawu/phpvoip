@@ -49,7 +49,7 @@ abstract class SipSession
 	function set_state($new){
 		$old = $this->state;
 		$this->state = $new;
-		if(!$old !== $new && $this->callback){
+		if($old !== $new && $this->callback){
 			call_user_func($this->callback, $this);
 		}
 	}

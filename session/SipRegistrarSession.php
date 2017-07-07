@@ -4,7 +4,8 @@ class SipRegistrarSession extends SipSession
 	public $username;
 	public $password;
 	public $remote_branch;
-	private $expires = 60;
+	public $expires = 30;
+	
 	private $auth = array(
 		'scheme' => 'Digest',
 		'realm' => 'phpvoip',
@@ -36,7 +37,6 @@ class SipRegistrarSession extends SipSession
 			$new->auth();
 		}else if($this->is_state(SIP::COMPLETED)){
 			// 客户端 refresh
-			Logger::debug("recv client refresh msg");
 			$new = parent::new_response($branch);
 			$new->auth();
 		}else{
@@ -70,15 +70,6 @@ class SipRegistrarSession extends SipSession
 					$trans->nowait();
 					return true;
 				}
-				if($msg->expires <= 0){
-					Logger::debug("client logout");
-					$this->expires = 0;
-					$this->local->set_tag(SIP::new_tag());
-					$this->complete();
-					
-					$trans->completing(); // 等待客户端可能的重传
-					return true;
-				}
 				if($trans->state == SIP::COMPLETING){
 					Logger::debug("recv duplicated REGISTER");
 					$trans->nowait();
@@ -88,7 +79,7 @@ class SipRegistrarSession extends SipSession
 				if($this->is_state(SIP::COMPLETED)){
 					Logger::debug("REGISTRAR " . $msg->from->address() . " renewed");
 				}else{
-					Logger::debug("REGISTRAR " . $msg->from->address() . " registered");
+					#Logger::debug("REGISTRAR " . $msg->from->address() . " registered");
 					$this->local->set_tag(SIP::new_tag());
 					$this->complete();
 				}
@@ -98,10 +89,16 @@ class SipRegistrarSession extends SipSession
 				
 				$this->transactions[] = $trans;
 				$trans->completing(); // 等待客户端可能的重传
+
+				if($msg->expires <= 0){
+					Logger::debug("client logout");
+					$this->expires = 0;
+				}else{
+					$new = $this->new_request();
+					$new->keepalive();
+					$new->wait($this->expires + 5);
+				}
 				
-				$new = $this->new_request();
-				$new->keepalive();
-				$new->wait($this->expires + 5);
 				return true;
 			}
 		}

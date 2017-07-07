@@ -62,9 +62,9 @@ class SIP
 		}else if($state == self::AUTHING){
 			return 'AUTHING';
 		}else if($state == self::CLOSING){
-			return 'CLOSED';
-		}else if($state == self::CLOSED){
 			return 'CLOSING';
+		}else if($state == self::CLOSED){
+			return 'CLOSED';
 		}else if($state == self::FIN_WAIT){
 			return 'FIN_WAIT';
 		}else if($state == self::CLOSE_WAIT){

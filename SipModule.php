@@ -203,7 +203,7 @@ abstract class SipModule
 				$sess->del_transaction($trans);
 			}
 		}
-		if(!$sess->transactions){
+		if(!$sess->is_state(SIP::CLOSED) && !$sess->transactions){
 			Logger::debug("terminate session with no transactions");
 			$sess->terminate();
 		}
@@ -244,10 +244,6 @@ abstract class SipModule
 			}
 			$sess->module = null;
 			unset($this->sessions[$index]);
-			// // 如果存在于 dialog 中，dialog 也要删除
-			// foreach($this->dialogs as $dialog){
-			// 	$dialog->del_session($sess);
-			// }
 			break;
 		}
 	}

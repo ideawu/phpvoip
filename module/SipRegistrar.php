@@ -70,14 +70,11 @@ class SipRegistrar extends SipModule
 				if($tmp->remote->username !== $sess->remote->username){
 					continue;
 				}
-				if($sess->expires <= 0){
-					Logger::debug("client logout");
+
+				if($tmp->call_id === $sess->call_id){
+					Logger::debug("REGISTRAR " . $sess->remote->address() . " renewed");
 				}else{
-					if($tmp->call_id === $sess->call_id){
-						Logger::debug("REGISTRAR " . $sess->remote->address() . " renewed");
-					}else{
-						Logger::debug("REGISTRAR " . $sess->remote->address() . " with new call_id");
-					}
+					Logger::debug("REGISTRAR " . $sess->remote->address() . " with new call_id");
 				}
 				
 				Logger::debug('    del ' . $sess->remote->encode());

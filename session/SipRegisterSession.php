@@ -5,7 +5,7 @@ class SipRegisterSession extends SipSession
 	public $password;
 	public $domain;
 
-	const MIN_EXPIRES = 60;
+	const MIN_EXPIRES = 30;
 	const MAX_EXPIRES = 120;
 	private $auth;
 	private $expires = self::MIN_EXPIRES;
