@@ -36,6 +36,10 @@ class SipLink
 		if(!$buf){
 			return null;
 		}
+		$buf = ltrim($buf);
+		if(strlen($buf) == 0){
+			return null;
+		}
 		
 		// 模拟丢包
 		// static $i = 0;

@@ -59,7 +59,7 @@ class SipRegistrarSession extends SipSession
 			if($trans->state == SIP::AUTHING || $trans->state == SIP::COMPLETING){
 				if(!$msg->auth){
 					Logger::debug("recv duplicated REGISTER without auth info");
-					#$trans->nowait();
+					$trans->nowait();
 					return true;
 				}
 				

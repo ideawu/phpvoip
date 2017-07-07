@@ -55,18 +55,32 @@ class SipContact
 		}
 		$ret .= "@{$this->domain}>";
 		foreach($this->parameters as $k=>$v){
-			$ret .= ";{$k}={$v}";
+			$ret .= ";{$k}";
+			if(strlen($v)){
+				$ret .= "={$v}";
+			}
 		}
 		return $ret;
 	}
 	
 	function decode($str){
-		// TODO: <> 里可能有分号
-		$ps = explode(';', $str);
-		$this->parse_address($ps[0]);
+		$pos = strpos($str, '>');
+		if($pos === false){
+			$address = $str;
+			$parameters = '';
+		}else{
+			$address = substr($str, 0, $pos + 1);
+			$parameters = substr($str, $pos + 1);
+		}
 		
-		for($i=1; $i<count($ps); $i++){
-			$p = $ps[$i];
+		$this->parse_address($address);
+		
+		$ps = explode(';', $parameters);
+		foreach($ps as $p){
+			$p = trim($p);
+			if(strlen($p) == 0){
+				continue;
+			}
 			$kv = explode('=', $p);
 			$k = $kv[0];
 			$v = isset($kv[1])? $kv[1] : '';
@@ -86,7 +100,7 @@ class SipContact
 		
 		$ts = explode('@', $uri);
 		if(count($ts) == 2){
-			$this->domain = $ts[1]; // 可能包含 port
+			$this->domain = $ts[1]; // 可能包含 port 和 tag，如 '127.0.0.1:1234;ob'
 			$ps = explode(':', $ts[0]);
 			if(count($ps) == 2){
 				$this->scheme = $ps[0];

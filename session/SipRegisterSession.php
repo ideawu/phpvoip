@@ -99,6 +99,6 @@ class SipRegisterSession extends SipSession
 	private function www_auth($str){
 		$auth = SIP::decode_www_auth($str);
 		$auth = SIP::www_auth($this->username, $this->password, $this->uri, 'REGISTER', $auth);
-		return self::encode_www_auth($auth);
+		return SIP::encode_www_auth($auth);
 	}
 }
