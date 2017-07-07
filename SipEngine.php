@@ -113,8 +113,8 @@ class SipEngine
 		if($msg->method == 'INVITE'){
 			if($msg->to->username === $msg->from->username){
 				Logger::info("invalid INVITE, from == to, {$msg->from->username}");
-				// TODO: 发送错误回复
-				return false;
+				$this->error_reply($msg, 400);
+				return true;
 			}
 
 			$callee = $this->callin($msg);
@@ -123,9 +123,9 @@ class SipEngine
 				return true;
 			}
 			
-			$msg = $this->router->route($msg);
+			$out_msg = $this->router->route($msg);
 			
-			$caller = $this->callout($msg);
+			$caller = $this->callout($out_msg);
 			if(!$caller){
 				$this->error_reply($msg, 404);
 				return true;
@@ -182,6 +182,7 @@ class SipEngine
 	
 	private function error_reply($msg, $code=0){
 		if($msg->is_response()){
+			Logger::debug("drop msg");
 			return;
 		}
 		

@@ -34,13 +34,11 @@ class SipMessage
 		100 => 'Trying',
 		180 => 'Ringing',
 		200 => 'OK',
+		400 => 'Bad Request',
 		401 => 'Unauthorized',
 		403 => 'Forbidden',
 		404 => 'Not Found',
-		451 => 'Unsupported Media Type',
 		481 => 'Call/Transaction Does Not Exist',
-		486 => 'Busy Here',
-		487 => 'Request Terminated',
 	);
 	
 	// 返回简洁描述

@@ -1,7 +1,7 @@
 <?php
 class SipCalleeSession extends SipBaseCallSession
 {
-	private $remote_branch;
+	public $remote_branch;
 	
 	function __construct(){
 		parent::__construct();
