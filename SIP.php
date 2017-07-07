@@ -158,6 +158,7 @@ class SIP
 			$auth['response'] = $res;
 			return $auth;
 		}
+		return array();
 	}
 	
 	static function guess_local_ip($remote_ip){

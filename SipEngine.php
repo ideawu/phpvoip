@@ -70,7 +70,7 @@ class SipEngine
 	
 		$ret = @socket_select($read, $write, $except, 0, 20*1000);
 		// TESTING: 如下代码实现引擎慢速响应
-		$pause = 0.3;
+		$pause = 0.2;
 		static $stime = 0;
 		$ts = microtime(1) - $stime;
 		$sleep = min($pause, max(0, $pause - $ts));
@@ -97,10 +97,7 @@ class SipEngine
 				break;
 			}
 			// TODO: 在一次轮次内，相同的两条消息应该丢掉第2条
-			$ret = $this->incoming($msg);
-			if($ret !== true){
-				$this->error_reply($msg);
-			}
+			$this->incoming($msg);
 		}
 	}
 	
@@ -116,25 +113,30 @@ class SipEngine
 		if($msg->method == 'INVITE'){
 			if($msg->to->username === $msg->from->username){
 				Logger::info("invalid INVITE, from == to, {$msg->from->username}");
+				// TODO: 发送错误回复
 				return false;
 			}
 
 			$callee = $this->callin($msg);
 			if(!$callee){
-				return false;
+				$this->error_reply($msg, 403);
+				return true;
 			}
 			
 			$msg = $this->router->route($msg);
 			
 			$caller = $this->callout($msg);
 			if(!$caller){
-				return false;
+				$this->error_reply($msg, 404);
+				return true;
 			}
 
 			$this->mixer->add_dialog($callee, $caller);
 			return true;
 		}
-		return false;
+		
+		$this->error_reply($msg);
+		return true;
 	}
 	
 	private function callin($msg){
@@ -146,9 +148,6 @@ class SipEngine
 				return $sess;
 			}
 		}
-		
-		Logger::debug("403 Forbidden");
-		// TODO: send error response
 		return null;
 	}
 	
@@ -161,10 +160,6 @@ class SipEngine
 				return $sess;
 			}
 		}
-
-		Logger::debug("404 Not Found");
-		// TODO: send error response
-		return;
 		return null;
 	}
 	
@@ -185,8 +180,41 @@ class SipEngine
 		}
 	}
 	
-	private function error_reply($msg){
-		Logger::debug("drop msg");
-		// TODO: 在此处根据不同的消息类似创建不同的 ErrorReplySession
+	private function error_reply($msg, $code=0){
+		if($msg->is_response()){
+			return;
+		}
+		
+		if(!$code){
+			if($msg->method === 'REGISTER'){
+				$code = 401;
+			}else{
+				$code = 481;
+			}
+		}
+
+		$ret = new SipMessage();
+		
+		$ret->src_ip = $this->local_ip;
+		$ret->src_port = $this->local_port;
+		$ret->dst_ip = $msg->src_ip;
+		$ret->dst_port = $msg->src_port;
+		
+		$ret->code = $code;
+		$ret->cseq = $msg->cseq;
+		$ret->cseq_method = $msg->cseq_method;
+		$ret->uri = $msg->uri;
+		$ret->call_id = $msg->call_id;
+		if($msg->method === 'REGISTER'){
+			$ret->from = $msg->from;
+			$ret->to = $msg->to;
+		}else{
+			$ret->from = $msg->to;
+			$ret->to = $msg->from;
+		}
+		$ret->branch = $msg->branch;
+		$ret->contact = $msg->contact;
+		
+		$this->link->send($ret);
 	}
 }

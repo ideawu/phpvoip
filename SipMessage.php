@@ -29,6 +29,19 @@ class SipMessage
 	// 未详细解析的 header, 每个元素是 pair [key, val]
 	public $headers = array();
 	public $content = '';
+
+	private static $code_reasons = array(
+		100 => 'Trying',
+		180 => 'Ringing',
+		200 => 'OK',
+		401 => 'Unauthorized',
+		403 => 'Forbidden',
+		404 => 'Not Found',
+		451 => 'Unsupported Media Type',
+		481 => 'Call/Transaction Does Not Exist',
+		486 => 'Busy Here',
+		487 => 'Request Terminated',
+	);
 	
 	// 返回简洁描述
 	function brief(){
@@ -77,14 +90,8 @@ class SipMessage
 	
 	function encode(){
 		if($this->code > 0 && strlen($this->reason) == 0){
-			if($this->code == 100){
-				$this->reason = 'Trying';
-			}else if($this->code == 180){
-				$this->reason = 'Ringing';
-			}else if($this->code == 200){
-				$this->reason = 'OK';
-			}else if($this->code == 401){
-				$this->reason = 'Unauthorized';
+			if(isset(self::$code_reasons[$this->code])){
+				$this->reason = self::$code_reasons[$this->code];
 			}
 		}
 		

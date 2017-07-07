@@ -54,11 +54,6 @@ abstract class SipBaseCallSession extends SipSession
 				return true;
 			}
 		}
-
-		// 415 Unsupported Media Type
-		// 481 Call/Transaction Does Not Exist
-		// 486 Busy Here
-		// 487 Request Terminated
 		
 		if($msg->code == 180 && ($this->is_state(SIP::CALLING) || $this->is_state(SIP::TRYING))){
 			$this->set_state(SIP::RINGING);
