@@ -77,9 +77,6 @@ abstract class SipSession
 	}
 	
 	function complete(){
-		// if($this->state != SIP::COMPLETED){
-		// 	Logger::debug($this->brief() . " established");
-		// }
 		$this->set_state(SIP::COMPLETED);
 	}
 	
@@ -98,13 +95,6 @@ abstract class SipSession
 		$new = $this->new_request();
 		$new->method = $method;
 		$new->close();
-		// foreach($this->transactions as $trans){
-		// 	$this->transactions = array();
-		// 	$new = $this->new_request($trans->branch);
-		// 	$new->close();
-		// 	break;
-		// 	// $trans->close();
-		// }
 	}
 	
 	function onclose($msg){
