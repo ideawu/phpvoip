@@ -72,7 +72,12 @@ class SipRegistrarSession extends SipSession
 				}
 				if($msg->expires <= 0){
 					Logger::debug("client logout");
-					$this->terminate();
+					$this->expires = 0;
+					$this->local->set_tag(SIP::new_tag());
+					$this->complete();
+					
+					$trans->completing(); // 等待客户端可能的重传
+					return true;
 				}
 				if($trans->state == SIP::COMPLETING){
 					Logger::debug("recv duplicated REGISTER");

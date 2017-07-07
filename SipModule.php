@@ -65,6 +65,10 @@ abstract class SipModule
 			$this->complete_session($sess);
 		}
 
+		if($sess->is_state(SIP::CLOSED)){
+			$this->del_session($sess);
+		}
+
 		return true;
 	}
 	
@@ -165,8 +169,10 @@ abstract class SipModule
 			if(!$s1 && $s2){
 				$this->complete_session($sess);
 			}
+			
 			if($sess->is_state(SIP::CLOSED)){
 				$this->del_session($sess);
+				continue;
 			}
 		}
 		return $ret;

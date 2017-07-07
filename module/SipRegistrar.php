@@ -61,14 +61,40 @@ class SipRegistrar extends SipModule
 	function sess_callback($sess){
 		Logger::debug($sess->brief() . " state = " . $sess->state_text());
 		if($sess->is_state(SIP::COMPLETED)){
-			if($sess->expres == 0){
-				// 用户 logout
-			}else{
-				// 将同用户不同 call_id 的会话清除，处理逻辑1
-				// 将同用户同 call_id 的会话清除，处理逻辑2
+			// 将同用户不同 call_id 的会话清除，处理逻辑1
+			// 将同用户同 call_id 的会话清除，处理逻辑2
+			foreach($this->sessions as $index=>$tmp){
+				if($tmp === $sess){
+					continue;
+				}
+				if($tmp->remote->username !== $sess->remote->username){
+					continue;
+				}
+				if($sess->expires <= 0){
+					Logger::debug("client logout");
+				}else{
+					if($tmp->call_id === $sess->call_id){
+						Logger::debug("REGISTRAR " . $sess->remote->address() . " renewed");
+					}else{
+						Logger::debug("REGISTRAR " . $sess->remote->address() . " with new call_id");
+					}
+				}
+				
+				Logger::debug('    del ' . $sess->remote->encode());
+				unset($this->sessions[$index]);
 			}
 		}
 		if($sess->is_state(SIP::CLOSED)){
+			foreach($this->sessions as $index=>$tmp){
+				if($tmp === $sess){
+					continue;
+				}
+				if($tmp->remote->username !== $sess->remote->username){
+					continue;
+				}
+				Logger::debug('    del ' . $sess->remote->encode());
+				unset($this->sessions[$index]);
+			}
 		}
 	}
 	
