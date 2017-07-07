@@ -4,7 +4,7 @@ class SipRegistrarSession extends SipSession
 	public $username;
 	public $password;
 	public $remote_branch;
-	public $expires = 30;
+	public $expires = 60; // 似乎某个 UAC 不支持少于60
 	
 	private $auth = array(
 		'scheme' => 'Digest',
@@ -91,7 +91,7 @@ class SipRegistrarSession extends SipSession
 				$trans->completing(); // 等待客户端可能的重传
 
 				if($msg->expires <= 0){
-					Logger::debug("client logout");
+					Logger::debug($msg->from->address() . " client logout");
 					$this->expires = 0;
 				}else{
 					$new = $this->new_request();
@@ -129,7 +129,7 @@ class SipRegistrarSession extends SipSession
 			$msg->expires = $this->expires;
 			return $msg;
 		}else if($trans->state == SIP::KEEPALIVE){
-			Logger::debug("session expires, terminate");
+			Logger::debug($this->remote->address() . " session expires, terminate");
 			$this->terminate();
 		}
 	}

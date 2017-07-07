@@ -5,7 +5,7 @@ class SipRegisterSession extends SipSession
 	public $password;
 	public $domain;
 
-	const MIN_EXPIRES = 30;
+	const MIN_EXPIRES = 60;
 	const MAX_EXPIRES = 120;
 	private $auth;
 	private $expires = self::MIN_EXPIRES;
@@ -40,7 +40,7 @@ class SipRegisterSession extends SipSession
 		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
 			if($msg->code == 200){
 				$this->auth = null;
-				$expires = min(self::MAX_EXPIRES, $this->expires - 5);
+				$expires = min(self::MAX_EXPIRES, $this->expires);
 				if($this->is_state(SIP::COMPLETED)){
 					Logger::debug("REGISTER " .$this->local->address(). " renewed, expires: $expires");
 				}else{
@@ -52,7 +52,7 @@ class SipRegisterSession extends SipSession
 				
 				$new = $this->new_request();
 				$new->register();
-				$new->wait($expires);
+				$new->wait($expires/2);
 			}else if($msg->code == 401){
 				$this->auth = $this->www_auth($msg->auth);
 				
