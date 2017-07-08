@@ -27,6 +27,28 @@ class SipCallerSession extends SipBaseCallSession
 		}
 	}
 
+	function close(){
+		if($this->is_state(SIP::CLOSING)){
+			return;
+		}
+
+		if($this->is_state(SIP::CALLING)){
+			foreach($this->transactions as $new){ // 应该倒序遍历
+				Logger::debug("send CANCEL");
+				$new->method = 'CANCEL';
+				$new->close();
+			}
+		}else if($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)){
+			foreach($this->transactions as $new){ // 应该倒序遍历
+				Logger::debug("send BYE");
+				$new->method = 'BYE';
+				$new->close();
+			}
+		}
+		
+		$this->set_state(SIP::CLOSING);
+	}
+
 	function incoming($msg, $trans){
 		$ret = parent::incoming($msg, $trans);
 		if($ret === true){

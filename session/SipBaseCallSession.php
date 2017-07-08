@@ -93,7 +93,7 @@ abstract class SipBaseCallSession extends SipSession
 				$msg->method = $trans->method;
 			}
 			// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
-			// 然后回复 OK 给 CANCEL，目前的实现会 drop 487
+			// 然后回复 OK 给 CANCEL
 			return $msg;
 		}else if($trans->state == SIP::CLOSE_WAIT){
 			$msg = new SipMessage();
