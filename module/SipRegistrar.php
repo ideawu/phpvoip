@@ -62,7 +62,6 @@ class SipRegistrar extends SipModule
 	}
 	
 	function sess_callback($sess){
-		Logger::debug($sess->brief() . " state = " . $sess->state_text());
 		// 将同用户不同 call_id 的会话清除，处理逻辑1
 		// 将同用户同 call_id 的会话清除，处理逻辑2
 		if($sess->is_state(SIP::COMPLETED)){

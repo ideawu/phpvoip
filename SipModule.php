@@ -235,13 +235,13 @@ abstract class SipModule
 	}
 	
 	function add_session($sess){
-		Logger::debug("NEW " . $sess->brief());
+		#Logger::debug("NEW " . $sess->brief());
 		$sess->module = $this;
 		$this->sessions[] = $sess;
 	}
 
 	function del_session($sess){
-		Logger::debug("DEL " . $sess->brief());
+		#Logger::debug("DEL " . $sess->brief());
 		foreach($this->sessions as $index=>$tmp){
 			if($tmp !== $sess){
 				continue;
@@ -253,6 +253,6 @@ abstract class SipModule
 	}
 	
 	function complete_session($sess){
-		Logger::debug("COMPLETE " . $sess->brief());
+		#Logger::debug("COMPLETE " . $sess->brief());
 	}
 }

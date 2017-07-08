@@ -50,6 +50,7 @@ abstract class SipSession
 		$old = $this->state;
 		$this->state = $new;
 		if($old !== $new && $this->callback){
+			Logger::debug($this->brief() . " state = " . $this->state_text());
 			call_user_func($this->callback, $this);
 		}
 	}

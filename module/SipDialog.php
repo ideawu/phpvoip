@@ -47,7 +47,6 @@ class SipDialog
 	}
 	
 	function sess_callback($sess){
-		Logger::debug($sess->brief() . " state = " . $sess->state_text());
 		if($sess === $this->caller){
 			if($sess->is_state(SIP::RINGING)){
 				Logger::debug("caller ringing, callee ringing");

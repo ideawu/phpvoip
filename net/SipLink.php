@@ -35,7 +35,7 @@ class SipLink
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
 		Logger::debug("send " . $msg->brief() . " to '{$msg->dst_ip}:{$msg->dst_port}'");
-		echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
+		#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 	}
 	
 	function recv(){
@@ -73,7 +73,7 @@ class SipLink
 			return;
 		}
 		Logger::debug("recv " . $msg->brief() . " from '{$msg->src_ip}:{$msg->src_port}'");
-		echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
+		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 		return $msg;
 	}
 }
