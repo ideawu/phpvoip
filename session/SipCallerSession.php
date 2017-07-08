@@ -1,10 +1,24 @@
 <?php
 class SipCallerSession extends SipBaseCallSession
 {
-	function __construct(){
+	function __construct($uri, $from, $to){
 		parent::__construct();
 		$this->role = SIP::CALLER;
 		$this->set_state(SIP::NONE);
+
+		$this->uri = $uri;
+		$this->call_id = SIP::new_call_id();
+		$this->local = $from;
+		$this->local->set_tag(SIP::new_tag());
+		$this->remote = $to;
+		// contact 必须和 from 保持一致
+		$this->contact = new SipContact($from->username, $from->domain);
+	}
+	
+	function init(){
+		$this->set_state(SIP::CALLING);
+		$new = $this->new_request();
+		$new->calling();
 	}
 
 	function del_transaction($trans){
@@ -12,12 +26,6 @@ class SipCallerSession extends SipBaseCallSession
 		if($this->is_state(SIP::CALLING) || $this->is_state(SIP::RINGING)){
 			$this->close();
 		}
-	}
-	
-	function init(){
-		$this->set_state(SIP::CALLING);
-		$new = $this->new_request();
-		$new->calling();
 	}
 
 	function incoming($msg, $trans){

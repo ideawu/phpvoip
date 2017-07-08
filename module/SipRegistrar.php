@@ -20,8 +20,11 @@ class SipRegistrar extends SipModule
 			if(!isset($this->users[$username])){
 				return false;
 			}
+			if($username !== $msg->contact->username){
+				Logger::debug("username: {$username} != contact: {$msg->contact->username}");
+				return false;
+			}
 			
-			// TODO: 验证 contact
 			$password = $this->users[$username];
 				
 			$local_ip = $this->engine->local_ip;
@@ -60,9 +63,9 @@ class SipRegistrar extends SipModule
 	
 	function sess_callback($sess){
 		Logger::debug($sess->brief() . " state = " . $sess->state_text());
+		// 将同用户不同 call_id 的会话清除，处理逻辑1
+		// 将同用户同 call_id 的会话清除，处理逻辑2
 		if($sess->is_state(SIP::COMPLETED)){
-			// 将同用户不同 call_id 的会话清除，处理逻辑1
-			// 将同用户同 call_id 的会话清除，处理逻辑2
 			foreach($this->sessions as $index=>$tmp){
 				if($tmp === $sess){
 					continue;
@@ -96,10 +99,53 @@ class SipRegistrar extends SipModule
 	}
 	
 	function callin($msg){
+		foreach($this->sessions as $sess){
+			if(!$sess->is_state(SIP::COMPLETED)){
+				continue;
+			}
+			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+				continue;
+			}
+			if($msg->to->username !== $sess->username){
+				continue;
+			}
+			
+			$call = new SipCalleeSession($msg);
+			$call->local_ip = $sess->local_ip;
+			$call->local_port = $sess->local_port;
+			$call->remote_ip = $sess->remote_ip;
+			$call->remote_port = $sess->remote_port;
+			$call->init();
+			return $call;
+		}
 		return null;
 	}
 	
 	function callout($msg){
+		foreach($this->sessions as $sess){
+			if(!$sess->is_state(SIP::COMPLETED)){
+				continue;
+			}
+			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+				continue;
+			}
+			if($msg->to->username !== $sess->username){
+				continue;
+			}
+		
+			$uri = $msg->uri;
+			$from = clone $msg->from;
+			$to = clone $msg->to;
+			$contact = clone $msg->contact;
+
+			$call = new SipCallerSession($uri, $from, $to, $contact);
+			$call->local_ip = $sess->local_ip;
+			$call->local_port = $sess->local_port;
+			$call->remote_ip = $sess->remote_ip;
+			$call->remote_port = $sess->remote_port;
+			$call->init();
+			return $call;
+		}
 		return null;
 	}
 }

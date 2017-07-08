@@ -57,6 +57,8 @@ class SipChannel extends SipModule
 	function sess_callback($sess){
 		if($sess->is_state(SIP::COMPLETED)){
 			Logger::debug("channel connected, " . $sess->contact->encode());
+		}else if($sess->is_state(SIP::CLOSED)){
+			Logger::debug("channel disconnected, " . $sess->contact->encode());
 		}
 	}
 
@@ -65,7 +67,6 @@ class SipChannel extends SipModule
 		if(!$sess->is_state(SIP::COMPLETED)){
 			return null;
 		}
-		
 		if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 			return null;
 		}
@@ -75,31 +76,12 @@ class SipChannel extends SipModule
 			return null;
 		}
 		
-		$call = new SipCalleeSession();
-		$call->local_ip = $this->local_ip;
-		$call->local_port = $this->local_port;
-		$call->remote_ip = $this->remote_ip;
-		$call->remote_port = $this->remote_port;
-		
-		// TODO: 可能需要修改地址中的 domain
-		$call->uri = $msg->uri;
-		$call->call_id = $msg->call_id;
-		$call->local = clone $msg->to;
-		$call->remote = clone $msg->from;
-		$call->contact = clone $this->contact;
-		$call->remote_cseq = $msg->cseq;
-		$call->remote_branch = $msg->branch;
-		$call->remote_sdp = $msg->content;
-
-		if(!$call->remote_allow){
-			$str = $msg->get_header('Allow');
-			if($str){
-				$call->remote_allow = preg_split('/[, ]+/', trim($str));
-			}
-		}
-
+		$call = new SipCalleeSession($msg);
+		$call->local_ip = $sess->local_ip;
+		$call->local_port = $sess->local_port;
+		$call->remote_ip = $sess->remote_ip;
+		$call->remote_port = $sess->remote_port;
 		$call->init();
-
 		return $call;
 	}
 
@@ -108,30 +90,26 @@ class SipChannel extends SipModule
 		if(!$sess->is_state(SIP::COMPLETED)){
 			return null;
 		}
-
+		if($msg->from->username !== $sess->username){
+			return null;
+		}
 		if($msg->to->username === $sess->username){
 			Logger::error("SipChannel is not UAC, drop msg with to=self");
 			return null;
 		}
-
-		if($msg->from->username == $sess->username){
-			$call = new SipCallerSession();
-			$call->local_ip = $this->local_ip;
-			$call->local_port = $this->local_port;
-			$call->remote_ip = $this->remote_ip;
-			$call->remote_port = $this->remote_port;
-			
-			$call->uri = $msg->uri; // TODO: 可能需要修改地址中的 domain
-			$call->call_id = SIP::new_call_id();
-			$call->local = clone $this->contact;
-			$call->local->set_tag(SIP::new_tag());
-			$call->remote = clone $msg->to; // TODO: 可能需要修改地址中的 domain
-			$call->contact = clone $this->contact; // 如果要保留原呼叫人，则设为 $msg->contact
-			
-			$call->init();
-			return $call;
-		}
 		
-		return null;
+		// TODO: 可能需要修改各个地址中的 domain
+		$uri = $msg->uri;
+		$from = clone $msg->from;
+		#$from->username = $msg->contact->username; // 如果要保留原发起人
+		$to = clone $msg->to;
+
+		$call = new SipCallerSession($uri, $from, $to);
+		$call->local_ip = $sess->local_ip;
+		$call->local_port = $sess->local_port;
+		$call->remote_ip = $sess->remote_ip;
+		$call->remote_port = $sess->remote_port;
+		$call->init();
+		return $call;
 	}
 }

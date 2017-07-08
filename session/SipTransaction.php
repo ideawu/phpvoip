@@ -6,6 +6,7 @@ class SipTransaction
 	public $remote_tag;
 	public $cseq;
 	public $method;
+	public $code;
 	
 	public $state;
 	public $timers;

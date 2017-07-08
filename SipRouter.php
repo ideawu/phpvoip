@@ -21,7 +21,7 @@ class SipRouter
 		$ret->uri = $msg->uri;
 		$ret->from = clone $msg->from;
 		$ret->to = clone $msg->to;
-		$ret->contact = clone $msg->contact;
+		$ret->contact = clone $msg->contact; // 重写后的INVITE要保留原有的 contact
 		$ret->call_id = SIP::new_call_id();
 		$ret->from->set_tag(SIP::new_tag());
 		$ret->branch = SIP::new_branch();

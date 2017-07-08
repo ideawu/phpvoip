@@ -59,12 +59,10 @@ abstract class SipBaseCallSession extends SipSession
 			$this->set_state(SIP::RINGING);
 			return true;
 		}
-		if($msg->code >= 300 && $msg->code < 400){
-			// ...
-			Logger::info("nothing to do with {$msg->code}");
-		}else if($msg->code == 404 || $msg->code == 481){
-			Logger::info("recv {$msg->code} {$msg->reason}, terminate " . $this->role_name());
-			$this->terminate();
+		if($msg->code >= 400){
+			// 需要回复 ACK
+			Logger::info("recv {$msg->code} {$msg->reason}, closing " . $this->role_name());
+			$this->onclose($msg);
 			return true;
 		}
 	}
@@ -90,8 +88,12 @@ abstract class SipBaseCallSession extends SipSession
 			return $msg;
 		}else if($trans->state == SIP::CLOSE_WAIT){
 			$msg = new SipMessage();
-			$msg->code = 200;
-			$msg->cseq_method = $trans->method;
+			if($trans->code >= 300){
+				$msg->method = 'ACK';
+			}else{
+				$msg->code = 200;
+				$msg->cseq_method = $trans->method;
+			}
 			return $msg;
 		}
 	}

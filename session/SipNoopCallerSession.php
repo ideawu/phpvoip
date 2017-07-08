@@ -8,7 +8,9 @@ class SipNoopCallerSession extends SipSession
 		
 		$this->local = new SipContact();
 		$this->remote = new SipContact();
-		
+	}
+	
+	function init(){
 		$new = $this->new_request();
 		$new->trying();
 		$new->timers = array(1, 1, 1, 1, 1, 1);

@@ -52,7 +52,7 @@ class SipLink
 		$msg->src_ip = $ip;
 		$msg->src_port = $port;
 		
-		// // TODO:
+		// // TODO: PHP 5.4 不支持 socket_recvmsg()
 		// if($this->local_ip === '0.0.0.0'){
 		// 	$msg->dst_ip = SIP::guess_local_ip($msg->src_ip);
 		// 	Logger::info("Guest local ip {$msg->dst_ip} for recvfrom {$msg->src_ip}");
