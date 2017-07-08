@@ -13,8 +13,15 @@ class SipLink
 		$ret->sock = $link->sock;
 		$ret->local_ip = $link->local_ip;
 		$ret->local_port = $link->local_port;
-		$ret->udp->set_nonblock();
 		return $ret;
+	}
+	
+	function set_nonblock(){
+		$this->udp->set_nonblock();
+	}
+	
+	function set_block(){
+		$this->udp->set_block();
 	}
 	
 	function send($msg){

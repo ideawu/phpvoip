@@ -106,7 +106,7 @@ class SipRegistrar extends SipModule
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
 			}
-			if($msg->to->username !== $sess->username){
+			if($msg->from->username !== $sess->remote->username){
 				continue;
 			}
 			
@@ -129,7 +129,7 @@ class SipRegistrar extends SipModule
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
 			}
-			if($msg->to->username !== $sess->username){
+			if($msg->to->username !== $sess->remote->username){
 				continue;
 			}
 		

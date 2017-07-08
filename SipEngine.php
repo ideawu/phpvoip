@@ -18,6 +18,7 @@ class SipEngine
 	static function create($local_ip='127.0.0.1', $local_port=0){
 		$ret = new SipEngine();
 		$ret->link = SipLink::listen($local_ip, $local_port);
+		$ret->link->set_nonblock();
 		$ret->local_ip = $ret->link->local_ip;
 		$ret->local_port = $ret->link->local_port;
 		return $ret;
@@ -119,7 +120,7 @@ class SipEngine
 
 			$callee = $this->callin($msg);
 			if(!$callee){
-				$this->error_reply($msg, 403);
+				$this->error_reply($msg, 401);
 				return true;
 			}
 			

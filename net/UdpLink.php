@@ -25,6 +25,10 @@ class UdpLink
 		return $ret;
 	}
 	
+	function set_block(){
+		return socket_set_block($this->sock);
+	}
+	
 	function set_nonblock(){
 		return socket_set_nonblock($this->sock);
 	}
