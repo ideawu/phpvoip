@@ -92,6 +92,13 @@ abstract class SipSession
 			$method = 'CANCEL';
 		}
 		$this->set_state(SIP::CLOSING);
+		foreach($this->transactions as $new){
+			// $this->transactions = array();
+			// $new = $this->new_request();
+			$new->method = $method;
+			$new->close();
+			return;
+		}
 		$this->transactions = array();
 		$new = $this->new_request();
 		$new->method = $method;
@@ -129,8 +136,8 @@ abstract class SipSession
 				echo "{$b['file']} {$b['line']}\n";
 			}
 		}
-		$trans->local = clone $this->local;
-		$trans->remote = clone $this->remote;
+		$trans->from = clone $this->local;
+		$trans->to = clone $this->remote;
 		$trans->cseq = $this->local_cseq;
 		$this->add_transaction($trans);
 		return $trans;
@@ -139,8 +146,8 @@ abstract class SipSession
 	function new_response($branch){
 		$trans = new SipTransaction();
 		$trans->branch = $branch; //
-		$trans->local = clone $this->local;
-		$trans->remote = clone $this->remote;
+		$trans->from = clone $this->remote;
+		$trans->to = clone $this->local;
 		$trans->cseq = $this->remote_cseq;
 		$this->add_transaction($trans);
 		return $trans;

@@ -53,9 +53,11 @@ class SipDialog
 				$this->callee->ringing();
 			}
 			if($sess->is_state(SIP::COMPLETED)){
-				Logger::debug("caller completed, completing callee");
-				$this->callee->completing();
-				$this->callee->local_sdp = $this->caller->remote_sdp;
+				// Logger::debug("caller completed, completing callee");
+				// $this->callee->completing();
+				// $this->callee->local_sdp = $this->caller->remote_sdp;
+				Logger::debug("caller completed, closing callee");
+				$this->callee->close();
 			}
 		}
 		if($sess->is_state(SIP::CLOSED)){

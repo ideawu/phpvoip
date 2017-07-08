@@ -84,6 +84,8 @@ class SipRegisterSession extends SipSession
 	// 返回要发送的消息
 	function outgoing($trans){
 		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
+			$trans->to->del_tag();
+
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
 			$msg->expires = $this->expires;

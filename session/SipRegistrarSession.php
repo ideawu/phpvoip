@@ -81,7 +81,7 @@ class SipRegistrarSession extends SipSession
 				if($this->is_state(SIP::COMPLETED)){
 					Logger::debug("REGISTRAR " . $msg->from->address() . " renewed");
 				}else{
-					#Logger::debug("REGISTRAR " . $msg->from->address() . " registered");
+					Logger::debug("REGISTRAR " . $msg->from->address() . " registered");
 					$this->local->set_tag(SIP::new_tag());
 					$this->complete();
 				}
@@ -89,8 +89,10 @@ class SipRegistrarSession extends SipSession
 				// 清除全部事务
 				$this->transactions = array();
 				
-				$this->transactions[] = $trans;
-				$trans->completing(); // 等待客户端可能的重传
+				// $this->transactions[] = $trans;
+				// $trans->completing(); // 等待客户端可能的重传
+				$new = $this->new_response($trans->branch);
+				$new->completing();
 
 				$new = $this->new_request();
 				$new->keepalive();
@@ -108,6 +110,8 @@ class SipRegistrarSession extends SipSession
 			$msg->cseq_method = 'REGISTER';
 			return $msg;
 		}else if($trans->state == SIP::AUTHING){
+			$trans->to->del_tag();
+			
 			$msg = new SipMessage();
 			$msg->code = 401;
 			$msg->cseq_method = 'REGISTER';

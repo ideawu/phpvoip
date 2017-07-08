@@ -27,7 +27,7 @@ abstract class SipBaseCallSession extends SipSession
 		}
 		
 		if($trans->state == SIP::FIN_WAIT){
-			if($msg->code == 200){
+			if($msg->code == 200 || $msg->method == 'ACK'){
 				Logger::info("recv {$msg->code} {$msg->reason}, finish CLOSE_WAIT " . $this->role_name());
 				$this->terminate();
 				return true;
@@ -86,7 +86,12 @@ abstract class SipBaseCallSession extends SipSession
 			return $msg;
 		}else if($trans->state == SIP::FIN_WAIT){
 			$msg = new SipMessage();
-			$msg->method = $trans->method;
+			if($trans->code){
+				$msg->code = $trans->code;
+				$msg->cseq_method = $trans->method;
+			}else{
+				$msg->method = $trans->method;
+			}
 			// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
 			// 然后回复 OK 给 CANCEL，目前的实现会 drop 487
 			return $msg;

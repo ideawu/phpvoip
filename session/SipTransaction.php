@@ -2,8 +2,8 @@
 class SipTransaction
 {
 	public $branch;
-	public $local;
-	public $remote;
+	public $from;
+	public $to;
 	public $cseq;
 	public $method;
 	public $code;
@@ -45,13 +45,11 @@ class SipTransaction
 	function register(){
 		$this->state = SIP::TRYING;
 		$this->timers = self::$register_timers;
-		$this->remote->del_tag();;
 	}
 	
 	function auth(){
 		$this->state = SIP::AUTHING;
 		$this->timers = array(0, 5);
-		$this->local->del_tag();;
 	}
 	
 	function calling(){
@@ -78,6 +76,7 @@ class SipTransaction
 	function completing(){
 		$this->state = SIP::COMPLETING;
 		$this->timers = self::$completing_timers;
+		Logger::debug($this->from->tag() . ' ' . $this->to->tag());
 	}
 
 	function keepalive(){

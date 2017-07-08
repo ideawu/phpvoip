@@ -122,31 +122,28 @@ abstract class SipModule
 	
 	private function find_transaction_for_msg($msg, $sess){
 		foreach($sess->transactions as $trans){
+			if($msg->cseq !== $trans->cseq){
+				#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+				continue;
+			}
+			if($msg->from->tag() !== $trans->from->tag()){
+				Logger::debug("to.tag: ". $msg->from->tag() . " != local.tag: " . $trans->from->tag());
+				continue;
+			}
+			if($trans->to->tag()){
+				if($msg->to->tag() !== $trans->to->tag()){
+					Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->to->tag());
+					continue;
+				}
+			}
+
 			if($msg->is_request()){
 				// 观察到 Yate Client 会在连接成功之后，再发送新的 INVITE，
 				// fromtag, totag(不为空), callid 相同，branch, cseq 不同。
 				// uri 也不同。
-				if($msg->cseq !== $trans->cseq){
-					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
-					continue;
-				}
 				#if($trans->local_tag){
-					if($msg->to->tag() !== $trans->local->tag()){
-						Logger::debug("to.tag: ". $msg->to->tag() . " != local.tag: " . $trans->local->tag());
-						continue;
-					}
 					#}
 			}else{
-				if($msg->cseq !== $trans->cseq){
-					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
-					continue;
-				}
-				if($trans->remote->tag()){
-					if($msg->to->tag() !== $trans->remote->tag()){
-						Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->remote->tag());
-						continue;
-					}
-				}
 				if($msg->branch !== $trans->branch){
 					Logger::debug("branch: {$msg->branch} != branch: {$trans->branch}");
 					continue;
@@ -223,13 +220,9 @@ abstract class SipModule
 		$msg->uri = $sess->uri;
 		$msg->call_id = $sess->call_id;
 		$msg->contact = $sess->contact;
-		if($msg->is_request()){
-			$msg->from = $trans->local;
-			$msg->to = $trans->remote;
-		}else{
-			$msg->from = $trans->remote;
-			$msg->to = $trans->local;
-		}
+		
+		$msg->from = $trans->from;
+		$msg->to = $trans->to;
 		$msg->branch = $trans->branch;
 		$msg->cseq = $trans->cseq;
 	}

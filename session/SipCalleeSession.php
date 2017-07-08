@@ -37,7 +37,28 @@ class SipCalleeSession extends SipBaseCallSession
 			$this->close();
 		}
 	}
-	
+
+	function close(){
+		Logger::debug("" . $this->state_text());
+		if($this->is_state(SIP::CLOSING)){
+			return;
+		}
+
+		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			foreach($this->transactions as $new){ // 应该倒序遍历
+				Logger::debug("reply Busy Here");
+				$this->transactions = array($new);
+				$new->code = 486;
+				$new->method = 'INVITE';
+				$new->close();
+				break;
+			}
+		}else{
+			// bye/cancel
+		}
+		$this->set_state(SIP::CLOSING);
+	}
+		
 	function ringing(){
 		$this->set_state(SIP::RINGING);
 		if(!$this->local->tag()){

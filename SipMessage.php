@@ -39,6 +39,7 @@ class SipMessage
 		403 => 'Forbidden',
 		404 => 'Not Found',
 		481 => 'Call/Transaction Does Not Exist',
+		486 => 'Busy Here',
 	);
 	
 	// 返回简洁描述
