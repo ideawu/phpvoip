@@ -115,8 +115,12 @@ abstract class SipSession
 		$this->set_state(SIP::CLOSING);
 		$this->transactions = array();
 		$new = $this->new_response($msg->branch);
-		$new->method = $msg->method;
-		$new->code = $msg->code;
+		if($msg->method == 'BYE' || $msg->method == 'CANCEL'){
+			$new->code = 200;
+			$new->method = $msg->method;
+		}else{
+			$new->method = 'ACK';
+		}
 		$new->onclose();
 	}
 	
