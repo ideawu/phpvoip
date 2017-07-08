@@ -37,22 +37,26 @@ abstract class SipBaseCallSession extends SipSession
 		///////////////////////////////////////////
 		
 		if($trans->state == SIP::KEEPALIVE){
-			// TODO: 415 不一定正确
-			if($msg->code == 200 || $msg->code == 415){ // 415 Unsupported Media Type
+			if($msg->code == 481){
+				Logger::info("recv {$msg->code} {$msg->reason}, closing " . $this->role_name());
+				$this->onclose($msg);
+				return true;
+			}else{
+				Logger::info("recv {$msg->code} {$msg->reason}, keepalive");
 				$trans->keepalive();
 				return true;
 			}
-			// 有些 pbx 不能很好地处理 INFO，降级使用 OPTIONS
-			if($msg->code == 500 && in_array('INFO', $this->remote_allow)){
-				Logger::debug("INFO response 500, use OPTIONS instead");
-				foreach($this->remote_allow as $index=>$cmd){
-					if($cmd === 'INFO'){
-						unset($this->remote_allow[$index]);
-						break;
-					}
-				}
-				return true;
-			}
+			// // 有些 pbx 不能很好地处理 INFO，降级使用 OPTIONS
+			// if($msg->code == 500 && in_array('INFO', $this->remote_allow)){
+			// 	Logger::debug("INFO response 500 {$msg->reason}, use OPTIONS instead");
+			// 	foreach($this->remote_allow as $index=>$cmd){
+			// 		if($cmd === 'INFO'){
+			// 			unset($this->remote_allow[$index]);
+			// 			break;
+			// 		}
+			// 	}
+			// 	return true;
+			// }
 		}
 		
 		if($msg->code == 180 && ($this->is_state(SIP::CALLING) || $this->is_state(SIP::TRYING))){
@@ -75,10 +79,10 @@ abstract class SipBaseCallSession extends SipSession
 			$msg = new SipMessage();
 			if(in_array('INFO', $this->remote_allow)){
 				$msg->method = 'INFO';
-				$msg->add_header('Content-Type', 'application/sdp');
 			}else{
 				$msg->method = 'OPTIONS';
 			}
+			$msg->add_header('Accept', 'application/sdp');
 			return $msg;
 		}else if($trans->state == SIP::FIN_WAIT){
 			$msg = new SipMessage();

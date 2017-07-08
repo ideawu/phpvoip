@@ -9,7 +9,7 @@ class SipTransaction
 	public $code;
 	
 	public $state;
-	public $timers;
+	public $timers = array();
 
 	protected static $register_timers = array(0, 0.5, 1, 2, 3, 2);
 	

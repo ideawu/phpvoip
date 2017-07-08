@@ -50,7 +50,7 @@ abstract class SipModule
 		$trans = $this->find_transaction_for_msg($msg, $sess);
 		if(!$trans){
 			if($msg->is_request()){
-				#Logger::debug("create new response");
+				Logger::debug("create new response");
 				$trans = $sess->new_response($msg->branch);
 				// 不能在这里调用此方法，因为 new_response 里可能会改变状态
 				// $trans->trying();
@@ -127,7 +127,7 @@ abstract class SipModule
 				// fromtag, totag(不为空), callid 相同，branch, cseq 不同。
 				// uri 也不同。
 				if($msg->cseq !== $trans->cseq){
-					// Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
 				#if($trans->local_tag){
@@ -138,7 +138,7 @@ abstract class SipModule
 					#}
 			}else{
 				if($msg->cseq !== $trans->cseq){
-					// Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
 				if($trans->remote->tag()){

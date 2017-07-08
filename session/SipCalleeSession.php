@@ -33,6 +33,7 @@ class SipCalleeSession extends SipBaseCallSession
 	function del_transaction($trans){
 		parent::del_transaction($trans);
 		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			Logger::debug("del_transaction close");
 			$this->close();
 		}
 	}
@@ -46,8 +47,6 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->transactions = array();
 		$new = $this->new_response($this->remote_branch);
 		$new->ringing();
-		echo $new->local->encode() . "\n";
-		echo $new->remote->encode() . "\n";
 	}
 	
 	function completing(){
@@ -67,22 +66,29 @@ class SipCalleeSession extends SipBaseCallSession
 			return true;
 		}
 		
-		if($trans->state == SIP::COMPLETING){
+		if($msg->method == 'INVITE'){
+			Logger::debug("recv duplicated INVITE");
+			if($this->is_state(SIP::COMPLETED)){
+				$trans->completing();
+			}else{
+				$trans->nowait();
+			}
+			if($msg->content){
+				$this->remote_sdp = $msg->content;
+			}
+			return true;
+		}
+		if($trans->state == SIP::COMPLETING && !$this->is_state(SIP::COMPLETED)){
 			if($msg->method == 'ACK'){
+				Logger::debug("recv ACK, complete callee");
 				$this->complete();
 				
-				$this->del_transaction($trans);
+				// 清除全部事务
+				$this->transactions = array();
 				
 				$new = $this->new_request($trans->branch);
 				$new->keepalive();
 				
-				return true;
-			}else if($msg->method == 'INVITE'){
-				Logger::debug("recv duplicated INVITE, resend OK");
-				$trans->nowait();
-				if($msg->content){
-					$this->remote_sdp = $msg->content;
-				}
 				return true;
 			}
 		}
