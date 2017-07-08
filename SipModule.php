@@ -52,7 +52,8 @@ abstract class SipModule
 			if($msg->is_request()){
 				Logger::debug("create new response");
 				$trans = $sess->new_response($msg->branch);
-				$trans->trying();
+				// 不能在这里调用此方法，因为 new_response 里可能会改变状态
+				// $trans->trying();
 			}else{
 				return false;
 			}
