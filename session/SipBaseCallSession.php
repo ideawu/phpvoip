@@ -28,7 +28,7 @@ abstract class SipBaseCallSession extends SipSession
 		
 		if($trans->state == SIP::FIN_WAIT){
 			if($msg->code == 200 || $msg->method == 'ACK'){
-				Logger::info("recv {$msg->code} {$msg->reason}, finish CLOSE_WAIT " . $this->role_name());
+				Logger::info("recv " . $msg->brief() . ", finish CLOSE_WAIT " . $this->role_name());
 				$this->terminate();
 				return true;
 			}
