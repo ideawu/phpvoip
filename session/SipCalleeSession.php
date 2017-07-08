@@ -12,7 +12,6 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->call_id = $msg->call_id;
 		$this->local = clone $msg->to;
 		$this->remote = clone $msg->from;
-		$this->contact = clone $msg->contact;
 		$this->remote_cseq = $msg->cseq;
 		$this->remote_sdp = $msg->content;
 
@@ -20,6 +19,7 @@ class SipCalleeSession extends SipBaseCallSession
 	}
 	
 	function init(){
+		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
 		// 不能在 100 响应中返回 totag，所以这里不生成 local tag
 		$this->set_state(SIP::TRYING);
 		$new = $this->new_response($this->remote_branch);
@@ -39,19 +39,26 @@ class SipCalleeSession extends SipBaseCallSession
 	
 	function ringing(){
 		$this->set_state(SIP::RINGING);
-		$this->local->set_tag(SIP::new_tag());
+		if(!$this->local->tag()){
+			$this->local->set_tag(SIP::new_tag());
+		}
 		
 		$this->transactions = array();
 		$new = $this->new_response($this->remote_branch);
 		$new->ringing();
+		echo $new->local->encode() . "\n";
+		echo $new->remote->encode() . "\n";
 	}
 	
 	function completing(){
 		$this->set_state(SIP::COMPLETING);
+		if(!$this->local->tag()){
+			$this->local->set_tag(SIP::new_tag());
+		}
 		
 		$this->transactions = array();
 		$new = $this->new_response($this->remote_branch);
-		$new->completing();
+		$new->accept();
 	}
 	
 	function incoming($msg, $trans){

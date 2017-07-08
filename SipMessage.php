@@ -21,7 +21,7 @@ class SipMessage
 	public $content_length = 0;
 
 	public $via = null;
-	public $contact = null;
+	public $contact = null; // 网络层地址, 但RFC中似乎并没有这样说？
 	
 	public $expires = null;
 	public $auth;
@@ -107,7 +107,11 @@ class SipMessage
 		if($this->via){
 			$headers[] = "Via: {$this->via}";
 		}else{
-			$headers[] = "Via: SIP/2.0/UDP {$this->src_ip}:{$this->src_port};rport;branch={$this->branch}";
+			if($this->is_request()){
+				$headers[] = "Via: SIP/2.0/UDP {$this->src_ip}:{$this->src_port};rport;branch={$this->branch}";
+			}else{
+				$headers[] = "Via: SIP/2.0/UDP {$this->dst_ip}:{$this->dst_port};rport;branch={$this->branch};received={$this->src_ip}";
+			}
 		}
 		if($this->contact){
 			$headers[] = "Contact: " . $this->contact->encode();

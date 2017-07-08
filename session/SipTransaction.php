@@ -2,8 +2,8 @@
 class SipTransaction
 {
 	public $branch;
-	public $local_tag;
-	public $remote_tag;
+	public $local;
+	public $remote;
 	public $cseq;
 	public $method;
 	public $code;
@@ -16,6 +16,7 @@ class SipTransaction
 	protected static $calling_timers = array(0, 0.5, 0.5, 2, 3, 3, 3, 3);
 	protected static $trying_timers = array(0, 1, 1, 1);
 	protected static $ringing_timers = array(0, 3, 3, 3, 3, 3);
+	protected static $accept_timers = array(0, 1, 1, 1); // 重复发送OK直到收到ACK
 	protected static $completing_timers = array(0, 5);
 	
 	protected static $keepalive_timers = array(10, 3, 1, 1);
@@ -44,11 +45,13 @@ class SipTransaction
 	function register(){
 		$this->state = SIP::TRYING;
 		$this->timers = self::$register_timers;
+		$this->remote->del_tag();;
 	}
 	
 	function auth(){
 		$this->state = SIP::AUTHING;
 		$this->timers = array(0, 5);
+		$this->local->del_tag();;
 	}
 	
 	function calling(){
@@ -66,11 +69,17 @@ class SipTransaction
 		$this->timers = self::$ringing_timers;
 	}
 	
+	function accept(){
+   		// 等待 ACK
+		$this->state = SIP::COMPLETING;
+		$this->timers = self::$accept_timers;
+	}
+	
 	function completing(){
 		$this->state = SIP::COMPLETING;
 		$this->timers = self::$completing_timers;
 	}
-	
+
 	function keepalive(){
 		$this->state = SIP::KEEPALIVE;
 		$this->timers = self::$keepalive_timers;

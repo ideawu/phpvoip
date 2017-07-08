@@ -11,11 +11,10 @@ class SipCallerSession extends SipBaseCallSession
 		$this->local = $from;
 		$this->local->set_tag(SIP::new_tag());
 		$this->remote = $to;
-		// contact 必须和 from 保持一致
-		$this->contact = new SipContact($from->username, $from->domain);
 	}
 	
 	function init(){
+		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
 		$this->set_state(SIP::CALLING);
 		$new = $this->new_request();
 		$new->calling();

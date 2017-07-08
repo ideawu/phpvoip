@@ -29,12 +29,12 @@ abstract class SipModule
 			return false;
 		}
 		if($msg->is_request() && !$sess->remote_cseq){
-			Logger::debug("init remote_cseq={$msg->cseq}");
+			#Logger::debug("init remote_cseq={$msg->cseq}");
 			$sess->remote_cseq = $msg->cseq;
 		}
 		if($msg->is_request() && $msg->cseq == $sess->remote_cseq + 1){
+			#Logger::debug("update remote_cseq {$msg->cseq}");
 			$sess->remote_cseq ++;
-			Logger::debug("update remote_cseq {$msg->cseq}");
 		}
 		if($msg->code >= 180 && !$sess->remote->tag() && $msg->to->tag()){
 			Logger::debug("set remote.tag=" . $msg->to->tag());
@@ -50,7 +50,7 @@ abstract class SipModule
 		$trans = $this->find_transaction_for_msg($msg, $sess);
 		if(!$trans){
 			if($msg->is_request()){
-				Logger::debug("create new response");
+				#Logger::debug("create new response");
 				$trans = $sess->new_response($msg->branch);
 				// 不能在这里调用此方法，因为 new_response 里可能会改变状态
 				// $trans->trying();
@@ -107,12 +107,12 @@ abstract class SipModule
 					Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
 					continue;
 				}
-				if($sess->remote->tag()){
-					if($msg->to->tag() !== $sess->remote->tag()){
-						Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
-						continue;
-					}
-				}
+				// if($sess->remote->tag()){
+				// 	if($msg->to->tag() !== $sess->remote->tag()){
+				// 		Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
+				// 		continue;
+				// 	}
+				// }
 			}
 			
 			return $sess;
@@ -130,20 +130,20 @@ abstract class SipModule
 					// Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
-				if($trans->local_tag){
-					if($msg->to->tag() !== $trans->local_tag){
-						Logger::debug("to.tag: ". $msg->to->tag() . " != local_tag: {$trans->local_tag}");
+				#if($trans->local_tag){
+					if($msg->to->tag() !== $trans->local->tag()){
+						Logger::debug("to.tag: ". $msg->to->tag() . " != local.tag: " . $trans->local->tag());
 						continue;
 					}
-				}
+					#}
 			}else{
 				if($msg->cseq !== $trans->cseq){
 					// Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
 					continue;
 				}
-				if($trans->remote_tag){
-					if($msg->to->tag() !== $trans->remote_tag){
-						Logger::debug("to.tag: " . $msg->to->tag() . " != remote_tag: {$trans->remote_tag}");
+				if($trans->remote->tag()){
+					if($msg->to->tag() !== $trans->remote->tag()){
+						Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->remote->tag());
 						continue;
 					}
 				}
@@ -222,14 +222,14 @@ abstract class SipModule
 
 		$msg->uri = $sess->uri;
 		$msg->call_id = $sess->call_id;
-		if($msg->is_request()){
-			$msg->from = $sess->local;
-			$msg->to = $sess->remote;
-		}else{
-			$msg->from = $sess->remote;
-			$msg->to = $sess->local;
-		}
 		$msg->contact = $sess->contact;
+		if($msg->is_request()){
+			$msg->from = $trans->local;
+			$msg->to = $trans->remote;
+		}else{
+			$msg->from = $trans->remote;
+			$msg->to = $trans->local;
+		}
 		$msg->branch = $trans->branch;
 		$msg->cseq = $trans->cseq;
 	}

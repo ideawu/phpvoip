@@ -124,12 +124,11 @@ class SipRegistrar extends SipModule
 	function callout($msg){
 		foreach($this->sessions as $sess){
 			if(!$sess->is_state(SIP::COMPLETED)){
-				continue;
-			}
-			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+				Logger::debug('');
 				continue;
 			}
 			if($msg->to->username !== $sess->remote->username){
+				Logger::debug("{$msg->to->username} {$sess->remote->username}");
 				continue;
 			}
 		

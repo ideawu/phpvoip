@@ -4,7 +4,7 @@ class SipRegistrarSession extends SipSession
 	public $username;
 	public $password;
 	public $remote_branch;
-	public $expires = 60; // 似乎某个 UAC 不支持少于60
+	private $expires = 60; // 似乎某个 UAC 不支持少于60
 	
 	private $auth = array(
 		'scheme' => 'Digest',
@@ -45,10 +45,6 @@ class SipRegistrarSession extends SipSession
 		return $new;
 	}
 	
-	/*
-	有些实现，刷新注册时，使用新的 tag branch，仅 call_id 不变
-	*/
-	
 	function incoming($msg, $trans){
 		if($msg->method == 'REGISTER'){
 			if($trans->state == SIP::TRYING){
@@ -68,6 +64,12 @@ class SipRegistrarSession extends SipSession
 				if($in_auth['response'] !== $my_auth['response']){
 					Logger::debug("auth failed");
 					$trans->nowait();
+					return true;
+				}
+				if($msg->expires <= 0){
+					Logger::debug($this->remote->address() . " client logout, onclose");
+					$this->expires = 0;
+					$this->onclose($msg);
 					return true;
 				}
 				if($trans->state == SIP::COMPLETING){
@@ -90,14 +92,9 @@ class SipRegistrarSession extends SipSession
 				$this->transactions[] = $trans;
 				$trans->completing(); // 等待客户端可能的重传
 
-				if($msg->expires <= 0){
-					Logger::debug($msg->from->address() . " client logout");
-					$this->expires = 0;
-				}else{
-					$new = $this->new_request();
-					$new->keepalive();
-					$new->wait($this->expires + 5);
-				}
+				$new = $this->new_request();
+				$new->keepalive();
+				$new->wait($this->expires + 5);
 				
 				return true;
 			}
@@ -131,6 +128,13 @@ class SipRegistrarSession extends SipSession
 		}else if($trans->state == SIP::KEEPALIVE){
 			Logger::debug($this->remote->address() . " session expires, terminate");
 			$this->terminate();
+		}else if($trans->state == SIP::CLOSE_WAIT){
+			$this->terminate();
+			$msg = new SipMessage();
+			$msg->code = 200;
+			$msg->cseq_method = 'REGISTER';
+			$msg->expires = $this->expires;
+			return $msg;
 		}
 	}
 }

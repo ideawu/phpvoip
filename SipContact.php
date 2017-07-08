@@ -22,7 +22,7 @@ class SipContact
 	}
 	
 	function equals($dst){
-		return ($this->username === $dst->username) && ($this->tag == $dst->tag);
+		return ($this->username === $dst->username) && ($this->tag() == $dst->tag());
 	}
 	
 	function address(){
@@ -33,15 +33,24 @@ class SipContact
 		$this->set_parameter('tag', $tag);
 	}
 	
+	function del_tag(){
+		$this->del_parameter('tag');
+	}
+	
 	function tag(){
-		return $this->tag;
+		return $this->get_parameter('tag');
+	}
+	
+	function get_parameter($k){
+		return $this->parameters[$k];
 	}
 	
 	function set_parameter($k, $v){
 		$this->parameters[$k] = $v;
-		if($k == 'tag'){
-			$this->tag = $v;
-		}
+	}
+
+	function del_parameter($k){
+		unset($this->parameters[$k]);
 	}
 	
 	function encode(){

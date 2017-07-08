@@ -11,6 +11,7 @@ class SipRobotModule extends SipModule
 	
 	function callout($msg){
 		$sess = new SipNoopCallerSession();
+		$sess->init();
 		return $sess;
 	}
 }

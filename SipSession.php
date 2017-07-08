@@ -128,8 +128,8 @@ abstract class SipSession
 				echo "{$b['file']} {$b['line']}\n";
 			}
 		}
-		$trans->local_tag = $this->local->tag();
-		$trans->remote_tag = $this->remote->tag();
+		$trans->local = clone $this->local;
+		$trans->remote = clone $this->remote;
 		$trans->cseq = $this->local_cseq;
 		$this->add_transaction($trans);
 		return $trans;
@@ -138,8 +138,8 @@ abstract class SipSession
 	function new_response($branch){
 		$trans = new SipTransaction();
 		$trans->branch = $branch; //
-		$trans->local_tag = $this->local->tag();
-		$trans->remote_tag = $this->remote->tag();
+		$trans->local = clone $this->local;
+		$trans->remote = clone $this->remote;
 		$trans->cseq = $this->remote_cseq;
 		$this->add_transaction($trans);
 		return $trans;
