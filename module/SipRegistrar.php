@@ -136,9 +136,8 @@ class SipRegistrar extends SipModule
 			$uri = $msg->uri;
 			$from = clone $msg->from;
 			$to = clone $msg->to;
-			$contact = clone $msg->contact;
 
-			$call = new SipCallerSession($uri, $from, $to, $contact);
+			$call = new SipCallerSession($uri, $from, $to);
 			$call->local_ip = $sess->local_ip;
 			$call->local_port = $sess->local_port;
 			$call->remote_ip = $sess->remote_ip;
