@@ -34,6 +34,13 @@ abstract class SipModule
 				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
 			}
 		}
+		
+		/*
+		消息只能是下列情形之一：
+		1. 新请求(本端completed之后): seq+1, call_id, from tag, to tag
+		2. 交互中的请求: seq, call_id, from tag, to tag(本端设置之后), branch
+		3. 响应: seq, call_id, from tag, to tag(本端设置之后), branch
+		*/
 
 		if($msg->is_request() && !$sess->remote_cseq){
 			#Logger::debug("init remote_cseq={$msg->cseq}");
