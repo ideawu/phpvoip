@@ -19,6 +19,7 @@ abstract class SipSession
 	public $remote_cseq;
 	
 	public $uri;
+	// TODO: 只有一个 transaction
 	// 最多存2个。第1个要么处于重传态，要么完成态。第2个要么处于完成态，要么关闭态。
 	public $transactions = array();
 	

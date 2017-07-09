@@ -85,32 +85,29 @@ class SipEngine
 		}
 		
 		if($read){
-			$this->proc_recv();
+			while(1){
+				$msg = $this->link->recv();
+				if(!$msg){
+					break;
+				}
+				$this->proc_recv($msg);
+			}
 		}
 		
 		$this->proc_send();
 	}
 	
-	private function proc_recv(){
-		while(1){
-			$msg = $this->link->recv();
-			if(!$msg){
-				break;
-			}
-			// TODO: 在一次轮次内，相同的两条消息应该丢掉第2条
-			$this->incoming($msg);
-		}
-	}
-	
-	private function incoming($msg){
-		foreach($this->modules as $mi){
-			$module = $mi['module'];
-			$ret = $module->incoming($msg);
-			if($ret === true){
+	private function proc_recv($msg){
+		try{
+			$ret = $this->incoming($msg);
+			if($ret){
 				return true;
 			}
+		}catch(Exception $e){
+			$this->error_reply($msg, $e->getCode(), $e->getMessage());
+			return true;
 		}
-
+		
 		if($msg->method == 'INVITE'){
 			if($msg->to->username === $msg->from->username){
 				Logger::info("invalid INVITE, from == to, {$msg->from->username}");
@@ -138,6 +135,16 @@ class SipEngine
 		
 		$this->error_reply($msg);
 		return true;
+	}
+
+	private function incoming($msg){
+		foreach($this->modules as $mi){
+			$module = $mi['module'];
+			$ret = $module->incoming($msg);
+			if($ret === true){
+				return true;
+			}
+		}
 	}
 	
 	private function callin($msg){
@@ -181,7 +188,7 @@ class SipEngine
 		}
 	}
 	
-	private function error_reply($msg, $code=0){
+	private function error_reply($msg, $code=0, $reason=null){
 		if($msg->is_response() || $msg->method === 'ACK'){
 			Logger::debug("drop msg");
 			return;
@@ -203,6 +210,7 @@ class SipEngine
 		$ret->dst_port = $msg->src_port;
 		
 		$ret->code = $code;
+		$ret->reason = $reason;
 		$ret->cseq = $msg->cseq;
 		$ret->cseq_method = $msg->cseq_method;
 		$ret->uri = $msg->uri;

@@ -28,6 +28,13 @@ abstract class SipModule
 		if(!$sess){
 			return false;
 		}
+		if(!$sess->remote_allow){
+			$str = $msg->get_header('Allow');
+			if($str){
+				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
+			}
+		}
+
 		if($msg->is_request() && !$sess->remote_cseq){
 			#Logger::debug("init remote_cseq={$msg->cseq}");
 			$sess->remote_cseq = $msg->cseq;
@@ -39,12 +46,6 @@ abstract class SipModule
 		if($msg->code >= 180 && !$sess->remote->tag() && $msg->to->tag()){
 			Logger::debug("set remote.tag=" . $msg->to->tag());
 			$sess->remote->set_tag($msg->to->tag());
-		}
-		if(!$sess->remote_allow){
-			$str = $msg->get_header('Allow');
-			if($str){
-				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
-			}
 		}
 
 		$trans = $this->find_transaction_for_msg($msg, $sess);
