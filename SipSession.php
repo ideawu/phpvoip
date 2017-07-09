@@ -33,6 +33,17 @@ abstract class SipSession
 	abstract function incoming($msg);
 	abstract function outgoing();
 	
+	/*
+	当会话收到一个新的cseq请求消息时，调用本方法，默认创建一个回复事务。子类可以改写本方法，
+	判断某个状态和某些消息类型才创建回复事务。
+	*/
+	function on_new_request($msg){
+		Logger::debug("recv new request, create new response");
+		$this->remote_cseq = $msg->cseq;
+		$this->new_response($msg->branch);
+		return true;
+	}
+	
 	function set_callback($callback){
 		$this->callback = $callback;
 	}
@@ -136,16 +147,5 @@ abstract class SipSession
 		$this->trans->from = clone $this->remote;
 		$this->trans->to = clone $this->local;
 		$this->trans->cseq = $this->remote_cseq;
-	}
-	
-	/*
-	当会话收到一个新的请求消息时，调用本方法，默认创建一个回复事务。子类可以改写本方法，
-	判断某个状态和某些消息类型才创建回复事务。
-	*/
-	function on_new_request($msg){
-		Logger::debug("recv new request, create new response");
-		$this->remote_cseq = $msg->cseq;
-		$this->new_response($msg->branch);
-		return true;
 	}
 }
