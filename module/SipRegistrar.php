@@ -39,19 +39,11 @@ class SipRegistrar extends SipModule
 			$local_ip = SIP::guess_local_ip($msg->src_ip);
 		}
 
-		$sess = new SipRegistrarSession();
+		$sess = new SipRegistrarSession($msg);
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
 		$sess->remote_ip = $msg->src_ip;
 		$sess->remote_port = $msg->src_port;
-
-		$sess->uri = $msg->uri;
-		$sess->call_id = $msg->call_id;
-		$sess->local = clone $msg->to;
-		$sess->remote = clone $msg->from;
-		$sess->contact = clone $msg->contact;
-		$sess->remote_cseq = $msg->cseq;
-		$sess->remote_branch = $msg->branch;
 
 		$sess->username = $username;
 		$sess->password = $password;

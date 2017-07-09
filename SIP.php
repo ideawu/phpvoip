@@ -11,7 +11,7 @@ include_once(dirname(__FILE__) . '/SipRouter.php');
 
 include_once(dirname(__FILE__) . '/session/SipTransaction.php');
 include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
-// include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
+include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
 // include_once(dirname(__FILE__) . '/session/SipBaseCallSession.php');
 // include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
 // include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');

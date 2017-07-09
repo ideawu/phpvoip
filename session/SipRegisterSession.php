@@ -40,10 +40,6 @@ class SipRegisterSession extends SipSession
 		$this->trans->register();
 	}
 	
-	function complete(){
-		$this->set_state(SIP::COMPLETED);
-	}
-	
 	function incoming($msg){
 		$trans = $this->trans;
 		if($trans->state == SIP::TRYING){

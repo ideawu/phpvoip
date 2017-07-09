@@ -139,7 +139,7 @@ class SipEngine
 	private function incoming($msg){
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
-			$ret = $module->proc_incoming($msg);
+			$ret = $module->incoming($msg);
 			if($ret === true){
 				return true;
 			}

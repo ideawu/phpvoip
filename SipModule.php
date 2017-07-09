@@ -23,9 +23,8 @@ abstract class SipModule
 	function init(){
 	}
 	
-	// 引擎方法，被引擎调用
-	function proc_incoming($msg){
-		$sess = $this->incoming($msg);
+	function incoming($msg){
+		$sess = $this->find_session($msg);
 		if(!$sess){
 			return false;
 		}
@@ -40,9 +39,11 @@ abstract class SipModule
 		$trans = $sess->trans;
 		/*
 		消息只能是下列情形之一：
-		1. 新请求(本端completed之后): seq+1, call_id, from tag, to tag
+		1. 新请求: seq+1, call_id, from tag, to tag
 		2. 交互中的请求: seq, call_id, from tag, to tag(重传不验证), branch
 		3. 响应: seq, call_id, from tag, to tag(本端设置之后), branch
+		
+		只有处理某些状态，才能允许某些新请求。
 		*/
 		if($msg->is_request()){
 			if($msg->cseq <= 0 || $msg->cseq > $sess->remote_cseq + 1){
@@ -52,19 +53,26 @@ abstract class SipModule
 				Logger::debug("drop msg with old cseq");
 				return true;
 			}else if(!$sess->remote_cseq || $msg->cseq == $sess->remote_cseq + 1){
-				if($sess->is_state(SIP::COMPLETED)){
-					$sess->remote_cseq = $msg->cseq;
-					Logger::debug("recv new request, create new response");
-					$sess->new_response($msg->branch);
-				}else{
-					Logger::debug("session not completed, drop new request");
+				$ret = $sess->on_new_request($msg);
+				if(!$ret){
+					Logger::debug("new request not acceptable");
 					return true;
 				}
 			}else{
-				// request during a transaction
+				// request during a transaction 和下面的代码重复
+				if($msg->cseq !== $trans->cseq){
+					Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+					return true;
+				}
 				if($msg->branch !== $trans->branch){
 					Logger::debug("Invalid branch");
 					throw new Exception("Invalid branch", 500);
+				}
+				if($trans->to->tag()){
+					if($msg->to->tag() !== $trans->to->tag()){
+						Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->to->tag());
+						return true;
+					}
 				}
 			}
 		}else{
@@ -98,7 +106,7 @@ abstract class SipModule
 	}
 
 	// 返回处理该消息的 session，没有则返回 null。子类可以继承此方法，增加功能。
-	protected function incoming($msg){
+	private function find_session($msg){
 		foreach($this->sessions as $sess){
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 				continue;
@@ -112,8 +120,8 @@ abstract class SipModule
 					Logger::debug("from: " . $msg->from->encode() . " != remote: " . $sess->remote->encode());
 					continue;
 				}
-				if(!$msg->to->equals($sess->local)){
-					Logger::debug("to: " . $msg->to->encode() . " != local: " . $sess->local->encode());
+				if($msg->to->username !== $sess->local->username){
+					Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->local->encode());
 					continue;
 				}
 			}else{
@@ -193,8 +201,14 @@ abstract class SipModule
 		$msg->call_id = $sess->call_id;
 		$msg->contact = $sess->contact;
 		
-		$msg->from = $trans->from;
-		$msg->to = $trans->to;
+		if($msg->is_request()){
+			$msg->from = $sess->local;
+			$msg->to = $sess->remote;
+		}else{
+			$msg->from = $sess->remote;
+			$msg->to = $sess->local;
+		}
+		
 		$msg->branch = $trans->branch;
 		$msg->cseq = $trans->cseq;
 	}

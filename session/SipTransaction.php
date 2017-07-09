@@ -27,7 +27,7 @@ class SipTransaction
 	}
 	
 	function nowait(){
-		if($this->timers && $this->timers <= 0.002){
+		if($this->timers && $this->timers[0] <= 0.002){
 			return;
 		}else{
 			array_unshift($this->timers, 0);
@@ -73,7 +73,6 @@ class SipTransaction
 	function completing(){
 		$this->state = SIP::COMPLETING;
 		$this->timers = self::$completing_timers;
-		Logger::debug($this->from->tag() . ' ' . $this->to->tag());
 	}
 
 	function keepalive(){
