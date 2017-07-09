@@ -35,16 +35,13 @@ class SipTransaction
 	}
 	
 	function wait($seconds){
-		if($this->timers){
-			$this->timers[0] += $seconds;
-		}else{
-			$this->timers = array($seconds, 0);
-		}
+		array_unshift($this->timers, $seconds);
 	}
 	
 	function register(){
 		$this->state = SIP::TRYING;
 		$this->timers = self::$register_timers;
+		$this->to->del_tag();
 	}
 	
 	function auth(){

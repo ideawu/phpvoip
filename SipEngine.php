@@ -90,7 +90,11 @@ class SipEngine
 				if(!$msg){
 					break;
 				}
-				$this->proc_recv($msg);
+				try{
+					$this->proc_recv($msg);
+				}catch(Exception $e){
+					$this->error_reply($msg, $e->getCode(), $e->getMessage());
+				}
 			}
 		}
 		
@@ -98,13 +102,8 @@ class SipEngine
 	}
 	
 	private function proc_recv($msg){
-		try{
-			$ret = $this->incoming($msg);
-			if($ret){
-				return true;
-			}
-		}catch(Exception $e){
-			$this->error_reply($msg, $e->getCode(), $e->getMessage());
+		$ret = $this->incoming($msg);
+		if($ret){
 			return true;
 		}
 		
@@ -140,7 +139,7 @@ class SipEngine
 	private function incoming($msg){
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
-			$ret = $module->incoming($msg);
+			$ret = $module->proc_incoming($msg);
 			if($ret === true){
 				return true;
 			}

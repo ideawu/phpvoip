@@ -22,76 +22,88 @@ abstract class SipModule
 	
 	function init(){
 	}
-
-	function incoming($msg){
-		$sess = $this->find_session_for_msg($msg);
+	
+	// 引擎方法，被引擎调用
+	function proc_incoming($msg){
+		$sess = $this->incoming($msg);
 		if(!$sess){
 			return false;
 		}
+
 		if(!$sess->remote_allow){
 			$str = $msg->get_header('Allow');
 			if($str){
 				$sess->remote_allow = preg_split('/[, ]+/', trim($str));
 			}
 		}
-		
+
+		$trans = $sess->trans;
 		/*
 		消息只能是下列情形之一：
 		1. 新请求(本端completed之后): seq+1, call_id, from tag, to tag
-		2. 交互中的请求: seq, call_id, from tag, to tag(本端设置之后), branch
+		2. 交互中的请求: seq, call_id, from tag, to tag(重传不验证), branch
 		3. 响应: seq, call_id, from tag, to tag(本端设置之后), branch
 		*/
-
-		if($msg->is_request() && !$sess->remote_cseq){
-			#Logger::debug("init remote_cseq={$msg->cseq}");
-			$sess->remote_cseq = $msg->cseq;
-		}
-		if($msg->is_request() && $msg->cseq == $sess->remote_cseq + 1){
-			#Logger::debug("update remote_cseq {$msg->cseq}");
-			$sess->remote_cseq ++;
-		}
-		if($msg->code >= 180 && !$sess->remote->tag() && $msg->to->tag()){
-			Logger::debug("set remote.tag=" . $msg->to->tag());
-			$sess->remote->set_tag($msg->to->tag());
-		}
-
-		$trans = $this->find_transaction_for_msg($msg, $sess);
-		if(!$trans){
-			if($msg->is_request()){
-				Logger::debug("create new response");
-				$trans = $sess->new_response($msg->branch);
-				// 不能在这里调用此方法，因为 new_response 里可能会改变状态
-				// $trans->trying();
+		if($msg->is_request()){
+			if($msg->cseq <= 0 || $msg->cseq > $sess->remote_cseq + 1){
+				Logger::debug("Invalid Cseq");
+				throw new Exception("Invalid Cseq", 500);
+			}else if($msg->cseq < $sess->remote_cseq){
+				Logger::debug("drop msg with old cseq");
+				return true;
+			}else if(!$sess->remote_cseq || $msg->cseq == $sess->remote_cseq + 1){
+				if($sess->is_state(SIP::COMPLETED)){
+					$sess->remote_cseq = $msg->cseq;
+					Logger::debug("recv new request, create new response");
+					$sess->new_response($msg->branch);
+				}else{
+					Logger::debug("session not completed, drop new request");
+					return true;
+				}
 			}else{
-				return false;
+				// request during a transaction
+				if($msg->branch !== $trans->branch){
+					Logger::debug("Invalid branch");
+					throw new Exception("Invalid branch", 500);
+				}
+			}
+		}else{
+			if($msg->cseq !== $trans->cseq){
+				Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
+				return true;
+			}
+			if($msg->branch !== $trans->branch){
+				Logger::debug("branch: {$msg->branch} != branch: {$trans->branch}");
+				return true;
+			}
+			if($trans->to->tag()){
+				if($msg->to->tag() !== $trans->to->tag()){
+					Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->to->tag());
+					return true;
+				}
 			}
 		}
 
 		// Logger::debug($sess->role_name() . " process msg");
 		$s1 = $sess->is_state(SIP::COMPLETED);
-		$sess->incoming($msg, $trans);
+		$sess->incoming($msg);
 		$s2 = $sess->is_state(SIP::COMPLETED);
 		if(!$s1 && $s2){
 			$this->complete_session($sess);
 		}
-
 		if($sess->is_state(SIP::CLOSED)){
 			$this->del_session($sess);
 		}
-
 		return true;
 	}
-	
-	private function find_session_for_msg($msg){
-		#echo "{$msg->call_id}\n";
+
+	// 返回处理该消息的 session，没有则返回 null。子类可以继承此方法，增加功能。
+	protected function incoming($msg){
 		foreach($this->sessions as $sess){
-			#echo "    {$sess->call_id}\n";
 			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
-				// Logger::debug("{$msg->src_ip} {$sess->remote_ip} {$msg->src_port} {$sess->remote_port}");
 				continue;
 			}
 			if($msg->call_id !== $sess->call_id){
-				// Logger::debug("{$msg->call_id} $sess->call_id");
 				continue;
 			}
 			
@@ -115,51 +127,11 @@ abstract class SipModule
 					Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
 					continue;
 				}
-				// if($sess->remote->tag()){
-				// 	if($msg->to->tag() !== $sess->remote->tag()){
-				// 		Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
-				// 		continue;
-				// 	}
-				// }
 			}
 			
 			return $sess;
 		}
-		return false;
-	}
-	
-	private function find_transaction_for_msg($msg, $sess){
-		foreach($sess->transactions as $trans){
-			if($msg->cseq !== $trans->cseq){
-				#Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
-				continue;
-			}
-			if($msg->from->tag() !== $trans->from->tag()){
-				Logger::debug("to.tag: ". $msg->from->tag() . " != local.tag: " . $trans->from->tag());
-				continue;
-			}
-			if($trans->to->tag()){
-				if($msg->to->tag() !== $trans->to->tag()){
-					Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->to->tag());
-					continue;
-				}
-			}
-
-			if($msg->is_request()){
-				// 观察到 Yate Client 会在连接成功之后，再发送新的 INVITE，
-				// fromtag, totag(不为空), callid 相同，branch, cseq 不同。
-				// uri 也不同。
-				#if($trans->local_tag){
-					#}
-			}else{
-				if($msg->branch !== $trans->branch){
-					Logger::debug("branch: {$msg->branch} != branch: {$trans->branch}");
-					continue;
-				}
-			}
-			return $trans;
-		}
-		return false;
+		return null;
 	}
 	
 	/*
@@ -170,56 +142,48 @@ abstract class SipModule
 		$ret = array();
 		foreach($this->sessions as $index=>$sess){
 			$s1 = $sess->is_state(SIP::COMPLETED);
-			$msgs = $this->proc_trans($sess, $time, $timespan);
-			$ret += $msgs;
+			$msg = $this->proc_trans($sess, $time, $timespan);
 			$s2 = $sess->is_state(SIP::COMPLETED);
 			if(!$s1 && $s2){
 				$this->complete_session($sess);
 			}
-			
 			if($sess->is_state(SIP::CLOSED)){
 				$this->del_session($sess);
-				continue;
+			}
+			if($msg){
+				$this->before_sess_send_msg($sess, $msg);
+				$ret[] = $msg;
 			}
 		}
 		return $ret;
 	}
 	
 	private function proc_trans($sess, $time, $timespan){
-		$ret = array();
-		foreach($sess->transactions as $trans){
-			$trans->timers[0] -= $timespan;
-			if($trans->timers[0] <= 0){
-				array_shift($trans->timers);
-				if(count($trans->timers) == 0){
-					if($trans->state == SIP::FIN_WAIT || $trans->state == SIP::CLOSE_WAIT){
-						Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " close transaction gracefully");
-						$sess->terminate();
-						break;
-					}else{
-						// transaction timeout
-						Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " transaction end");
-					}
-				}else{
-					$msg = $sess->outgoing($trans);
-					if($msg){
-						$this->before_sess_send_msg($sess, $trans, $msg);
-						$ret[] = $msg;
-					}
-				}
+		$trans = $sess->trans;
+		
+		if(!$trans->timers){
+			if($trans->state == SIP::FIN_WAIT || $trans->state == SIP::CLOSE_WAIT){
+				Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " close transaction gracefully");
+			}else{
+				Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " transaction timeout");
 			}
-			if(!$trans->timers){
-				$sess->del_transaction($trans);
-			}
-		}
-		if(!$sess->is_state(SIP::CLOSED) && !$sess->transactions){
-			Logger::debug("terminate session with no transactions");
 			$sess->terminate();
+			return;
 		}
-		return $ret;
+		
+		$trans->timers[0] -= $timespan;
+		if($trans->timers[0] <= 0){
+			array_shift($trans->timers);
+			if($trans->timers){
+				$msg = $sess->outgoing();
+				return $msg;
+			}
+		}
 	}
 	
-	private function before_sess_send_msg($sess, $trans, $msg){
+	private function before_sess_send_msg($sess, $msg){
+		$trans = $sess->trans;
+
 		$msg->src_ip = $sess->local_ip;
 		$msg->src_port = $sess->local_port;
 		$msg->dst_ip = $sess->remote_ip;

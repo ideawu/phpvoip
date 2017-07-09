@@ -19,10 +19,8 @@ abstract class SipSession
 	public $remote_cseq;
 	
 	public $uri;
-	// TODO: 只有一个 transaction
-	// 最多存2个。第1个要么处于重传态，要么完成态。第2个要么处于完成态，要么关闭态。
-	public $transactions = array();
-	
+	public $trans;
+
 	private $callback;
 	
 	function __construct(){
@@ -32,8 +30,8 @@ abstract class SipSession
 	}
 	
 	abstract function init();
-	abstract function incoming($msg, $trans);
-	abstract function outgoing($trans);
+	abstract function incoming($msg);
+	abstract function outgoing();
 	
 	function set_callback($callback){
 		$this->callback = $callback;
@@ -45,6 +43,10 @@ abstract class SipSession
 	
 	function is_state($state){
 		return $this->state === $state;
+	}
+	
+	function is_completed(){
+		return $this->state === SIP::COMPLETED;
 	}
 	
 	function set_state($new){
@@ -93,81 +95,46 @@ abstract class SipSession
 			$method = 'CANCEL';
 		}
 		$this->set_state(SIP::CLOSING);
-		foreach($this->transactions as $new){
-			// $this->transactions = array();
-			// $new = $this->new_request();
-			$new->method = $method;
-			$new->close();
-			return;
-		}
-		$this->transactions = array();
-		$new = $this->new_request();
-		$new->method = $method;
-		$new->close();
+		$this->trans->close();
+		$this->trans->method = $method;
+		return;
 	}
 	
 	function onclose($msg){
-		foreach($this->transactions as $trans){
-			// 如果是在被动关闭，就让现有的关闭流程继续，否则将从主动关闭转为被动关闭
-			if($trans->state == SIP::CLOSE_WAIT){
-				return;
-			}
+		// 如果是在被动关闭，就让现有的关闭流程继续，否则将从主动关闭转为被动关闭
+		if($this->trans->state == SIP::CLOSE_WAIT){
+			return;
 		}
+
 		$this->set_state(SIP::CLOSING);
-		$this->transactions = array();
-		$new = $this->new_response($msg->branch);
 		if($msg->method == 'BYE' || $msg->method == 'CANCEL'){
-			$new->code = 200;
-			$new->method = $msg->method;
+			$this->trans->code = 200;
+			$this->trans->method = $msg->method;
 		}else{
-			$new->method = 'ACK';
+			$this->trans->method = 'ACK';
 		}
-		$new->onclose();
+		$this->trans->onclose();
 	}
 	
 	function terminate(){
 		$this->set_state(SIP::CLOSED);
-		$this->transactions = array();
 	}
 	
 	function new_request($branch=null){
 		$this->local_cseq ++;
 		
-		$trans = new SipTransaction();
-		$trans->branch = ($branch===null)? SIP::new_branch() : $branch;
-		if(!$this->local){
-			$bt = debug_backtrace(false);
-			foreach($bt as $b){
-				echo "{$b['file']} {$b['line']}\n";
-			}
-		}
-		$trans->from = clone $this->local;
-		$trans->to = clone $this->remote;
-		$trans->cseq = $this->local_cseq;
-		$this->add_transaction($trans);
-		return $trans;
+		$this->trans = new SipTransaction();
+		$this->trans->branch = ($branch===null)? SIP::new_branch() : $branch;
+		$this->trans->from = clone $this->local;
+		$this->trans->to = clone $this->remote;
+		$this->trans->cseq = $this->local_cseq;
 	}
 	
 	function new_response($branch){
-		$trans = new SipTransaction();
-		$trans->branch = $branch; //
-		$trans->from = clone $this->remote;
-		$trans->to = clone $this->local;
-		$trans->cseq = $this->remote_cseq;
-		$this->add_transaction($trans);
-		return $trans;
-	}
-	
-	function add_transaction($trans){
-		$this->transactions[] = $trans;
-	}
-	
-	function del_transaction($trans){
-		foreach($this->transactions as $index=>$tmp){
-			if($tmp === $trans){
-				unset($this->transactions[$index]);
-				break;
-			}
-		}
+		$this->trans = new SipTransaction();
+		$this->trans->branch = $branch; //
+		$this->trans->from = clone $this->remote;
+		$this->trans->to = clone $this->local;
+		$this->trans->cseq = $this->remote_cseq;
 	}
 }

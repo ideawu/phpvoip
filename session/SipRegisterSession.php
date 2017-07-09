@@ -27,65 +27,69 @@ class SipRegisterSession extends SipSession
 		
 		$this->call_id = SIP::new_call_id();
 		$this->local->set_tag(SIP::new_tag());
-
 	}
 	
 	function init(){
 		$this->set_state(SIP::TRYING);
-		$new = $this->new_request();
-		$new->register();
+		$this->new_request();
+		$this->trans->register();
 	}
 	
-	function incoming($msg, $trans){
-		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
+	function auth(){
+		$this->new_request();
+		$this->trans->register();
+	}
+	
+	function complete(){
+		$this->set_state(SIP::COMPLETED);
+	}
+	
+	function incoming($msg){
+		$trans = $this->trans;
+		if($trans->state == SIP::TRYING){
 			if($msg->code == 200){
-				$this->auth = null;
 				$expires = min(self::MAX_EXPIRES, $this->expires);
-				if($this->is_state(SIP::COMPLETED)){
+				if($this->is_completed()){
 					Logger::debug("REGISTER " .$this->local->address(). " renewed, expires: $expires");
 				}else{
 					Logger::debug("REGISTER " .$this->local->address(). " registered, expires: $expires");
 					$this->complete();
 				}
-				
-				$this->del_transaction($trans);
-				
-				$new = $this->new_request();
-				$new->register();
-				$new->wait($expires/2);
-			}else if($msg->code == 401){
-				$this->auth = $this->www_auth($msg->auth);
-				
-				$this->del_transaction($trans);
-				
-				$new = $this->new_request();
-				$new->register();
-				if($trans->state == SIP::AUTHING){
+
+				$this->auth = null;
+				$this->remote->set_tag($msg->to->tag());
+		
+				$this->new_request();
+				$this->trans->register();
+				$this->trans->wait($expires/2);
+				return true;
+			}
+			if($msg->code == 100){
+				return true;
+			}
+			if($msg->code == 401){
+				$this->auth();
+				if($this->auth){
 					Logger::error("{$this->local->username} auth failed");
-					$new->wait(3);
-				}else{
-					#Logger::debug("{$this->local->username} auth");
-					$new->state = SIP::AUTHING;
+					$trans->wait(3);
 				}
-			}else if($msg->code == 423){
+				$this->auth = $this->www_auth($msg->auth);
+				return true;
+			}
+			if($msg->code == 423){
 				// 423 Interval Too Brief
 				$v = $msg->get_header('Min-Expires');
 				if($v){
 					$this->expires = max(self::MIN_EXPIRES, intval($v));
+					$trans->nowait();
 				}
-				$this->del_transaction($trans);
-				
-				$new = $this->new_request();
-				$new->register();
 			}
 		}
 	}
-	
-	// 返回要发送的消息
-	function outgoing($trans){
-		if($trans->state == SIP::TRYING || $trans->state == SIP::AUTHING){
-			$trans->to->del_tag();
 
+	function outgoing(){
+		$trans = $this->trans;
+		if($trans->state == SIP::TRYING){
 			$msg = new SipMessage();
 			$msg->method = 'REGISTER';
 			$msg->expires = $this->expires;
