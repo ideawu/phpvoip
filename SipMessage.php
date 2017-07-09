@@ -38,6 +38,7 @@ class SipMessage
 		401 => 'Unauthorized',
 		403 => 'Forbidden',
 		404 => 'Not Found',
+		405 => 'Method Not Allowed',
 		481 => 'Call/Transaction Does Not Exist',
 		486 => 'Busy Here',
 	);
