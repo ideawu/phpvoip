@@ -41,6 +41,7 @@ class SipMessage
 		405 => 'Method Not Allowed',
 		481 => 'Call/Transaction Does Not Exist',
 		486 => 'Busy Here',
+		487 => 'Request Terminated',
 	);
 	
 	// 返回简洁描述
