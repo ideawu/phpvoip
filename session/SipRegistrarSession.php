@@ -108,7 +108,7 @@ class SipRegistrarSession extends SipSession
 		}else if($trans->state == SIP::COMPLETING){
 			static $i=0;
 			if($i++%2 == 0){
-				Logger::debug("drop msg");
+				Logger::debug("manually drop msg");
 				return;
 			}
 			$msg = new SipMessage();

@@ -31,13 +31,17 @@ class SipRegisterSession extends SipSession
 	
 	function init(){
 		$this->set_state(SIP::TRYING);
+		$this->register();
+	}
+	
+	function register(){
 		$this->new_request();
 		$this->trans->register();
 	}
 	
 	function auth(){
-		$this->new_request();
-		$this->trans->register();
+		// 不改变 session 状态
+		$this->register();
 	}
 	
 	function incoming($msg){
@@ -55,8 +59,7 @@ class SipRegisterSession extends SipSession
 				$this->auth = null;
 				$this->remote->set_tag($msg->to->tag());
 		
-				$this->new_request();
-				$this->trans->register();
+				$this->register();
 				$this->trans->wait($expires/2);
 				return true;
 			}
@@ -77,7 +80,7 @@ class SipRegisterSession extends SipSession
 				$v = $msg->get_header('Min-Expires');
 				if($v){
 					$this->expires = max(self::MIN_EXPIRES, intval($v));
-					$trans->nowait();
+					$this->register();
 				}
 			}
 		}
