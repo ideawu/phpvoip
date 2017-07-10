@@ -17,6 +17,8 @@ abstract class SipSession
 	public $contact;
 	public $local_cseq;
 	public $remote_cseq;
+	public $local_contact;
+	public $remote_contact;
 	
 	public $uri;
 	public $trans;
@@ -30,8 +32,11 @@ abstract class SipSession
 	}
 	
 	abstract function init();
-	abstract function incoming($msg);
-	abstract function outgoing();
+	
+	function incoming($msg){
+	}
+	function outgoing(){
+	}
 	
 	/*
 	当会话收到一个新的cseq请求消息时，调用本方法，默认创建一个回复事务。子类可以改写本方法，

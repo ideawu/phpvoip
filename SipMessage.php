@@ -93,6 +93,14 @@ class SipMessage
 		return $ret;
 	}
 	
+	function del_header($key){
+		foreach($this->headers as $index=>$v){
+			if($key === $v[0]){
+				unset($this->headers[$index]);
+			}
+		}
+	}
+	
 	function encode(){
 		if($this->code > 0 && strlen($this->reason) == 0){
 			if(isset(self::$code_reasons[$this->code])){
@@ -117,12 +125,18 @@ class SipMessage
 			if($this->is_request()){
 				$headers[] = "Via: SIP/2.0/UDP {$this->src_ip}:{$this->src_port};rport;branch={$this->branch}";
 			}else{
-				$headers[] = "Via: SIP/2.0/UDP {$this->dst_ip}:{$this->dst_port};rport;branch={$this->branch}";
-				//;received={$this->src_ip}";
+				$headers[] = "Via: SIP/2.0/UDP {$this->dst_ip}:{$this->dst_port};rport;branch={$this->branch};received={$this->src_ip}";
 			}
 		}
 		if($this->contact){
 			$headers[] = "Contact: " . $this->contact->encode();
+		}
+		if($this->auth){
+			if($this->is_request()){
+				$headers[] = "Authorization: {$this->auth}";
+			}else{
+				$headers[] = "WWW-Authenticate: {$this->auth}";
+			}
 		}
 
 		foreach($this->headers as $v){

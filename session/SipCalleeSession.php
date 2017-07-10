@@ -1,6 +1,8 @@
 <?php
-class SipCalleeSession extends SipBaseCallSession
+class SipCalleeSession extends SipSession
 {
+	public $local_sdp;
+	public $remote_sdp;
 	public $remote_branch;
 	
 	function __construct($msg){
@@ -25,30 +27,7 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->new_response($this->remote_branch);
 		$this->trans->trying();
 	}
-
-	// function close(){
-	// 	if($this->is_state(SIP::CLOSING)){
-	// 		return;
-	// 	}
-	//
-	// 	if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-	// 		foreach($this->transactions as $new){ // 应该倒序遍历
-	// 			Logger::debug("reply Busy Here");
-	// 			$new->code = 486;
-	// 			$new->method = 'INVITE';
-	// 			$new->close();
-	// 		}
-	// 	}else if($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)){
-	// 		foreach($this->transactions as $new){ // 应该倒序遍历
-	// 			Logger::debug("Send bye");
-	// 			$new->method = 'BYE';
-	// 			$new->close();
-	// 		}
-	// 	}
-	//
-	// 	$this->set_state(SIP::CLOSING);
-	// }
-		
+	
 	function ringing(){
 		$this->set_state(SIP::RINGING);
 		if(!$this->local->tag()){
@@ -66,6 +45,21 @@ class SipCalleeSession extends SipBaseCallSession
 		}
 		$this->trans->accept();
 	}
+	
+	function close(){
+		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			$this->new_response();
+			$this->trans->onclose();
+			$this->trans->code = 487;
+			$this->trans->method = 'INVITE';
+		}else{
+			$this->new_request();
+			$this->trans->close();
+			$this->trans->method = 'BYE';
+		}
+		$this->set_state(SIP::CLOSING);
+		return;
+	}
 
 	function on_new_request($msg){
 		// 其它状态下，禁止接收新请求。
@@ -74,7 +68,7 @@ class SipCalleeSession extends SipBaseCallSession
 			$this->trans->accept();
 			return true;
 		}
-		if($this->is_state(SIP::COMPLETED) && $msg->method === 'INVITE'){
+		if($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED) && $msg->method === 'INVITE'){
 			parent::on_new_request($msg);
 			$this->trans->accept();
 			return true;
@@ -83,10 +77,6 @@ class SipCalleeSession extends SipBaseCallSession
 	}
 	
 	function incoming($msg){
-		// $ret = parent::incoming($msg);
-		// if($ret === true){
-		// 	return true;
-		// }
 		$trans = $this->trans;
 		if($trans->state == SIP::TRYING || $trans->state == SIP::RINGING){
 			if($msg->method == 'INVITE'){
@@ -102,6 +92,13 @@ class SipCalleeSession extends SipBaseCallSession
 				return true;
 			}
 			if($msg->method == 'ACK'){
+				// 放在 complete 前面，因为 complete 的回调可能会关闭会话（测试时）
+				#$new = $this->new_request($trans->branch);
+				$this->remote_branch = $msg->branch;
+				$new = $this->new_request($this->remote_branch);
+				$new->keepalive();
+				$new->wait(100000); // TODO:
+
 				if($this->is_completed()){
 					Logger::debug("recv ACK when completed");
 				}else{
@@ -109,20 +106,52 @@ class SipCalleeSession extends SipBaseCallSession
 					$this->complete();
 				}
 				
-				$new = $this->new_request($trans->branch);
-				$new->keepalive();
-				$new->wait();
+				return true;
+			}
+		}
+		if($trans->state == SIP::FIN_WAIT){
+			if($msg->code == 200){
+				Logger::info("recv " . $msg->brief() . ", terminate " . $this->role_name());
+				$this->terminate();
+				return true;
+			}
+		}
+		if($trans->state == SIP::CLOSE_WAIT){
+			if($msg->method == 'ACK'){
+				Logger::info("recv " . $msg->brief() . ", terminate " . $this->role_name());
+				$this->terminate();
 				return true;
 			}
 		}
 	}
 	
 	function outgoing(){
-		// $msg = parent::outgoing($trans);
-		// if($msg){
-		// 	return $msg;
-		// }
 		$trans = $this->trans;
+		if($trans->state == SIP::FIN_WAIT){
+			$msg = new SipMessage();
+			if($trans->code){
+				$msg->code = $trans->code;
+				$msg->cseq_method = $trans->method;
+			}else{
+				$msg->method = $trans->method;
+			}
+			// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
+			// 然后回复 200 给 CANCEL
+			return $msg;
+		}
+		if($trans->state == SIP::CLOSE_WAIT){
+			$msg = new SipMessage();
+			if($trans->code){
+				$msg->code = $trans->code;
+				$msg->cseq_method = $trans->method;
+			}else{
+				$msg->method = $trans->method;
+			}
+			// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
+			// 然后回复 200 给 CANCEL
+			return $msg;
+		}
+		
 		if($trans->state == SIP::TRYING){
 			$msg = new SipMessage();
 			$msg->code = 100;

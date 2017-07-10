@@ -91,4 +91,9 @@ class SipTransaction
 		$this->state = SIP::CLOSE_WAIT;
 		$this->timers = self::$onclose_timers;
 	}
+	
+	function close_wait(){
+		$this->state = SIP::CLOSING;
+		$this->timers = array(5);
+	}
 }

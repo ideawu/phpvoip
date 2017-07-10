@@ -9,6 +9,21 @@ abstract class SipBaseCallSession extends SipSession
 	}
 	
 	function incoming($msg){
+		$ret = parent::incoming($msg);
+		if($ret === true){
+			return true;
+		}
+		return;
+
+		$trans = $this->trans;
+		if($trans->state == SIP::FIN_WAIT){
+			if($msg->code == 200 || $msg->method == 'ACK'){
+				Logger::info("recv " . $msg->brief() . ", finish CLOSE_WAIT " . $this->role_name());
+				$this->terminate();
+				return true;
+			}
+		}
+
 		if($msg->method == 'BYE' || $msg->method == 'CANCEL'){
 			if($trans->state == SIP::FIN_WAIT){
 				Logger::debug($this->role_name() . " {$this->call_id} FIN_WAIT => CLOSE_WAIT");
@@ -26,13 +41,6 @@ abstract class SipBaseCallSession extends SipSession
 			return true;
 		}
 		
-		if($trans->state == SIP::FIN_WAIT){
-			if($msg->code == 200 || $msg->method == 'ACK'){
-				Logger::info("recv " . $msg->brief() . ", finish CLOSE_WAIT " . $this->role_name());
-				$this->terminate();
-				return true;
-			}
-		}
 		
 		///////////////////////////////////////////
 		
@@ -70,8 +78,33 @@ abstract class SipBaseCallSession extends SipSession
 			return true;
 		}
 	}
+	//
+	// function close(){
+	// 	// 主动关闭只执行一次
+	// 	if($this->is_state(SIP::CLOSING)){
+	// 		return;
+	// 	}
+	// 	if($this->is_state(SIP::COMPLETED) || $this->is_state(SIP::COMPLETING)){
+	// 		$method = 'BYE';
+	// 	}else{
+	// 		$method = 'CANCEL';
+	// 	}
+	// 	$this->set_state(SIP::CLOSING);
+	// 	$this->trans->cseq ++;
+	// 	$this->trans->branch = SIP::new_branch();
+	// 	$this->trans->close();
+	// 	$this->trans->method = $method;
+	// 	return;
+	// }
 	
 	function outgoing(){
+		$ret = parent::outgoing();
+		if($ret){
+			return $ret;
+		}
+		return;
+		
+		$trans = $this->trans;
 		if($trans->state == SIP::KEEPALIVE){
 			Logger::debug("refresh " . $this->role_name() . " session {$this->call_id}");
 
@@ -86,12 +119,13 @@ abstract class SipBaseCallSession extends SipSession
 			return $msg;
 		}else if($trans->state == SIP::FIN_WAIT){
 			$msg = new SipMessage();
-			if($trans->code){
-				$msg->code = $trans->code;
-				$msg->cseq_method = $trans->method;
-			}else{
-				$msg->method = $trans->method;
-			}
+			$msg->method = $trans->method;
+			// if($trans->code){
+			// 	$msg->code = $trans->code;
+			// 	$msg->cseq_method = $trans->method;
+			// }else{
+			// 	$msg->method = $trans->method;
+			// }
 			// 对方收到 CANCEL 后，会先回复 487 Request Terminated 给之前的请求，
 			// 然后回复 200 给 CANCEL
 			return $msg;

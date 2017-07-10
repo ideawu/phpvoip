@@ -62,6 +62,7 @@ abstract class SipModule
 		}
 		if($sess->is_state(SIP::CLOSED)){
 			$this->del_session($sess);
+			$this->engine->recycle_session($sess);
 		}
 		return true;
 	}
@@ -157,6 +158,7 @@ abstract class SipModule
 			}
 			if($sess->is_state(SIP::CLOSED)){
 				$this->del_session($sess);
+				$this->engine->recycle_session($sess);
 			}
 			if($msg){
 				$this->before_sess_send_msg($sess, $msg);
@@ -168,7 +170,7 @@ abstract class SipModule
 	
 	private function proc_trans($sess, $time, $timespan){
 		$trans = $sess->trans;
-		
+		// Logger::debug(json_encode($trans->timers));
 		if(!$trans->timers){
 			if($trans->state == SIP::FIN_WAIT || $trans->state == SIP::CLOSE_WAIT){
 				Logger::debug($sess->role_name() . ' ' . SIP::state_text($trans->state) . " close transaction gracefully");
@@ -207,6 +209,11 @@ abstract class SipModule
 		}else{
 			$msg->from = $sess->remote;
 			$msg->to = $sess->local;
+		}
+		// TESTING:
+		if($msg->method == 'BYE'){
+			$msg->uri = "sip:{$msg->to->username}@{$msg->to->domain}:53919;ob";
+			$msg->contact = '';
 		}
 		
 		$msg->branch = $trans->branch;

@@ -10,28 +10,59 @@ if($argv[1]){
 	$port = 5060;
 }
 
-$ip = '0.0.0.0';
-$link = SipLink::listen($ip, 0);
+$ip = '127.0.0.1';
+$link = SipLink::listen($ip, 5070);
 
-$msg = new SipMessage();
-$msg->method = 'INVITE';
-$msg->call_id = 1;
-$msg->cseq = 1;
-$msg->dst_ip = '127.0.0.1';
-#$msg->dst_ip = '172.16.10.100';
-$msg->dst_port = $port;
-$msg->src_port = $link->local_port;
-$msg->src_ip = SIP::guess_local_ip($msg->dst_ip);
-$msg->from = new SipContact(1002, 'me.com');
-$msg->to = new SipContact(1001, 'me.com');
-$msg->uri = "{$msg->to->username}@{$msg->to->domain}";
-$msg->from->set_tag(mt_rand());
-$msg->branch = mt_rand();
+$server_ip = '127.0.0.1';
+$server_port = 5060;
 
-$link->send($msg);
-echo $msg->encode() . "\n";
+$client_ip = '';
+$client_port = 0;
 
-while($ret = $link->recv()){
-	echo $ret->encode() . "\n";
+while(1){
+	$read = array($link->sock);
+	$write = array();
+	$except = array();
+	$ret = @socket_select($read, $write, $except, 0, 20*1000);
+	if($read){
+		$msg = $link->recv();
+		if(!$msg){
+			continue;
+		}
+		if(!$client_ip){
+			$client_ip = $msg->src_ip;
+			$client_port = $msg->src_port;
+		}
+		
+		if($msg->src_port == $client_port){
+			if($msg->method == 'INVITE'){
+				static $i = 0;
+				$i ++;
+				if($i > 1 && $i < 5){
+					Logger::debug("drop INVITE");
+					continue;
+				}
+			}
+			// 转发给 server
+			$msg->dst_ip = $server_ip;
+			$msg->dst_port = $server_port;
+			$msg->src_ip = $link->local_ip;
+			$msg->src_port = $link->local_port;
+			$msg->del_header('Route');
+			$msg->uri = str_replace(':5070', '', $msg->uri);
+			$link->send($msg);
+		}else{
+			// 转发给 client
+			$msg->dst_ip = $client_ip;
+			$msg->dst_port = $client_port;
+			$msg->src_ip = $link->local_ip;
+			$msg->src_port = $link->local_port;
+			$msg->del_header('Route');
+			if($msg->contact){
+				$msg->contact->domain = str_replace("$server_port", "{$link->local_port}", $msg->contact->domain);
+			}
+			#$msg->via = str_replace("rport={}", 'rport', $msg->via);
+			$link->send($msg);
+		}
+	}
 }
-

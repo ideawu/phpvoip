@@ -8,6 +8,7 @@ class SipEngine
 	private $modules = array();
 	private $router;
 	private $mixer;
+	private $recycle;
 	
 	private $inited = false;
 	
@@ -31,6 +32,9 @@ class SipEngine
 		
 		$this->mixer = new SipMixer();
 		$this->add_module($this->mixer, INT_MAX); // Mixer模块放在所有模块的前面
+		
+		$this->recycle = new SipRecycle();
+		$this->add_module($this->recycle);
 
 		if($this->inited){
 			return;
@@ -189,7 +193,7 @@ class SipEngine
 	}
 	
 	private function error_reply($msg, $code=0, $reason=null){
-		if($msg->is_response() /*|| $msg->method === 'ACK'*/){
+		if($msg->is_response() || $msg->method === 'ACK'){
 			Logger::debug("drop msg");
 			return;
 		}
@@ -226,5 +230,9 @@ class SipEngine
 		$ret->contact = $msg->contact;
 		
 		$this->link->send($ret);
+	}
+	
+	function recycle_session($sess){
+		$this->recycle->recycle_session($sess);
 	}
 }

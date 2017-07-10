@@ -85,8 +85,30 @@ in_from   in_to   out_from    out_to
 
 
 
+# INVITE
 
+### 正常
 
+创建会话 A=>B
 
+	> INVITE (from.tag=at, to.tag=  , seq+0, branch0, contact=A, uri=B)
+	< 180    (from.tag=at, to.tag=bt, seq+0, branch0, contact=B)
+	< OK     (from.tag=at, to.tag=bt, seq+0, branch0, contact=B)
+	> ACK    (from.tag=at, to.tag=bt, seq+0, branch1, contact=A, uri=B)
+	# 某些客户端会重发新的 INVITE
+	> INVITE (from.tag=at, to.tag=bt, seq+1, branch2, contact=A, uri=B)
+	< OK     (from.tag=at, to.tag=bt, seq+1, branch2, contact=B)
+	> ACK    (from.tag=at, to.tag=bt, seq+1, branch3, contact=A, uri=B)
 
+发 BYE B=>A
+
+	< BYE    (from.tag=bt, to.tag=at, seqx , branch4 , contact= , uri=A)
+	> OK     (from.tag=bt, to.tag=at, seqx , branch4 , contact= )
+
+发 BYE A=>B
+
+	> BYE    (from.tag=at, to.tag=bt, seq+2, branch4 , contact= , uri=B)
+	< OK     (from.tag=at, to.tag=bt, seq+2, branch4 , contact= )
+
+### 中止
 

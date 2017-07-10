@@ -16,7 +16,9 @@ include_once(dirname(__FILE__) . '/session/SipBaseCallSession.php');
 include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
 // include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
 include_once(dirname(__FILE__) . '/session/SipNoopCallerSession.php');
+include_once(dirname(__FILE__) . '/session/SipRecycleSession.php');
 
+include_once(dirname(__FILE__) . '/module/SipRecycle.php');
 include_once(dirname(__FILE__) . '/module/SipDialog.php');
 include_once(dirname(__FILE__) . '/module/SipMixer.php');
 include_once(dirname(__FILE__) . '/module/SipChannel.php');
@@ -43,6 +45,7 @@ class SIP
 	const COMPLETING  = 199; // 
 	const COMPLETED   = 200;
 	
+	const RECYCLE     = 10;
 	const KEEPALIVE   = 19; //
 	const FIN_WAIT    = 20;  // 主动关闭
 	const CLOSE_WAIT  = 21;  // 被动关闭
@@ -75,6 +78,8 @@ class SIP
 			return 'KEEPALIVE';
 		}else if($state == self::COMPLETING){
 			return 'COMPLETING';
+		}else if($state == self::RECYCLE){
+			return 'RECYCLE';
 		}else{
 			return 'NONE';
 		}
