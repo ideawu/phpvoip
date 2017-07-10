@@ -71,7 +71,6 @@ class SipCalleeSession extends SipBaseCallSession
 		// 其它状态下，禁止接收新请求。
 		if(($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)) && $msg->method === 'ACK'){
 			parent::on_new_request($msg);
-			$this->remote_branch = $msg->branch;
 			$this->trans->accept();
 			return true;
 		}
@@ -112,7 +111,7 @@ class SipCalleeSession extends SipBaseCallSession
 				
 				$new = $this->new_request($trans->branch);
 				$new->keepalive();
-				$new->wait(9999);
+				$new->wait();
 				return true;
 			}
 		}

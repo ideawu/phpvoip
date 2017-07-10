@@ -81,7 +81,7 @@ class SipRegistrarSession extends SipSession
 				}
 
 				$this->local->set_tag(SIP::new_tag());
-				Logger::debug("set tag " . $this->local->tag());
+				#Logger::debug("set tag " . $this->local->tag());
 				$this->complete();
 				$this->trans->completing();
 				$this->trans->timers = array(0, $this->expires);
