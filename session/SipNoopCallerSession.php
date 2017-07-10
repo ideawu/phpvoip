@@ -31,14 +31,19 @@ TEXT;
 		$new->timers = array(1, 1, 1, 1, 1, 1);
 	}
 	
-	function incoming($msg, $trans){
+	function incoming($msg){
 		return null;
 	}
 	
 	private $count = 0;
 
-	function outgoing($trans){
-		if(++$this->count == 2){
+	function outgoing(){
+		$trans = $this->trans;
+		$this->count += 1;
+		if($this->count == 1){
+			$this->set_state(SIP::RINGING);
+		}
+		if($this->count == 2){
 			$this->complete();
 			$trans->wait(999);
 		}

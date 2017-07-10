@@ -94,6 +94,7 @@ class SipEngine
 					$this->proc_recv($msg);
 				}catch(Exception $e){
 					$this->error_reply($msg, $e->getCode(), $e->getMessage());
+					return true;
 				}
 			}
 		}
@@ -188,7 +189,7 @@ class SipEngine
 	}
 	
 	private function error_reply($msg, $code=0, $reason=null){
-		if($msg->is_response() || $msg->method === 'ACK'){
+		if($msg->is_response() /*|| $msg->method === 'ACK'*/){
 			Logger::debug("drop msg");
 			return;
 		}

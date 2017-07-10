@@ -47,13 +47,17 @@ class SipMessage
 	function brief(){
 		if($this->is_request()){
 			$cmd = $this->method;
+			$src = $this->from->address();
+			$dst = $this->to->address();
 		}else{
 			$cmd = $this->code;
 			if($this->code == 200){
 				$cmd .= ' OK';
 			}
+			$src = $this->to->address();
+			$dst = $this->from->address();
 		}
-		$ret = sprintf('%-8s %3d %s=>%s', $cmd, $this->cseq, $this->from->address(), $this->to->address());
+		$ret = sprintf('%-8s %3d %s=>%s', $cmd, $this->cseq, $src, $dst);
 		return $ret;
 	}
 	
@@ -112,7 +116,8 @@ class SipMessage
 			if($this->is_request()){
 				$headers[] = "Via: SIP/2.0/UDP {$this->src_ip}:{$this->src_port};rport;branch={$this->branch}";
 			}else{
-				$headers[] = "Via: SIP/2.0/UDP {$this->dst_ip}:{$this->dst_port};rport;branch={$this->branch};received={$this->src_ip}";
+				$headers[] = "Via: SIP/2.0/UDP {$this->dst_ip}:{$this->dst_port};rport;branch={$this->branch}";
+				//;received={$this->src_ip}";
 			}
 		}
 		if($this->contact){

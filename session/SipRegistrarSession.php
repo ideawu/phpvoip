@@ -81,6 +81,7 @@ class SipRegistrarSession extends SipSession
 				}
 
 				$this->local->set_tag(SIP::new_tag());
+				Logger::debug("set tag " . $this->local->tag());
 				$this->complete();
 				$this->trans->completing();
 				$this->trans->timers = array(0, $this->expires);
@@ -106,11 +107,6 @@ class SipRegistrarSession extends SipSession
 			$msg->add_header('WWW-Authenticate', $str);
 			return $msg;
 		}else if($trans->state == SIP::COMPLETING){
-			static $i=0;
-			if($i++%2 == 0){
-				Logger::debug("manually drop msg");
-				return;
-			}
 			$msg = new SipMessage();
 			$msg->code = 200;
 			$msg->cseq_method = 'REGISTER';

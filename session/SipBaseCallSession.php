@@ -8,7 +8,7 @@ abstract class SipBaseCallSession extends SipSession
 		parent::__construct();
 	}
 	
-	function incoming($msg, $trans){
+	function incoming($msg){
 		if($msg->method == 'BYE' || $msg->method == 'CANCEL'){
 			if($trans->state == SIP::FIN_WAIT){
 				Logger::debug($this->role_name() . " {$this->call_id} FIN_WAIT => CLOSE_WAIT");
@@ -71,7 +71,7 @@ abstract class SipBaseCallSession extends SipSession
 		}
 	}
 	
-	function outgoing($trans){
+	function outgoing(){
 		if($trans->state == SIP::KEEPALIVE){
 			Logger::debug("refresh " . $this->role_name() . " session {$this->call_id}");
 

@@ -23,6 +23,17 @@ abstract class SipModule
 	function init(){
 	}
 	
+	/*
+	找出 session：
+		call_id, from username, from tag, to username
+	找出 trans：
+		 
+	1. 交互中的请求: to tag(若trans设置), branch, seq
+	2. 交互中的响应: to tag(若trans设置), branch, seq
+	3. 新请求:
+		ACK: to tag(若sess设置), new branch, seq
+		REQ: to tag(若sess设置), new branch, seq + 1
+	*/
 	function incoming($msg){
 		$sess = $this->find_session($msg);
 		if(!$sess){
@@ -36,60 +47,10 @@ abstract class SipModule
 			}
 		}
 
-		$trans = $sess->trans;
-		/*
-		消息只能是下列情形之一：
-		1. 新请求: seq+1, call_id, from tag, to tag
-		2. 交互中的请求: seq, call_id, from tag, to tag(重传不验证), branch
-		3. 响应: seq, call_id, from tag, to tag(本端设置之后), branch
-		
-		只有处理某些状态，才能允许某些新请求。
-		*/
-		if($msg->is_request()){
-			if($msg->cseq <= 0 || $msg->cseq > $sess->remote_cseq + 1){
-				Logger::debug("Invalid Cseq");
-				throw new Exception("Invalid Cseq", 500);
-			}else if($msg->cseq < $sess->remote_cseq){
-				Logger::debug("drop msg with old cseq");
-				return true;
-			}else if(!$sess->remote_cseq || $msg->cseq == $sess->remote_cseq + 1){
-				$ret = $sess->on_new_request($msg);
-				if(!$ret){
-					Logger::debug("new request not acceptable");
-					return true;
-				}
-			}else{
-				// request during a transaction 和下面的代码重复
-				if($msg->cseq !== $trans->cseq){
-					Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
-					return true;
-				}
-				if($msg->branch !== $trans->branch){
-					Logger::debug("Invalid branch");
-					throw new Exception("Invalid branch", 500);
-				}
-				if($trans->to->tag()){
-					if($msg->to->tag() !== $trans->to->tag()){
-						Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->to->tag());
-						return true;
-					}
-				}
-			}
-		}else{
-			if($msg->cseq !== $trans->cseq){
-				Logger::debug("cseq: {$msg->cseq} != cseq: {$trans->cseq}");
-				return true;
-			}
-			if($msg->branch !== $trans->branch){
-				Logger::debug("branch: {$msg->branch} != branch: {$trans->branch}");
-				return true;
-			}
-			if($trans->to->tag()){
-				if($msg->to->tag() !== $trans->to->tag()){
-					Logger::debug("to.tag: " . $msg->to->tag() . " != remote.tag: " . $trans->to->tag());
-					return true;
-				}
-			}
+		$trans = $this->find_trans($sess, $msg);
+		if(!$trans){
+			Logger::debug("drop invalid session msg");
+			return true;
 		}
 
 		// Logger::debug($sess->role_name() . " process msg");
@@ -103,6 +64,47 @@ abstract class SipModule
 			$this->del_session($sess);
 		}
 		return true;
+	}
+	
+	private function find_trans($sess, $msg){
+		$trans = $sess->trans;
+		
+		if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch){
+			// transaction msg
+			if($trans->to->tag() && $msg->to->tag() !== $trans->to->tag()){
+				Logger::debug("to.tag: " . $msg->to->tag() . " != to.tag: " . $trans->to->tag());
+				return null;
+			}
+			return $trans;
+		}
+		#ACK: new branch, seq
+		#REQ: new branch, seq + 1
+		if($msg->is_request()){
+			if($sess->local->tag() && $msg->to->tag() !== $sess->local->tag()){
+				Logger::debug("to.tag: " . $msg->to->tag() . " != local.tag: " . $sess->local->tag());
+				return null;
+			}
+
+			if($msg->method === 'ACK' && $msg->cseq === $trans->cseq){
+				Logger::debug("recv ACK in new transaction with old cseq");
+				$ret = $sess->on_new_request($msg);
+				if(!$ret){
+					Logger::debug("new request not acceptable, drop msg");
+					return null;
+				}
+				return $trans;
+			}else if(!$sess->remote_cseq || $sess->remote_cseq + 1 === $msg->cseq){
+				Logger::debug("recv new request with new cseq");
+				$ret = $sess->on_new_request($msg);
+				if(!$ret){
+					Logger::debug("new request not acceptable, drop msg");
+					return null;
+				}
+				return $trans;
+			}else{
+				Logger::debug("drop msg");
+			}
+		}
 	}
 
 	// 返回处理该消息的 session，没有则返回 null。子类可以继承此方法，增加功能。
@@ -129,8 +131,6 @@ abstract class SipModule
 					Logger::debug("from: " . $msg->from->encode() . " != local: " . $sess->local->encode());
 					continue;
 				}
-				// 发起会话或注册时，request.to.tag 为空，需要设为 response.to.tag
-				// 若此种情况，只验证 username，不验证 tag
 				if($msg->to->username !== $sess->remote->username){
 					Logger::debug("to: " . $msg->to->encode() . " != remote: " . $sess->remote->encode());
 					continue;

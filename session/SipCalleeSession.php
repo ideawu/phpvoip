@@ -14,7 +14,7 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->remote = clone $msg->from;
 		$this->remote_cseq = $msg->cseq;
 		$this->remote_sdp = $msg->content;
-
+		
 		$this->remote_branch = $msg->branch;
 	}
 	
@@ -22,107 +22,108 @@ class SipCalleeSession extends SipBaseCallSession
 		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
 		// 不能在 100 响应中返回 totag，所以这里不生成 local tag
 		$this->set_state(SIP::TRYING);
-		$new = $this->new_response($this->remote_branch);
-		$new->trying();
-	}
-	
-	function brief(){
-		return $this->role_name() .' '. $this->remote->address() .'=>'. $this->local->address();
+		$this->new_response($this->remote_branch);
+		$this->trans->trying();
 	}
 
-	function del_transaction($trans){
-		parent::del_transaction($trans);
-		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-			Logger::debug("del_transaction close");
-			$this->close();
-		}
-	}
-
-	function close(){
-		if($this->is_state(SIP::CLOSING)){
-			return;
-		}
-
-		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-			foreach($this->transactions as $new){ // 应该倒序遍历
-				Logger::debug("reply Busy Here");
-				$new->code = 486;
-				$new->method = 'INVITE';
-				$new->close();
-			}
-		}else if($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)){
-			foreach($this->transactions as $new){ // 应该倒序遍历
-				Logger::debug("Send bye");
-				$new->method = 'BYE';
-				$new->close();
-			}
-		}
-		
-		$this->set_state(SIP::CLOSING);
-	}
+	// function close(){
+	// 	if($this->is_state(SIP::CLOSING)){
+	// 		return;
+	// 	}
+	//
+	// 	if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+	// 		foreach($this->transactions as $new){ // 应该倒序遍历
+	// 			Logger::debug("reply Busy Here");
+	// 			$new->code = 486;
+	// 			$new->method = 'INVITE';
+	// 			$new->close();
+	// 		}
+	// 	}else if($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)){
+	// 		foreach($this->transactions as $new){ // 应该倒序遍历
+	// 			Logger::debug("Send bye");
+	// 			$new->method = 'BYE';
+	// 			$new->close();
+	// 		}
+	// 	}
+	//
+	// 	$this->set_state(SIP::CLOSING);
+	// }
 		
 	function ringing(){
 		$this->set_state(SIP::RINGING);
 		if(!$this->local->tag()){
 			$this->local->set_tag(SIP::new_tag());
+			$this->trans->to->set_tag($this->local->tag());
 		}
-		
-		$this->transactions = array();
-		$new = $this->new_response($this->remote_branch);
-		$new->ringing();
+		$this->trans->ringing();
 	}
 	
-	function completing(){
+	function accept(){
 		$this->set_state(SIP::COMPLETING);
 		if(!$this->local->tag()){
 			$this->local->set_tag(SIP::new_tag());
+			$this->trans->to->set_tag($this->local->tag());
 		}
-		
-		$this->transactions = array();
-		$new = $this->new_response($this->remote_branch);
-		$new->accept();
+		$this->trans->accept();
+	}
+
+	function on_new_request($msg){
+		// 其它状态下，禁止接收新请求。
+		if(($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)) && $msg->method === 'ACK'){
+			parent::on_new_request($msg);
+			$this->remote_branch = $msg->branch;
+			$this->trans->accept();
+			return true;
+		}
+		if($this->is_state(SIP::COMPLETED) && $msg->method === 'INVITE'){
+			parent::on_new_request($msg);
+			$this->trans->accept();
+			return true;
+		}
+		return false;
 	}
 	
-	function incoming($msg, $trans){
-		$ret = parent::incoming($msg, $trans);
-		if($ret === true){
-			return true;
-		}
-		
-		if($msg->method == 'INVITE'){
-			Logger::debug("recv duplicated INVITE");
-			if($this->is_state(SIP::COMPLETED)){
-				$trans->completing();
-			}else{
+	function incoming($msg){
+		// $ret = parent::incoming($msg);
+		// if($ret === true){
+		// 	return true;
+		// }
+		$trans = $this->trans;
+		if($trans->state == SIP::TRYING || $trans->state == SIP::RINGING){
+			if($msg->method == 'INVITE'){
+				Logger::debug("recv duplicated INVITE while " . SIP::state_text($trans->state));
 				$trans->nowait();
+				return true;
 			}
-			if($msg->content){
-				$this->remote_sdp = $msg->content;
-			}
-			return true;
 		}
-		if($trans->state == SIP::COMPLETING && !$this->is_state(SIP::COMPLETED)){
+		if($trans->state == SIP::COMPLETING){
+			if($msg->method == 'INVITE'){
+				Logger::debug("recv duplicated INVITE while " . SIP::state_text($trans->state));
+				$trans->nowait();
+				return true;
+			}
 			if($msg->method == 'ACK'){
-				Logger::debug("recv ACK, complete callee");
-				$this->complete();
-				
-				// 清除全部事务
-				$this->transactions = array();
+				if($this->is_completed()){
+					Logger::debug("recv ACK when completed");
+				}else{
+					Logger::debug("recv ACK, complete callee");
+					$this->complete();
+				}
 				
 				$new = $this->new_request($trans->branch);
 				$new->keepalive();
-				
+				$new->wait(9999);
 				return true;
 			}
 		}
 	}
 	
-	function outgoing($trans){
-		$msg = parent::outgoing($trans);
-		if($msg){
-			return $msg;
-		}
-		
+	function outgoing(){
+		// $msg = parent::outgoing($trans);
+		// if($msg){
+		// 	return $msg;
+		// }
+		$trans = $this->trans;
 		if($trans->state == SIP::TRYING){
 			$msg = new SipMessage();
 			$msg->code = 100;

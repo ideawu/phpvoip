@@ -25,16 +25,17 @@ class SipLink
 	}
 	
 	function send($msg){
+		Logger::debug("send " . $msg->brief() . " to '{$msg->dst_ip}:{$msg->dst_port}'");
+
 		// 模拟丢包
-		// static $i = 0;
-		// if($i++%2 == 0){
-		// 	echo "drop OK for BYE\n";
-		// 	return null;
-		// }
+		static $i=0;
+		if($i++%2 == 0){
+			Logger::debug("manually drop msg");
+			return null;
+		}
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
-		Logger::debug("send " . $msg->brief() . " to '{$msg->dst_ip}:{$msg->dst_port}'");
 		echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 	}
 	
@@ -47,13 +48,6 @@ class SipLink
 		if(strlen($buf) == 0){
 			return null;
 		}
-		
-		// 模拟丢包
-		// static $i = 0;
-		// if($i++%2 == 0){
-		// 	echo "drop OK for BYE\n";
-		// 	return null;
-		// }
 			
 		$msg = new SipMessage();
 		$msg->src_ip = $ip;
@@ -73,6 +67,14 @@ class SipLink
 			return;
 		}
 		Logger::debug("recv " . $msg->brief() . " from '{$msg->src_ip}:{$msg->src_port}'");
+		
+		// 模拟丢包
+		// static $i=0;
+		// if($i++%2 == 0){
+		// 	Logger::debug("manually drop msg");
+		// 	return null;
+		// }
+		
 		echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 		return $msg;
 	}

@@ -35,7 +35,7 @@ abstract class SipSession
 	
 	/*
 	当会话收到一个新的cseq请求消息时，调用本方法，默认创建一个回复事务。子类可以改写本方法，
-	判断某个状态和某些消息类型才创建回复事务。
+	判断某个状态和某些消息类型才创建新的回复事务。
 	*/
 	function on_new_request($msg){
 		Logger::debug("recv new request, create new response");
@@ -139,6 +139,7 @@ abstract class SipSession
 		$this->trans->from = clone $this->local;
 		$this->trans->to = clone $this->remote;
 		$this->trans->cseq = $this->local_cseq;
+		return $this->trans;
 	}
 	
 	function new_response($branch){
@@ -147,5 +148,6 @@ abstract class SipSession
 		$this->trans->from = clone $this->remote;
 		$this->trans->to = clone $this->local;
 		$this->trans->cseq = $this->remote_cseq;
+		return $this->trans;
 	}
 }
