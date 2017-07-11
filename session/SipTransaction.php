@@ -1,6 +1,8 @@
 <?php
 class SipTransaction
 {
+	public $role;
+	
 	public $branch;
 	public $from;
 	public $to;

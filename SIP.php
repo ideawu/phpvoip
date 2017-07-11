@@ -28,12 +28,13 @@ include_once(dirname(__FILE__) . '/module/SipRobotModule.php');
 
 class SIP
 {
-	// role
+	// transaction 类型
 	const NOOP        = 0;
 	const REGISTER    = 1;
 	const REGISTRAR   = 2;
 	const CALLER      = 3;
 	const CALLEE      = 4;
+	const CLOSER      = 5;
 
 	// state
 	const NONE        = 0;

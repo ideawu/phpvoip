@@ -32,9 +32,33 @@ abstract class SipSession
 	}
 	
 	abstract function init();
+	abstract function on_new_request($msg);
+	abstract function on_request($msg);
+	abstract function on_response($msg);
 	
 	function incoming($msg){
+		if(!$msg->is_reqeust()){
+			$ret = $this->check_trans($msg);
+			if(!$ret){
+				$ret = $this->on_new_request();
+				if(!$ret){
+					Logger::debug("drop request");
+					return false;
+				}
+			}
+			$this->trans->cseq = $msg->cseq;
+			$this->trans->branch = $msg->branch;
+			return $this->on_request($msg);
+		}else{
+			$ret = $this->check_trans($msg);
+			if(!$ret){
+				Logger::debug("drop response");
+				return false;
+			}
+			return $this->on_response($msg);
+		}
 	}
+	
 	function outgoing(){
 	}
 	

@@ -62,13 +62,41 @@ class SipCalleeSession extends SipSession
 	}
 
 	function on_new_request($msg){
+		if($msg->method === 'BYE'){
+			$this->new_response($msg);
+			$this->trans->close();
+			$this->send(200);
+			$this->terminate();
+			return true;
+		}
+		if($msg->method === 'CANCEL'){
+			$this->new_response($msg);
+			$this->trans->close();
+			if(!$this->is_completed()){ // 对于本端来说，会话已建立，不能回复 487
+				$this->send(487);
+			}
+			$this->send(200, SIP::new_tag());
+			$this->terminate();
+			return true;
+		}
+
+		$trans = $this->find_trans($msg);
+		if($trans){
+			$trans->nowait();
+			return true;
+		}
+		// drop msg
+		if($msg->is_response()){
+			return false;
+		}
+		
 		// 其它状态下，禁止接收新请求。
-		if(($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)) && $msg->method === 'ACK'){
+		if($msg->method === 'INVITE'){
 			parent::on_new_request($msg);
 			$this->trans->accept();
 			return true;
 		}
-		if($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED) && $msg->method === 'INVITE'){
+		if($msg->method === 'ACK'){
 			parent::on_new_request($msg);
 			$this->trans->accept();
 			return true;
