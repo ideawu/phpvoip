@@ -9,6 +9,9 @@ class SipRecycleSession extends SipSession
 	}
 	
 	function incoming($msg){
+		if($msg->method == 'ACK'){
+			return;
+		}
 		$trans = $this->trans;
 		$trans->cseq = $msg->cseq;
 		$trans->cseq_method = $msg->method;
