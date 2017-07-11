@@ -126,7 +126,22 @@ A=>B 发 CANCEL
 
 	> CANCEL (from.tag=at, to.tag=  , seq+0, branch0, contact= , uri=B)
 	< 487    (from.tag=at, to.tag=bt, seq+0, branch0, contact=B)
-	< OK     (from.tag=at, to.tag=Xt, seq+0, branch0, contact= )
+	< OK     (from.tag=at, to.tag=Ct, seq+0, branch0, contact= )
 	> ACK    (from.tag=at, to.tag=bt, seq+0, branch0, contact= , uri=B)
+
+A=>B 发 CANCEL（异常情况，B 已经成功回复了 200，但网络丢包）
+
+	< OK     (from.tag=at, to.tag=bt, seq+0, branch0, contact=B) # 网络丢包
+	> CANCEL (from.tag=at, to.tag=  , seq+0, branch0, contact= , uri=B)
+	< OK     (from.tag=at, to.tag=Ct, seq+0, branch0, contact= )
+
+ACK 是对 487 的回应，不是对 OK 的回应。OK 是对 CANCEL 的回应。
+
+RFC 设计的缺陷：RFC 把 CANCEL 当做独立的请求，UAC 判断原请求是否已被取消，取决于是否收到 487，不取决于 OK。而 UAS 如果已经发送过 200，那么它将不会再次发送 487.
+
+所以，如果一直未收到 487，UAC 无法知道原因，也即无法知道是因为会话已经建立，还是因为 CANCEL 网络丢包。只能等收到 UAS 重传 200 之后，才将 CANCEL 替换成 BYE。这导致无法快速地中止一个会话。
+
+对于用户来说，CANCEL 的意图是明确的，是不可撤销的，也即一旦用户决定关闭会话，就不依赖于任何条件，要么告知对方协商关闭，要么自己独自关闭。
+
 
 
