@@ -10,15 +10,15 @@ include_once(dirname(__FILE__) . '/SipSession.php');
 include_once(dirname(__FILE__) . '/SipRouter.php');
 
 include_once(dirname(__FILE__) . '/session/SipTransaction.php');
-include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
+// include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
 include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
-include_once(dirname(__FILE__) . '/session/SipBaseCallSession.php');
+// include_once(dirname(__FILE__) . '/session/SipBaseCallSession.php');
 include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
 // include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
 include_once(dirname(__FILE__) . '/session/SipNoopCallerSession.php');
-include_once(dirname(__FILE__) . '/session/SipRecycleSession.php');
+// include_once(dirname(__FILE__) . '/session/SipRecycleSession.php');
 
-include_once(dirname(__FILE__) . '/module/SipRecycle.php');
+// include_once(dirname(__FILE__) . '/module/SipRecycle.php');
 include_once(dirname(__FILE__) . '/module/SipDialog.php');
 include_once(dirname(__FILE__) . '/module/SipMixer.php');
 include_once(dirname(__FILE__) . '/module/SipChannel.php');
@@ -37,52 +37,39 @@ class SIP
 	const CLOSER      = 5;
 
 	// state
-	const NONE        = 0;
-	const CLOSED      = -1;
-	const CLOSING     = 1;
-	const CALLING     = 5;
-	const TRYING      = 100;
-	const RINGING     = 180;
-	const COMPLETING  = 199; // 
-	const COMPLETED   = 200;
-	
-	const RECYCLE     = 10;
-	const KEEPALIVE   = 19; //
-	const FIN_WAIT    = 20;  // 主动关闭
-	const CLOSE_WAIT  = 21;  // 被动关闭
-	const AUTHING     = 401;
+	const NONE       = 0;
+	const CLOSED     = -1;
+	const CLOSING    = 1;
+	const TRYING     = 100;
+	const AUTHING    = 101;
+	const RINGING    = 180;
+	const ACCEPTING  = 199;
+	const COMPLETED  = 200;
+	const CONFIRMED  = 201;
 
 	private static $call_id_prefix = 'c';
 	private static $tag_prefix = 't';
 	private static $branch_prefix = 'z9hG4bK_';
 	
 	static function state_text($state){
-		if($state == self::TRYING){
-			return 'TRYING';
-		}else if($state == self::RINGING){
-			return 'RINGING';
-		}else if($state == self::COMPLETED){
-			return 'COMPLETED';
-		}else if($state == self::AUTHING){
-			return 'AUTHING';
+		if($state == self::NONE){
+			return 'NONE';
 		}else if($state == self::CLOSING){
 			return 'CLOSING';
 		}else if($state == self::CLOSED){
 			return 'CLOSED';
-		}else if($state == self::FIN_WAIT){
-			return 'FIN_WAIT';
-		}else if($state == self::CLOSE_WAIT){
-			return 'CLOSE_WAIT';
-		}else if($state == self::CALLING){
-			return 'CALLING';
-		}else if($state == self::KEEPALIVE){
-			return 'KEEPALIVE';
-		}else if($state == self::COMPLETING){
-			return 'COMPLETING';
-		}else if($state == self::RECYCLE){
-			return 'RECYCLE';
+		}else if($state == self::TRYING){
+			return 'TRYING';
+		}else if($state == self::RINGING){
+			return 'RINGING';
+		}else if($state == self::ACCEPTING){
+			return 'ACCEPTING';
+		}else if($state == self::COMPLETED){
+			return 'COMPLETED';
+		}else if($state == self::AUTHING){
+			return 'AUTHING';
 		}else{
-			return 'NONE';
+			return 'UNKNOWN';
 		}
 	}
 

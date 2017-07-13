@@ -9,9 +9,6 @@ class SipNoopCallerSession extends SipSession
 		$this->role = SIP::NOOP;
 		$this->set_state(SIP::TRYING);
 		
-		$this->local = new SipContact();
-		$this->remote = new SipContact();
-		
 		$this->remote_sdp = <<<TEXT
 v=0
 o=yate 1499684812 1499684812 IN IP4 127.0.0.1
@@ -29,19 +26,17 @@ TEXT;
 	}
 	
 	function init(){
-		$new = $this->new_request();
-		$new->trying();
-		$new->timers = array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+		$this->set_state(SIP::TRYING);
+		$this->trans->timers = array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 	}
 	
-	function incoming($msg){
+	function incoming($msg, $trans){
 		return null;
 	}
 	
 	private $count = 0;
 
-	function outgoing(){
-		$trans = $this->trans;
+	function outgoing($trans){
 		$this->count += 1;
 		if($this->count == 1){
 			$this->set_state(SIP::RINGING);

@@ -30,7 +30,8 @@ class SipRegistrar extends SipModule
 			Logger::debug("username: {$username} != contact: {$msg->contact->username}");
 			return false;
 		}
-			
+		
+		Logger::debug("create new REGISTRAR session for $username");
 		$password = $this->users[$username];
 				
 		$local_ip = $this->engine->local_ip;

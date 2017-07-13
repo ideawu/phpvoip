@@ -8,69 +8,31 @@ abstract class SipSession
 	public $local_port;
 	public $remote_ip;
 	public $remote_port;
-	
-	public $remote_allow = array();
 
-	public $call_id; // session id
+	public $call_id;
 	public $local;
 	public $remote;
-	public $contact;
 	public $local_cseq;
 	public $remote_cseq;
 	public $local_contact;
 	public $remote_contact;
-	
-	public $uri;
-	public $trans;
+	public $local_branch;
+	public $remote_branch;
+
+	public $remote_allow = array();
 
 	private $callback;
 	
+	protected $trans;
+	protected $transactions = array();
+	
 	function __construct(){
-		$this->local = new SipContact();
-		$this->remote = new SipContact();
-		$this->local_cseq = SIP::new_cseq();
+		$this->set_state(SIP::NONE);
+		$this->trans = new SipTransaction();
+		$this->transactions = array($this->trans);
 	}
 	
-	abstract function init();
-	abstract function on_new_request($msg);
-	abstract function on_request($msg);
-	abstract function on_response($msg);
-	
-	function incoming($msg){
-		if(!$msg->is_reqeust()){
-			$ret = $this->check_trans($msg);
-			if(!$ret){
-				$ret = $this->on_new_request();
-				if(!$ret){
-					Logger::debug("drop request");
-					return false;
-				}
-			}
-			$this->trans->cseq = $msg->cseq;
-			$this->trans->branch = $msg->branch;
-			return $this->on_request($msg);
-		}else{
-			$ret = $this->check_trans($msg);
-			if(!$ret){
-				Logger::debug("drop response");
-				return false;
-			}
-			return $this->on_response($msg);
-		}
-	}
-	
-	function outgoing(){
-	}
-	
-	/*
-	当会话收到一个新的cseq请求消息时，调用本方法，默认创建一个回复事务。子类可以改写本方法，
-	判断某个状态和某些消息类型才创建新的回复事务。
-	*/
-	function on_new_request($msg){
-		Logger::debug("recv new request, create new response");
-		$this->remote_cseq = $msg->cseq;
-		$this->new_response($msg->branch);
-		return true;
+	function init(){
 	}
 	
 	function set_callback($callback){
@@ -83,10 +45,6 @@ abstract class SipSession
 	
 	function is_state($state){
 		return $this->state === $state;
-	}
-	
-	function is_completed(){
-		return $this->state === SIP::COMPLETED;
 	}
 	
 	function set_state($new){
@@ -119,64 +77,186 @@ abstract class SipSession
 	function brief(){
 		return $this->role_name() .' '. $this->local->address() .'=>'. $this->remote->address();
 	}
+
 	
 	function complete(){
 		$this->set_state(SIP::COMPLETED);
 	}
-	
-	function close(){
-		// 主动关闭只执行一次
-		if($this->is_state(SIP::CLOSING)){
-			return;
-		}
-		if($this->is_state(SIP::COMPLETED) || $this->is_state(SIP::COMPLETING)){
-			$method = 'BYE';
-		}else{
-			$method = 'CANCEL';
-		}
-		$this->set_state(SIP::CLOSING);
-		$this->trans->close();
-		$this->trans->method = $method;
-		return;
-	}
-	
-	function onclose($msg){
-		// 如果是在被动关闭，就让现有的关闭流程继续，否则将从主动关闭转为被动关闭
-		if($this->trans->state == SIP::CLOSE_WAIT){
-			return;
-		}
 
-		$this->set_state(SIP::CLOSING);
-		if($msg->method == 'BYE' || $msg->method == 'CANCEL'){
-			$this->trans->code = 200;
-			$this->trans->method = $msg->method;
-		}else{
-			$this->trans->method = 'ACK';
-		}
-		$this->trans->onclose();
-	}
-	
 	function terminate(){
 		$this->set_state(SIP::CLOSED);
 	}
 	
-	function new_request($branch=null){
-		$this->local_cseq ++;
-		
-		$this->trans = new SipTransaction();
-		$this->trans->branch = ($branch===null)? SIP::new_branch() : $branch;
-		$this->trans->from = clone $this->local;
-		$this->trans->to = clone $this->remote;
-		$this->trans->cseq = $this->local_cseq;
-		return $this->trans;
+	function add_transaction($trans){
+		$this->transactions[] = $trans;
 	}
 	
-	function new_response($branch){
-		$this->trans = new SipTransaction();
-		$this->trans->branch = $branch;
-		$this->trans->from = clone $this->remote;
-		$this->trans->to = clone $this->local;
-		$this->trans->cseq = $this->remote_cseq;
-		return $this->trans;
+	function del_transaction($trans){
+		foreach($this->transactions as $index=>$tmp){
+			if($tmp === $trans){
+				unset($this->transactions[$index]);
+				break;
+			}
+		}
+	}
+	
+	function match_sess($msg){
+		if($msg->src_ip !== $this->remote_ip || $msg->src_port !== $this->remote_port){
+			return false;
+		}
+		if($msg->call_id != $this->call_id){
+			return false;
+		}
+		
+		if($msg->is_request()){
+			if($msg->from->username != $this->remote->username){
+				return false;
+			}
+			if($msg->to->username != $this->local->username){
+				return false;
+			}
+			if($msg->from->tag() !== $this->remote->tag()){
+				return false;
+			}
+		}else{
+			if($msg->from->username != $this->local->username){
+				return false;
+			}
+			if($msg->to->username != $this->remote->username){
+				return false;
+			}
+			if($msg->from->tag() !== $this->local->tag()){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	private function match_trans($msg, $trans){
+		if($msg->is_response()){
+			if($msg->cseq !== $trans->cseq){
+				return false;
+			}
+			if($msg->cseq_method !== $trans->method){
+				return false;
+			}
+			if($msg->branch !== $trans->branch){
+				return false;
+			}
+			if($trans->to_tag){
+				if($msg->to->tag() !== $trans->to_tag){
+					return false;
+				}
+			}
+			return true;
+		}else{
+			// ACK 特殊处理
+			if($msg->method === 'ACK'){
+				if($msg->cseq !== $trans->cseq){
+					return false;
+				}
+				if($msg->uri !== $trans->uri){
+					return false;
+				}
+				if($msg->to->tag() !== $trans->to_tag){
+					return false;
+				}
+				return true;
+			}
+
+			// 收到重传或者 CANCEL
+			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri === $trans->uri){
+				Logger::debug("recv transaction request " . $msg->method);
+				return true;
+			}
+			// re-INVITE 或者 BYE
+			if($msg->cseq === $trans->cseq + 1 && $msg->to->tag() === $trans->to_tag){
+				Logger::debug("recv new cseq request " . $msg->method);
+				return true;
+			}
+			// 新请求或者 BYE
+			if(!$this->remote_cseq && $msg->to->tag() === $trans->to_tag){
+				Logger::debug("recv first cseq request " . $msg->method);
+				return true;
+			}
+			return false;
+		}
+	}
+
+	function proc_incoming($msg){
+		foreach($this->transactions as $trans){
+			if($this->match_trans($msg, $trans)){
+				return $this->incoming($msg, $trans);
+			}
+		}
+		return false;
+	}
+
+	function proc_outgoing($time, $timespan){
+		$ret = array();
+		foreach($this->transactions as $trans){
+			if(!$trans->timers){
+				$this->del_transaction($trans);
+				continue;
+			}
+			
+			$trans->timers[0] -= $timespan;
+			if($trans->timers[0] <= 0){
+				array_shift($trans->timers);
+				if(count($trans->timers) > 0){
+					$ret[] = $this->outgoing($trans);
+				}
+			}
+		}
+		if(!$this->transactions){
+			$this->terminate();
+		}
+		return $ret;
+	}
+		
+	protected function incoming($msg, $trans){
+		if($msg->code === 200){
+			if($trans->method === 'BYE'){
+				$this->terminate();
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	protected function outgoing($trans){
+		$msg = new SipMessage();
+		$msg->src_ip = $this->local_ip;
+		$msg->src_port = $this->local_port;
+		$msg->dst_ip = $this->remote_ip;
+		$msg->dst_port = $this->remote_port;
+
+		if($trans->code){
+			$msg->code = $trans->code;
+			$msg->cseq_method = $trans->method;
+		}else{
+			$msg->method = $trans->method;
+		}
+		
+		$msg->call_id = $this->call_id;
+		$msg->uri = $trans->uri;
+		$msg->branch = $trans->branch;
+		$msg->cseq = $trans->cseq;
+		$msg->expires = $trans->expires;
+		if($trans->auth){
+			$str = SIP::encode_www_auth($trans->auth);
+			$msg->auth = $str;
+		}
+		if($msg->is_request()){
+			$msg->from = clone $this->local;
+			$msg->to = clone $this->remote;
+			$msg->contact = clone $this->local_contact;
+		}else{
+			$msg->from = clone $this->remote;
+			$msg->to = clone $this->local;
+			$msg->contact = clone $this->remote_contact;
+		}
+		
+		return $msg;
 	}
 }
