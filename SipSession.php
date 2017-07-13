@@ -16,7 +16,7 @@ abstract class SipSession
 	public $local_cseq;
 	public $remote_cseq;
 	public $local_branch;
-	public $remote_branch;
+	// public $remote_branch;
 
 	public $remote_allow = array();
 
@@ -27,6 +27,8 @@ abstract class SipSession
 	
 	function __construct(){
 		$this->set_state(SIP::NONE);
+		$this->local_cseq = SIP::new_cseq();
+		$this->local_branch = SIP::new_branch();
 		$this->trans = new SipTransaction();
 		$this->transactions = array($this->trans);
 	}
@@ -104,17 +106,21 @@ abstract class SipSession
 			return false;
 		}
 		if($msg->call_id != $this->call_id){
+			#Logger::debug($this->role_name() . " {$msg->call_id} != {$this->call_id}");
 			return false;
 		}
 		
 		if($msg->is_request()){
 			if($msg->from->username != $this->remote->username){
+				Logger::debug("");
 				return false;
 			}
 			if($msg->to->username != $this->local->username){
+				Logger::debug("");
 				return false;
 			}
 			if($msg->from->tag() !== $this->remote->tag()){
+				Logger::debug($msg->from->tag() . " != " . $this->remote->tag());
 				return false;
 			}
 		}else{
@@ -143,7 +149,7 @@ abstract class SipSession
 				return false;
 			}
 			if($msg->branch !== $trans->branch){
-				Logger::debug("");
+				Logger::debug("{$msg->branch} != {$trans->branch}");
 				return false;
 			}
 			if($trans->to_tag){
@@ -177,13 +183,15 @@ abstract class SipSession
 				return true;
 			}
 			// re-INVITE 或者 BYE
-			if($msg->cseq === $trans->cseq + 1 && $msg->to->tag() === $trans->to_tag){
+			if($msg->cseq === $trans->cseq + 1 && $msg->to->tag() === $this->local->tag()){
 				Logger::debug("recv new cseq request " . $msg->method);
+				$this->remote_cseq = $msg->cseq;
 				return true;
 			}
 			// 新请求或者 BYE
-			if(!$this->remote_cseq && $msg->to->tag() === $trans->to_tag){
+			if(!$this->remote_cseq && $msg->to->tag() === $this->local->tag()){
 				Logger::debug("recv first cseq request " . $msg->method);
+				$this->remote_cseq = $msg->cseq;
 				return true;
 			}
 			return false;
@@ -228,7 +236,8 @@ abstract class SipSession
 	protected function incoming($msg, $trans){
 		if($msg->method === 'BYE'){
 			$this->transactions = array();
-			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			// if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			if($trans->code > 0 && $trans->code < 200){
 				$trans->code = 487; // Request Terminated
 				$trans->to_tag = $this->local->tag();
 				$trans->timers = array(0, 0);
@@ -257,6 +266,17 @@ abstract class SipSession
 				return true;
 			}
 		}
+		if($msg->code === 481 || $msg->code === 486 || $msg->code === 487){
+			Logger::debug("recv {$msg->code} for {$trans->method}, closing");
+			$this->set_state(SIP::CLOSING);
+			$this->remote->set_tag($msg->to->tag());
+			
+			$trans->method = 'ACK';
+			$trans->timers = array(0, 0);
+			$this->transactions = array($trans);
+			return true;
+		}
+
 		if($msg->method === 'ACK'){
 			if($trans->code >= 300){
 				Logger::debug("recv ACK for {$trans->code}, terminate");
@@ -290,7 +310,7 @@ abstract class SipSession
 		if($trans->to_tag){
 			$msg->to->set_tag($trans->to_tag);
 		}
-		if($msg->code === 200 && ($trans->method === 'INVITE' || $trans->method === 'REGISTER')){
+		if($msg->code === 200 || ($msg->is_request() && ($msg->method === 'INVITE' || $msg->method === 'REGISTER'))){
 			$msg->contact = clone $this->contact;
 		}
 		$msg->call_id = $this->call_id;

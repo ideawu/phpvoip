@@ -11,7 +11,6 @@ class SipCalleeSession extends SipSession
 		$this->call_id = $msg->call_id;
 		$this->local = clone $msg->to;
 		$this->remote = clone $msg->from;
-		$this->local_cseq = SIP::new_cseq();
 		$this->remote_cseq = $msg->cseq;
 
 		$this->remote_sdp = $msg->content;
@@ -30,7 +29,7 @@ class SipCalleeSession extends SipSession
 	function trying(){
 		$this->set_state(SIP::TRYING);
 		$this->trans->code = 100;
-		$this->trans->timers = array(0.5, 1, 2, 2);
+		$this->trans->timers = array(0.3, 1, 2, 2, 10);
 	}
 	
 	function ringing(){
@@ -45,8 +44,6 @@ class SipCalleeSession extends SipSession
 	function accept(){
 		$this->set_state(SIP::ACCEPTING);
 		$this->trans->code = 200;
-		$this->trans->content = $this->local_sdp;
-		$this->trans->content_type = 'application/sdp';
 		$this->trans->timers = array(0, 1, 2, 2, 2);
 		if(!$this->local->tag()){
 			$this->local->set_tag(SIP::new_tag());
@@ -72,11 +69,10 @@ class SipCalleeSession extends SipSession
 			
 			// 发送 BYE, 直到收到 200
 			$new = new SipTransaction();
-			$new->uri = "sip:{$this->remote->username}@{$this->remote->domain}";
-			$new->code = 0;
+			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
 			$new->method = 'BYE';
 			$new->cseq = $this->local_cseq;
-			$new->branch = SIP::new_branch();
+			$new->branch = $this->local_branch;
 			$new->to_tag = $this->remote->tag();
 			$new->timers = array(0, 1, 2, 2, 2);
 			$this->transactions = array($new);
@@ -94,7 +90,7 @@ class SipCalleeSession extends SipSession
 				
 				$trans->code = 487; // Request Terminated
 				$trans->to_tag = $this->local->tag();
-				$trans->timers = array(0, 3);
+				$trans->timers = array(0, 1, 2, 2, 2);
 			}else{
 				// 不关闭
 			}
@@ -128,26 +124,39 @@ class SipCalleeSession extends SipSession
 				return true;
 			}
 			if($trans->method === 'INVITE'){
-				if(!$this->is_state(SIP::ACCEPTING)){
-					Logger::debug("recv ACK when " . $this->state_text());
-				}else{
-					$this->complete();
-					$trans->timers = array(0, 3); // 等待可能重传的 ACK
-
-					// keepalive
-					$new = new SipTransaction();
-					$new->method = 'OPTIONS';
-					$new->uri = $msg->uri;
-					$new->cseq = $msg->cseq;
-					$new->branch = $msg->branch;
-					$new->to_tag = $this->local->tag();
-					$new->timers = array(10000); // TODO:
+				$this->transactions = array();
 				
-					$this->trans = $new;
-					$this->transactions[] = $new;
+				if($this->is_state(SIP::ACCEPTING)){
+					$this->complete();
+				}else{
+					Logger::debug("recv ACK when " . $this->state_text());
 				}
+					
+				$trans->timers = array(3); // 等待可能重传的 ACK
+				$this->transactions[] = $trans;
+
+				// keepalive
+				$new = new SipTransaction();
+				$new->method = 'OPTIONS';
+				$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+				$new->cseq = $msg->cseq;
+				$new->branch = $msg->branch;
+				$new->to_tag = $this->remote->tag();
+				$new->timers = array(10000); // TODO:
+			
+				$this->trans = $new;
+				$this->transactions[] = $new;
 				return true;
 			}
 		}
+	}
+	
+	protected function outgoing($trans){
+		$msg = parent::outgoing($trans);
+		if($msg && ($msg->is_response() && $msg->code == 200 && $msg->cseq_method === 'INVITE')){
+			$msg->content = $this->local_sdp;
+			$msg->content_type = 'application/sdp';
+		}
+		return $msg;
 	}
 }

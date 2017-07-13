@@ -120,11 +120,11 @@ class SipRegistrar extends SipModule
 	function callout($msg){
 		foreach($this->sessions as $sess){
 			if(!$sess->is_state(SIP::COMPLETED)){
-				Logger::debug('');
+				#Logger::debug('');
 				continue;
 			}
 			if($msg->to->username !== $sess->remote->username){
-				Logger::debug("{$msg->to->username} {$sess->remote->username}");
+				#Logger::debug("{$msg->to->username} {$sess->remote->username}");
 				continue;
 			}
 		
@@ -143,3 +143,34 @@ class SipRegistrar extends SipModule
 		return null;
 	}
 }
+
+/*
+			// TESTING
+			$uri = "sip:{$sess->remote->username}@{$sess->remote->domain}";
+			$from = new SipContact(1, '127.0.0.1:5070');
+			$to = clone $sess->remote;
+			$to->del_tag();
+
+			$call = new SipCallerSession($uri, $from, $to);
+			$call->local_ip = $sess->local_ip;
+			$call->local_port = $sess->local_port;
+			$call->remote_ip = $sess->remote_ip;
+			$call->remote_port = $sess->remote_port;
+			$call->local_sdp = <<<TEXT
+v=0
+o=yate 1499684812 1499684812 IN IP4 127.0.0.1
+s=SIP Call
+c=IN IP4 127.0.0.1
+t=0 0
+m=audio 28300 RTP/AVP 109 0 8 101
+a=rtpmap:109 iLBC/8000
+a=fmtp:109 mode=30
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:101 telephone-event/8000
+a=ptime:30
+TEXT;
+			$call->init();
+			$this->add_session($call);
+			return;
+*/

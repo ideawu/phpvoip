@@ -64,7 +64,7 @@ abstract class SipModule
 			if($sess->is_state(SIP::CLOSED)){
 				$this->del_session($sess);
 			}
-			$ret += $msgs;
+			$ret = array_merge($ret, $msgs);
 		}
 		return $ret;
 	}

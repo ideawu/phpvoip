@@ -54,7 +54,7 @@ TEXT;
 			$this->complete();
 		}
 		if($this->count == 10){
-			$this->terminate();
+			#$this->terminate();
 		}
 		return null;
 	}

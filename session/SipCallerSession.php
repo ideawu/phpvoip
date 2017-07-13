@@ -1,98 +1,125 @@
 <?php
-class SipCallerSession extends SipBaseCallSession
+class SipCallerSession extends SipSession
 {
+	public $local_sdp;
+	public $remote_sdp;
+
 	function __construct($uri, $from, $to){
 		parent::__construct();
 		$this->role = SIP::CALLER;
-		$this->set_state(SIP::NONE);
 
 		$this->uri = $uri;
 		$this->call_id = SIP::new_call_id();
 		$this->local = $from;
 		$this->local->set_tag(SIP::new_tag());
 		$this->remote = $to;
+
+		$this->trans->uri = $uri;
+		$this->trans->method = 'INVITE';
+		$this->trans->cseq = $this->local_cseq;
+		$this->trans->branch = $this->local_branch;
 	}
 	
 	function init(){
 		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
-		$this->set_state(SIP::CALLING);
-		$new = $this->new_request();
-		$new->calling();
+		$this->calling();
 	}
 
-	function del_transaction($trans){
-		parent::del_transaction($trans);
-		if($this->is_state(SIP::CALLING) || $this->is_state(SIP::RINGING)){
-			$this->close();
-		}
+	function calling(){
+		$this->set_state(SIP::TRYING);
+		$this->trans->timers = array(0, 1, 2, 2, 10);
 	}
 
 	function close(){
 		if($this->is_state(SIP::CLOSING)){
 			return;
 		}
-
-		if($this->is_state(SIP::CALLING)){
-			foreach($this->transactions as $new){ // 应该倒序遍历
-				Logger::debug("send CANCEL");
-				$new->method = 'CANCEL';
-				$new->close();
-			}
-		}else if($this->is_state(SIP::COMPLETING) || $this->is_state(SIP::COMPLETED)){
-			foreach($this->transactions as $new){ // 应该倒序遍历
-				Logger::debug("send BYE");
-				$new->method = 'BYE';
-				$new->close();
-			}
+		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			$this->set_state(SIP::CLOSING);
+			Logger::debug("caller send CANCEL to close session");
+			
+			// 发送 BYE, 直到收到 200
+			$new = new SipTransaction();
+			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+			$new->method = 'CANCEL';
+			$new->cseq = $this->local_cseq;
+			$new->branch = $this->local_branch;
+			$this->remote->del_tag();
+			$new->timers = array(0, 1, 2, 2, 2);
+			$this->transactions = array($new);
+		}else{
+			$this->set_state(SIP::CLOSING);
+			Logger::debug("callee send BYE to close session");
+			
+			// 发送 BYE, 直到收到 200
+			$new = new SipTransaction();
+			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+			$new->method = 'BYE';
+			$new->cseq = $this->local_cseq + 1;
+			$new->branch = $this->local_branch;
+			$new->to_tag = $this->remote->tag();
+			$new->timers = array(0, 1, 2, 2, 2);
+			$this->transactions = array($new);
 		}
-		
-		$this->set_state(SIP::CLOSING);
 	}
 
 	function incoming($msg, $trans){
-		$ret = parent::incoming($msg, $trans);
-		if($ret === true){
+		if(parent::incoming($msg, $trans)){
 			return true;
 		}
-		
-		if($trans->state == SIP::CALLING){
-			if($msg->code == 200){
+		if($msg->code === 100){
+			$trans->timers = array(5);
+			return true;
+		}
+		if($msg->code === 180){
+			$this->set_state(SIP::RINGING);
+			$this->remote->set_tag($msg->to->tag());
+			$trans->timers = array(15);
+			return true;
+		}
+		if($msg->code === 200){
+			$this->transactions = array();
+
+			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+				$this->remote->set_tag($msg->to->tag());
 				$this->remote_sdp = $msg->content;
 				$this->complete();
-
-				$trans->completing();
-
-				$new = $this->new_request($trans->branch);
-				$new->keepalive();
-				return true;
+				$trans->timers = array(3);
+			}else{
+				Logger::debug("recv 200 when " . $this->state_text());
 			}
-		}else if($trans->state == SIP::COMPLETING){
-			if($msg->code == 200){
-				Logger::debug("duplicated OK, resend ACK");
-				$trans->nowait();
-				return true;
-			}
+
+			$new = new SipTransaction();
+			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+			$new->method = 'ACK';
+			$new->cseq = $msg->cseq;
+			$new->branch = SIP::new_branch();
+			$new->to_tag = $msg->to->tag();
+			$new->timers = array(0, 0);
+			$this->transactions[] = $new;
+
+			// keepalive
+			$new = new SipTransaction();
+			$new->method = 'OPTIONS';
+			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+			$new->cseq = $msg->cseq;
+			// $new->branch = $msg->branch;
+			$new->branch = $trans->branch;
+			$new->to_tag = $this->remote->tag();
+			$new->timers = array(10000); // TODO:
+		
+			$this->trans = $new;
+			$this->transactions[] = $new;
+			return true;
 		}
 	}
 	
-	function outgoing($trans){
+	protected function outgoing($trans){
 		$msg = parent::outgoing($trans);
-		if($msg){
-			return $msg;
+		if($msg && ($msg->is_request() && $msg->method === 'INVITE')){
+			$msg->content = $this->local_sdp;
+			$msg->content_type = 'application/sdp';
 		}
-		
-		if($trans->state == SIP::CALLING){
-			$msg = new SipMessage();
-			$msg->method = 'INVITE';
-			$msg->add_header('Content-Type', 'application/sdp');
-			if($this->local_sdp){
-				$msg->content = $this->local_sdp;
-			}
-			return $msg;
-		}else if($trans->state == SIP::COMPLETING){
-			$msg = new SipMessage();
-			$msg->method = 'ACK';
-			return $msg;
-		}
+		return $msg;
 	}
 }
