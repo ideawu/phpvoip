@@ -16,7 +16,7 @@ $sip = SipEngine::create($ip, $port);
 // $sip->add_module($mod);
 
 $mod = new SipRobotModule();
-// $sip->add_module($mod, -1);
+$sip->add_module($mod, -1);
 
 $mod = new SipRegistrar();
 $mod->add_user('3001', '123456');

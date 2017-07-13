@@ -28,7 +28,7 @@ include_once(dirname(__FILE__) . '/module/SipRobotModule.php');
 
 class SIP
 {
-	// transaction 类型
+	// role
 	const NOOP        = 0;
 	const REGISTER    = 1;
 	const REGISTRAR   = 2;
@@ -41,11 +41,10 @@ class SIP
 	const CLOSED     = -1;
 	const CLOSING    = 1;
 	const TRYING     = 100;
-	const AUTHING    = 101;
 	const RINGING    = 180;
 	const ACCEPTING  = 199;
 	const COMPLETED  = 200;
-	const CONFIRMED  = 201;
+	const AUTHING    = 401;
 
 	private static $call_id_prefix = 'c';
 	private static $tag_prefix = 't';

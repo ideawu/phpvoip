@@ -12,10 +12,9 @@ abstract class SipSession
 	public $call_id;
 	public $local;
 	public $remote;
+	public $contact;
 	public $local_cseq;
 	public $remote_cseq;
-	public $local_contact;
-	public $remote_contact;
 	public $local_branch;
 	public $remote_branch;
 
@@ -32,8 +31,8 @@ abstract class SipSession
 		$this->transactions = array($this->trans);
 	}
 	
-	function init(){
-	}
+	abstract function init();
+	abstract function close();
 	
 	function set_callback($callback){
 		$this->callback = $callback;
@@ -126,6 +125,7 @@ abstract class SipSession
 				return false;
 			}
 			if($msg->from->tag() !== $this->local->tag()){
+				Logger::debug("");
 				return false;
 			}
 		}
@@ -135,16 +135,20 @@ abstract class SipSession
 	private function match_trans($msg, $trans){
 		if($msg->is_response()){
 			if($msg->cseq !== $trans->cseq){
+				Logger::debug("");
 				return false;
 			}
 			if($msg->cseq_method !== $trans->method){
+				Logger::debug("");
 				return false;
 			}
 			if($msg->branch !== $trans->branch){
+				Logger::debug("");
 				return false;
 			}
 			if($trans->to_tag){
 				if($msg->to->tag() !== $trans->to_tag){
+					Logger::debug($msg->to->tag() . " != " . $trans->to_tag);
 					return false;
 				}
 			}
@@ -153,12 +157,15 @@ abstract class SipSession
 			// ACK 特殊处理
 			if($msg->method === 'ACK'){
 				if($msg->cseq !== $trans->cseq){
+					Logger::debug("");
 					return false;
 				}
 				if($msg->uri !== $trans->uri){
+					Logger::debug("{$msg->uri} != {$trans->uri}");
 					return false;
 				}
 				if($msg->to->tag() !== $trans->to_tag){
+					Logger::debug($msg->to->tag() . " != " . $trans->to_tag);
 					return false;
 				}
 				return true;
@@ -204,19 +211,55 @@ abstract class SipSession
 			if($trans->timers[0] <= 0){
 				array_shift($trans->timers);
 				if(count($trans->timers) > 0){
-					$ret[] = $this->outgoing($trans);
+					$msg = $this->outgoing($trans);
+					if($msg){
+						$ret[] = $msg;
+					}
 				}
 			}
 		}
 		if(!$this->transactions){
+			Logger::debug($this->role_name() . " terminated for empty transactions");
 			$this->terminate();
 		}
 		return $ret;
 	}
 		
 	protected function incoming($msg, $trans){
+		if($msg->method === 'BYE'){
+			$this->transactions = array();
+			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+				$trans->code = 487; // Request Terminated
+				$trans->to_tag = $this->local->tag();
+				$trans->timers = array(0, 0);
+				$this->transactions[] = $trans;
+			}else{
+				//
+			}
+			$this->set_state(SIP::CLOSING);
+
+			// response OK
+			$new = new SipTransaction();
+			$new->code = 200;
+			$new->method = $msg->method;
+			$new->cseq = $msg->cseq;
+			$new->branch = $msg->branch; // 原 branch
+			$new->to_tag = $msg->to->tag();
+			$new->timers = array(0, 0);
+			$this->transactions[] = $new;
+			return true;
+		}
+
 		if($msg->code === 200){
 			if($trans->method === 'BYE'){
+				Logger::debug("recv 200 for BYE, terminate");
+				$this->terminate();
+				return true;
+			}
+		}
+		if($msg->method === 'ACK'){
+			if($trans->code >= 300){
+				Logger::debug("recv ACK for {$trans->code}, terminate");
 				$this->terminate();
 				return true;
 			}
@@ -237,25 +280,29 @@ abstract class SipSession
 		}else{
 			$msg->method = $trans->method;
 		}
-		
+		if($msg->is_request()){
+			$msg->from = clone $this->local;
+			$msg->to = clone $this->remote;
+		}else{
+			$msg->from = clone $this->remote;
+			$msg->to = clone $this->local;
+		}
+		if($trans->to_tag){
+			$msg->to->set_tag($trans->to_tag);
+		}
+		if($msg->code === 200 && ($trans->method === 'INVITE' || $trans->method === 'REGISTER')){
+			$msg->contact = clone $this->contact;
+		}
 		$msg->call_id = $this->call_id;
 		$msg->uri = $trans->uri;
 		$msg->branch = $trans->branch;
 		$msg->cseq = $trans->cseq;
 		$msg->expires = $trans->expires;
 		if($trans->auth){
-			$str = SIP::encode_www_auth($trans->auth);
-			$msg->auth = $str;
+			$msg->auth = SIP::encode_www_auth($trans->auth);
 		}
-		if($msg->is_request()){
-			$msg->from = clone $this->local;
-			$msg->to = clone $this->remote;
-			$msg->contact = clone $this->local_contact;
-		}else{
-			$msg->from = clone $this->remote;
-			$msg->to = clone $this->local;
-			$msg->contact = clone $this->remote_contact;
-		}
+		$msg->content = $trans->content;
+		$msg->content_type = $trans->content_type;
 		
 		return $msg;
 	}

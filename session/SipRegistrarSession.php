@@ -18,8 +18,8 @@ class SipRegistrarSession extends SipSession
 		$this->call_id = $msg->call_id;
 		$this->local = clone $msg->to;
 		$this->remote = clone $msg->from;
+		$this->contact = clone $msg->contact;
 		$this->remote_cseq = $msg->cseq;
-		$this->remote_contact = clone $msg->contact;
 
 		$this->trans->uri = $msg->uri;
 		$this->trans->method = $msg->method;

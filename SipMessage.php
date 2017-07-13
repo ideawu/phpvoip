@@ -18,7 +18,6 @@ class SipMessage
 	public $cseq_method;
 	public $from; // Contact
 	public $to; // Contact
-	public $content_length = 0;
 
 	public $via = null;
 	public $contact = null; // 网络层地址, 但RFC中似乎并没有这样说？
@@ -29,6 +28,8 @@ class SipMessage
 	// 未详细解析的 header, 每个元素是 pair [key, val]
 	public $headers = array();
 	public $content = '';
+	public $content_type = null;
+	public $content_length = 0;
 
 	private static $code_reasons = array(
 		100 => 'Trying',
@@ -148,6 +149,9 @@ class SipMessage
 			$headers[] = "Expires: {$this->expires}";
 		}
 		$headers[] = "User-Agent: phpvoip";
+		if($this->content_type){
+			$headers[] = "Content-Type: " . $this->content_type;
+		}
 		$headers[] = "Content-Length: " . $this->content_length;
 		
 		$ret = join("\r\n", $headers) . "\r\n\r\n{$this->content}";

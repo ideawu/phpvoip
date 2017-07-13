@@ -28,13 +28,13 @@ class SipLink
 		Logger::debug("send " . $msg->brief() . " to '{$msg->dst_ip}:{$msg->dst_port}'");
 
 		//模拟丢包
-		if($msg->code === 200 || ($msg->is_request() && $msg->method === 'ACK')){
-			static $i=0;
-			if($i++%2 == 0){
-				Logger::debug("manually drop msg");
-				return null;
-			}
-		}
+		// if($msg->code === 200 || ($msg->is_request() && $msg->method === 'ACK')){
+		// 	static $i=0;
+		// 	if($i++%2 == 0){
+		// 		Logger::debug("manually drop msg");
+		// 		return null;
+		// 	}
+		// }
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);

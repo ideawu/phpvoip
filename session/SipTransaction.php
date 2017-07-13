@@ -10,6 +10,8 @@ class SipTransaction
 	public $to_tag;
 	// public $via;
 	public $auth;
+	public $content = '';
+	public $content_type = null;
 	public $expires = null;
 	
 	public $timers = array();

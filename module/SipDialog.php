@@ -54,8 +54,8 @@ class SipDialog
 			}
 			if($sess->is_state(SIP::COMPLETED)){
 				Logger::debug("caller completed, accept callee");
-				$this->callee->accept();
 				$this->callee->local_sdp = $this->caller->remote_sdp;
+				$this->callee->accept();
 				// TESTING
 				// Logger::debug("caller completed, closing callee");
 				// $this->callee->close();
