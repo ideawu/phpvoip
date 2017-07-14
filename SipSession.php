@@ -109,7 +109,7 @@ abstract class SipSession
 		}else{
 			$new = $this->new_request('OPTIONS');
 		}
-		$new->timers = array(5, 3, 3, 3);
+		$new->timers = array(10, 2, 1, 1, 1);
 		$this->trans = $new;
 	}
 	
@@ -318,6 +318,9 @@ abstract class SipSession
 
 		// keepalive
 		if($trans->method === 'INFO' || $trans->method === 'OPTIONS'){
+			if($msg->code === 100){
+				return true;
+			}
 			if($msg->code !== 418){
 				Logger::debug("keepalive updated");
 				$this->del_transaction($trans);
