@@ -18,7 +18,7 @@ class SipRegistrarSession extends SipSession
 		$this->call_id = $msg->call_id;
 		$this->local = clone $msg->to;
 		$this->remote = clone $msg->from;
-		$this->contact = clone $msg->contact;
+		$this->contact = clone $this->remote;
 		$this->remote_cseq = $msg->cseq;
 		$this->remote_allow = $msg->allow;
 
@@ -63,7 +63,7 @@ class SipRegistrarSession extends SipSession
 				return true;
 			}
 			// 账号密码验证
-			$in_auth = SIP::decode_www_auth($msg->auth);
+			$in_auth = $msg->auth;
 			$my_auth = SIP::www_auth($this->username, $this->password, $msg->uri, 'REGISTER', $this->auth);
 			if($in_auth['response'] !== $my_auth['response']){
 				Logger::debug("auth failed");

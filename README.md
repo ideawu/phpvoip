@@ -85,6 +85,16 @@ in_from   in_to   out_from    out_to
 
 
 
+# REGISTER
+
+A=>B 注册
+
+	> REGISTER (from.tag=at, to.tag=  , seq+0, branch0, contact=A, uri=S)
+	< 401      (from.tag=at, to.tag=  , seq+0, branch0, contact= )
+	> REGISTER (from.tag=at, to.tag=  , seq+1, branch1, contact=A, uri=S)
+	< 200      (from.tag=at, to.tag=bt, seq+1, branch1, contact= )
+
+
 # INVITE
 
 ### 正常
@@ -93,22 +103,22 @@ A=>B 创建会话
 
 	> INVITE (from.tag=at, to.tag=  , seq+0, branch0, contact=A, uri=B)
 	< 180    (from.tag=at, to.tag=bt, seq+0, branch0, contact=B)
-	< OK     (from.tag=at, to.tag=bt, seq+0, branch0, contact=B)
+	< 200    (from.tag=at, to.tag=bt, seq+0, branch0, contact=B)
 	> ACK    (from.tag=at, to.tag=bt, seq+0, branch1, contact=A, uri=B)
 	# 某些客户端会重发新的 INVITE
 	> INVITE (from.tag=at, to.tag=bt, seq+1, branch2, contact=A, uri=B)
-	< OK     (from.tag=at, to.tag=bt, seq+1, branch2, contact=B)
+	< 200    (from.tag=at, to.tag=bt, seq+1, branch2, contact=B)
 	> ACK    (from.tag=at, to.tag=bt, seq+1, branch3, contact=A, uri=B)
 
 B=>A 发 BYE
 
 	< BYE    (from.tag=bt, to.tag=at, seqx , branch4, contact= , uri=A)
-	> OK     (from.tag=bt, to.tag=at, seqx , branch4, contact= )
+	> 200    (from.tag=bt, to.tag=at, seqx , branch4, contact= )
 
 A=>B 发 BYE
 
 	> BYE    (from.tag=at, to.tag=bt, seq+2, branch4, contact= , uri=B)
-	< OK     (from.tag=at, to.tag=bt, seq+2, branch4, contact= )
+	< 200    (from.tag=at, to.tag=bt, seq+2, branch4, contact= )
 
 ### 中止
 
@@ -125,15 +135,15 @@ B=>A 发 486 Busy Here
 A=>B 发 CANCEL
 
 	> CANCEL (from.tag=at, to.tag=  , seq+0, branch0, contact= , uri=B)
-	< OK     (from.tag=at, to.tag=Ct, seq+0, branch0, contact= )
+	< 200    (from.tag=at, to.tag=Ct, seq+0, branch0, contact= )
 	< 487    (from.tag=at, to.tag=bt, seq+0, branch0, contact=B)
 	> ACK    (from.tag=at, to.tag=bt, seq+0, branch0, contact= , uri=B)
 
 A=>B 发 CANCEL（异常情况，B 已经成功回复了 200，但网络丢包）
 
-	< OK     (from.tag=at, to.tag=bt, seq+0, branch0, contact=B) # 网络丢包
+	< 200    (from.tag=at, to.tag=bt, seq+0, branch0, contact=B) # 网络丢包
 	> CANCEL (from.tag=at, to.tag=  , seq+0, branch0, contact= , uri=B)
-	< OK     (from.tag=at, to.tag=Ct, seq+0, branch0, contact= )
+	< 200    (from.tag=at, to.tag=Ct, seq+0, branch0, contact= )
 
 ACK 是对 487 的回应，不是对 OK 的回应。OK 是对 CANCEL 的回应。
 

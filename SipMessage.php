@@ -135,9 +135,9 @@ class SipMessage
 		}
 		if($this->auth){
 			if($this->is_request()){
-				$headers[] = "Authorization: {$this->auth}";
+				$headers[] = "Authorization: " . SIP::encode_www_auth($this->auth);
 			}else{
-				$headers[] = "WWW-Authenticate: {$this->auth}";
+				$headers[] = "WWW-Authenticate: " . SIP::encode_www_auth($this->auth);
 			}
 		}
 
@@ -246,9 +246,9 @@ class SipMessage
 		}else if($key == 'Content-Length'){
 			$this->content_length = intval($val);
 		}else if($key == 'WWW-Authenticate'){
-			$this->auth = $val;
+			$this->auth = SIP::decode_www_auth($val);
 		}else if($key == 'Authorization'){
-			$this->auth = $val;
+			$this->auth = SIP::decode_www_auth($val);
 		}else if($key == 'Allow'){
 			$this->allow = preg_split('/[, ]+/', trim($val));;
 		}else{

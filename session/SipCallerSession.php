@@ -21,12 +21,8 @@ class SipCallerSession extends SipSession
 	}
 	
 	function init(){
-		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
-		$this->calling();
-	}
-
-	function calling(){
 		$this->set_state(SIP::TRYING);
+		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
 		$this->trans->timers = array(0, 1, 2, 2, 10);
 	}
 

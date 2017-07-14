@@ -80,12 +80,12 @@ abstract class SipSession
 	}
 
 	
-	protected function new_request($method){
+	protected function new_request($method, $uri=null){
 		$this->local_cseq ++;
 		$this->local_branch = SIP::new_branch();
 		
 		$new = new SipTransaction();
-		$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+		$new->uri = $uri? $uri : "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
 		$new->method = $method;
 		$new->cseq = $this->local_cseq;
 		$new->branch = $this->local_branch;
@@ -363,9 +363,7 @@ abstract class SipSession
 		$msg->branch = $trans->branch;
 		$msg->cseq = $trans->cseq;
 		$msg->expires = $trans->expires;
-		if($trans->auth){
-			$msg->auth = SIP::encode_www_auth($trans->auth);
-		}
+		$msg->auth = $trans->auth;
 		$msg->content = $trans->content;
 		$msg->content_type = $trans->content_type;
 		

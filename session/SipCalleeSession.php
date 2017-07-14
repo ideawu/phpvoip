@@ -23,12 +23,8 @@ class SipCalleeSession extends SipSession
 	}
 	
 	function init(){
-		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
-		$this->trying();
-	}
-	
-	function trying(){
 		$this->set_state(SIP::TRYING);
+		$this->contact = new SipContact($this->local->username, $this->local_ip . ':' . $this->local_port);
 		$this->trans->code = 100;
 		$this->trans->timers = array(0.3, 1, 2, 2, 10);
 	}
