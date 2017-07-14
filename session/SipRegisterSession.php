@@ -80,7 +80,7 @@ class SipRegisterSession extends SipSession
 			return true;
 		}
 		if($msg->code == 200){
-			if($msg->expires <= 0){
+			if($this->expires <= 0){
 				Logger::debug("Register closed.");
 				$this->terminate();
 				return true;

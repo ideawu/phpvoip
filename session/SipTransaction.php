@@ -17,7 +17,7 @@ class SipTransaction
 	public $timers = array();
 
 	function nowait(){
-		if($this->timers && $this->timers[0] <= 0.002){
+		if($this->timers && $this->timers[0] <= 0.01){
 			return;
 		}else{
 			array_unshift($this->timers, 0);
@@ -25,6 +25,10 @@ class SipTransaction
 	}
 	
 	function wait($seconds){
-		array_unshift($this->timers, $seconds);
+		if($this->timers && $this->timers[0] <= 0.01){
+			$this->timers[0] += $seconds;
+		}else{
+			array_unshift($this->timers, $seconds);
+		}
 	}
 }
