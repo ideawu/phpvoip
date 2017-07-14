@@ -50,8 +50,8 @@ class SipChannel extends SipModule
 		$this->add_session($sess);
 		$this->sess = $sess;
 		
-		$sess->set_callback(array($this, 'sess_callback'));
 		$sess->init();
+		$sess->set_callback(array($this, 'sess_callback'));
 	}
 	
 	function sess_callback($sess){

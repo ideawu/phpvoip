@@ -66,13 +66,13 @@ class SipEngine
 	
 		$ret = @socket_select($read, $write, $except, 0, 20*1000);
 		// TESTING: 如下代码实现引擎慢速响应
-		$pause = 0.2;
-		static $stime = 0;
-		$ts = microtime(1) - $stime;
-		$sleep = min($pause, max(0, $pause - $ts));
-		usleep($sleep * 1000 * 1000);
-		#Logger::debug(sprintf("sleep %.3f %.3f %.3f", $sleep, $ts, $stime));
-		$stime = microtime(1);
+		// $pause = 0.2;
+		// static $stime = 0;
+		// $ts = microtime(1) - $stime;
+		// $sleep = min($pause, max(0, $pause - $ts));
+		// usleep($sleep * 1000 * 1000);
+		// #Logger::debug(sprintf("sleep %.3f %.3f %.3f", $sleep, $ts, $stime));
+		// $stime = microtime(1);
 		
 		if($ret === false){
 			Logger::error(socket_strerror(socket_last_error()));
