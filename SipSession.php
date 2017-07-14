@@ -200,8 +200,8 @@ abstract class SipSession
 					Logger::debug("{$msg->uri} != {$trans->uri}");
 					return false;
 				}
-				if($msg->to->tag() !== $this->remote->tag()){
-					Logger::debug($msg->to->tag() . " != " . $this->remote->tag());
+				if($msg->to->tag() !== $this->local->tag()){
+					Logger::debug($msg->to->tag() . " != " . $this->local->tag());
 					return false;
 				}
 				return true;
