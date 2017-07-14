@@ -66,16 +66,14 @@ class SipCallerSession extends SipSession
 			return true;
 		}
 		if($msg->code === 200){
-			$this->transactions = array();
-
+			$this->remote->set_tag($msg->to->tag());
+			$this->remote_sdp = $msg->content;
 			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-				$this->remote->set_tag($msg->to->tag());
-				$this->remote_sdp = $msg->content;
 				$this->complete();
-				$trans->timers = array(3);
 			}else{
 				Logger::debug("recv 200 when " . $this->state_text());
 			}
+			$trans->timers = array(3); // 等待可能重传的 200
 
 			$new = new SipTransaction();
 			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
@@ -84,18 +82,11 @@ class SipCallerSession extends SipSession
 			$new->branch = SIP::new_branch();
 			$new->to_tag = $msg->to->tag();
 			$new->timers = array(0, 0);
-			$this->transactions[] = $new;
 
-			// keepalive
-			$new = new SipTransaction();
-			$new->method = 'OPTIONS';
-			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
-			$new->cseq = $msg->cseq;
-			$new->branch = $msg->branch;
-			$new->timers = array(10000); // TODO:
-		
-			$this->trans = $new;
+			$this->transactions = array();
+			$this->transactions[] = $trans;
 			$this->transactions[] = $new;
+			$this->keepalive();
 			return true;
 		}
 	}

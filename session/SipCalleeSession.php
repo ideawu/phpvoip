@@ -112,17 +112,15 @@ class SipCalleeSession extends SipSession
 				return true;
 			}
 			if($trans->method === 'INVITE'){
-				$this->transactions = array();
-				
 				if($this->is_state(SIP::ACCEPTING)){
 					$this->complete();
 				}else{
 					Logger::debug("recv ACK when " . $this->state_text());
 				}
-					
 				$trans->timers = array(3); // 等待可能重传的 ACK
-				$this->transactions[] = $trans;
 
+				$this->transactions = array();
+				$this->transactions[] = $trans;
 				$this->keepalive();
 				return true;
 			}
