@@ -43,7 +43,7 @@ class SipCallerSession extends SipSession
 			$new->method = 'CANCEL';
 			$new->cseq = $this->local_cseq;
 			$new->branch = $this->local_branch;
-			$this->remote->del_tag();
+			$this->remote->del_tag(); // TODO
 			$new->timers = array(0, 1, 2, 2, 2);
 			$this->transactions = array($new);
 		}else{
@@ -80,7 +80,6 @@ class SipCallerSession extends SipSession
 			$new->method = 'ACK';
 			$new->cseq = $msg->cseq;
 			$new->branch = SIP::new_branch();
-			$new->to_tag = $msg->to->tag();
 			$new->timers = array(0, 0);
 
 			$this->transactions = array();

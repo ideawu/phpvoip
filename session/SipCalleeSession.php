@@ -40,7 +40,6 @@ class SipCalleeSession extends SipSession
 		if(!$this->local->tag()){
 			$this->local->set_tag(SIP::new_tag());
 		}
-		$this->trans->to_tag = $this->local->tag();
 	}
 	
 	function accept(){
@@ -50,7 +49,6 @@ class SipCalleeSession extends SipSession
 		if(!$this->local->tag()){
 			$this->local->set_tag(SIP::new_tag());
 		}
-		$this->trans->to_tag = $this->local->tag();
 	}
 	
 	function close(){
@@ -89,7 +87,7 @@ class SipCalleeSession extends SipSession
 			$new->method = $msg->method;
 			$new->cseq = $msg->cseq;
 			$new->branch = $msg->branch; // 原 branch
-			$new->to_tag = SIP::new_tag(); // TODO
+			$new->to_tag = SIP::new_tag(); // 新 branch
 			$new->timers = array(0, 0);
 			$this->transactions[] = $new;
 			return true;

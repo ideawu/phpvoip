@@ -164,6 +164,12 @@ abstract class SipSession
 			if($msg->from->tag() !== $this->local->tag()){
 				return false;
 			}
+			if($this->remote->tag()){
+				if($msg->to->tag() !== $this->remote->tag()){
+					Logger::debug($msg->to->tag() . " != " . $this->remote->tag());
+					return false;
+				}
+			}
 		}
 		return true;
 	}
@@ -182,12 +188,6 @@ abstract class SipSession
 				Logger::debug("{$msg->branch} != {$trans->branch}");
 				return false;
 			}
-			if($trans->to_tag){
-				if($msg->to->tag() !== $trans->to_tag){
-					Logger::debug($msg->to->tag() . " != " . $trans->to_tag);
-					return false;
-				}
-			}
 			return true;
 		}else{
 			// ACK 特殊处理
@@ -200,14 +200,14 @@ abstract class SipSession
 					Logger::debug("{$msg->uri} != {$trans->uri}");
 					return false;
 				}
-				if($msg->to->tag() !== $trans->to_tag){
-					Logger::debug($msg->to->tag() . " != " . $trans->to_tag);
+				if($msg->to->tag() !== $this->remote->tag()){
+					Logger::debug($msg->to->tag() . " != " . $this->remote->tag());
 					return false;
 				}
 				return true;
 			}
 
-			// 收到重传或者 CANCEL
+			// CANCEL 不带 to.tag，重传的 INVITE，可能不带 to.tag
 			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri === $trans->uri){
 				Logger::debug("recv transaction request " . $msg->method);
 				return true;
@@ -273,7 +273,6 @@ abstract class SipSession
 			// if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 			if($trans->code > 0 && $trans->code < 200){
 				$trans->code = 487; // Request Terminated
-				$trans->to_tag = $this->local->tag();
 				$trans->timers = array(0, 0);
 				$this->transactions[] = $trans;
 			}else{
@@ -287,15 +286,21 @@ abstract class SipSession
 			$new->method = $msg->method;
 			$new->cseq = $msg->cseq;
 			$new->branch = $msg->branch; // 原 branch
-			$new->to_tag = $msg->to->tag();
 			$new->timers = array(0, 0);
 			$this->transactions[] = $new;
 			return true;
 		}
-
 		if($msg->code === 200){
 			if($trans->method === 'BYE'){
 				Logger::debug("recv 200 for BYE, terminate");
+				$this->terminate();
+				return true;
+			}
+		}
+		
+		if($msg->method === 'ACK'){
+			if($trans->code >= 300){
+				Logger::debug("recv ACK for {$trans->code}, terminate");
 				$this->terminate();
 				return true;
 			}
@@ -309,14 +314,6 @@ abstract class SipSession
 			$trans->timers = array(0, 0);
 			$this->transactions = array($trans);
 			return true;
-		}
-
-		if($msg->method === 'ACK'){
-			if($trans->code >= 300){
-				Logger::debug("recv ACK for {$trans->code}, terminate");
-				$this->terminate();
-				return true;
-			}
 		}
 
 		// keepalive
