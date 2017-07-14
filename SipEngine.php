@@ -54,6 +54,9 @@ class SipEngine
 			'module' => $mod,
 		);
 		array_splice($this->modules, $offset, 0, array($mi));
+		if($this->router){
+			$mod->init();
+		}
 	}
 
 	function loop(){

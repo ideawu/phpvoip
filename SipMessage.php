@@ -41,6 +41,7 @@ class SipMessage
 		403 => 'Forbidden',
 		404 => 'Not Found',
 		405 => 'Method Not Allowed',
+		423 => 'Interval Too Brief',
 		481 => 'Call/Transaction Does Not Exist',
 		486 => 'Busy Here',
 		487 => 'Request Terminated',

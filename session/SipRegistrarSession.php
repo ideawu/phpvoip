@@ -4,6 +4,8 @@ class SipRegistrarSession extends SipSession
 	public $username;
 	public $password;
 	private $expires = 180; // 似乎某个 UAC 不支持少于60
+	const MIN_EXPIRES = 35;
+	const MAX_EXPIRES = 120;
 	
 	private $auth = array(
 		'scheme' => 'Digest',
@@ -55,6 +57,12 @@ class SipRegistrarSession extends SipSession
 		if($msg->method == 'REGISTER'){
 			$trans->cseq = $msg->cseq;
 			$trans->branch = $msg->branch;
+			
+			if($msg->cseq > 0 && $msg->cseq < self::MIN_EXPIRES){
+				$trans->code = 423;
+				$trans->nowait();
+				return true;
+			}
 
 			if(!$msg->auth){
 				Logger::debug("recv duplicated REGISTER without auth info");
@@ -95,7 +103,6 @@ class SipRegistrarSession extends SipSession
 
 			$this->complete();
 			$this->local->set_tag(SIP::new_tag());
-			
 			$trans->expires = $this->expires;
 			$trans->timers = array(0, $this->expires);
 			return true;
