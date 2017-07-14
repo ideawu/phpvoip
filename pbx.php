@@ -12,18 +12,24 @@ $sip = SipEngine::create($ip, $port);
 
 $mod = new SipChannel('2005@carol.com', '1000', '127.0.0.1', 5060);
 $sip->add_module($mod);
+$mod = new SipChannel('2004@carol.com', '1000', '127.0.0.1', 5060);
+$sip->add_module($mod);
+$mod = new SipChannel('2003@carol.com', '1000', '127.0.0.1', 5060);
+$sip->add_module($mod);
 $mod = new SipChannel('221@me.com', '123456', '172.16.10.100', 5060);
+$sip->add_module($mod);
+$mod = new SipChannel('222@me.com', '123456', '172.16.10.100', 5060);
+$sip->add_module($mod);
+$mod = new SipChannel('223@me.com', '123456', '172.16.10.100', 5060);
 $sip->add_module($mod);
 
 $mod = new SipRobotModule();
 $sip->add_module($mod, -1);
 
 $mod = new SipRegistrar();
-$mod->add_user('3001', '123456');
-$mod->add_user('3002', '123456');
-$mod->add_user('3003', '123456');
-$mod->add_user('3004', '123456');
-$mod->add_user('3005', '123456');
+for($i=0; $i<10000; $i++){
+	$mod->add_user($i + 3000, '123456');
+}
 $sip->add_module($mod);
 
 $sip->init();

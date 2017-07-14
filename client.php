@@ -10,11 +10,20 @@ $ip = '0.0.0.0';
 $port = 0;
 $sip = SipEngine::create($ip, $port);
 
-$mod = new SipChannel('3002@carol.com', '123456', '127.0.0.1', 5070);
-$sip->add_module($mod);
+$i = 0;
+$count = 0;
 
 $sip->init();
 while(1){
+	$i ++;
+	if($count < 500 && $i % 1 == 0){
+		$user = $count + 3000;
+		$count ++;
+
+		Logger::debug("add user $user");
+		$mod = new SipChannel($user, '123456', '127.0.0.1', 5070);
+		$sip->add_module($mod);
+	}
 	$sip->loop();
 }
 

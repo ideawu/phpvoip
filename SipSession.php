@@ -208,19 +208,12 @@ abstract class SipSession
 
 			// CANCEL 不带 to.tag，重传的 INVITE，可能不带 to.tag
 			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri === $trans->uri){
-				Logger::debug("recv transaction request " . $msg->method);
+				#Logger::debug("recv transaction request " . $msg->method);
 				return true;
 			}
-			// // re-INVITE 或者 BYE
-			// Logger::debug("{$msg->cseq} trans: {$trans->cseq} remote_cseq: {$this->remote_cseq}");
-			// if($msg->cseq === $trans->cseq + 1 && $msg->to->tag() === $this->local->tag()){
-			// 	Logger::debug("recv new cseq request " . $msg->method);
-			// 	$this->remote_cseq = $msg->cseq;
-			// 	return true;
-			// }
 			// 新请求或者 BYE
 			if((!$this->remote_cseq || $msg->cseq === $this->remote_cseq + 1) && $msg->to->tag() === $this->local->tag()){
-				Logger::debug("recv new cseq request " . $msg->method);
+				#Logger::debug("recv new cseq request " . $msg->method);
 				$this->remote_cseq = $msg->cseq;
 				return true;
 			}
@@ -260,7 +253,7 @@ abstract class SipSession
 			}
 		}
 		if(!$this->transactions){
-			Logger::debug($this->role_name() . " terminated for empty transactions");
+			Logger::debug($this->role_name() . " terminated because of empty transactions");
 			$this->terminate();
 		}
 		return $ret;
