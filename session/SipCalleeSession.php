@@ -12,6 +12,7 @@ class SipCalleeSession extends SipSession
 		$this->local = clone $msg->to;
 		$this->remote = clone $msg->from;
 		$this->remote_cseq = $msg->cseq;
+		$this->remote_allow = $msg->allow;
 
 		$this->remote_sdp = $msg->content;
 
@@ -137,12 +138,12 @@ class SipCalleeSession extends SipSession
 
 				// keepalive
 				$new = new SipTransaction();
-				$new->method = 'OPTIONS';
+				$new->method = 'INFO';
 				$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
-				$new->cseq = $msg->cseq;
-				$new->branch = $msg->branch;
+				$new->cseq = $msg->cseq + 1;
+				$new->branch = SIP::new_branch();//$msg->branch;
 				$new->to_tag = $this->remote->tag();
-				$new->timers = array(10000); // TODO:
+				$new->timers = array(3, 3, 10000); // TODO:
 			
 				$this->trans = $new;
 				$this->transactions[] = $new;

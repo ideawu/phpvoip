@@ -3,7 +3,7 @@ class SipRegistrarSession extends SipSession
 {
 	public $username;
 	public $password;
-	private $expires = 60; // 似乎某个 UAC 不支持少于60
+	private $expires = 180; // 似乎某个 UAC 不支持少于60
 	
 	private $auth = array(
 		'scheme' => 'Digest',
@@ -20,6 +20,7 @@ class SipRegistrarSession extends SipSession
 		$this->remote = clone $msg->from;
 		$this->contact = clone $msg->contact;
 		$this->remote_cseq = $msg->cseq;
+		$this->remote_allow = $msg->allow;
 
 		$this->trans->uri = $msg->uri;
 		$this->trans->method = $msg->method;

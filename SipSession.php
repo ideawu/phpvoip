@@ -196,6 +196,9 @@ abstract class SipSession
 	}
 
 	function proc_incoming($msg){
+		if(!$this->remote_allow && $msg->allow){
+			$this->remote_allow = $msg->allow;
+		}
 		foreach($this->transactions as $trans){
 			if($this->match_trans($msg, $trans)){
 				return $this->incoming($msg, $trans);

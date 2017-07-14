@@ -29,7 +29,7 @@ TEXT;
 	
 	function init(){
 		$this->set_state(SIP::TRYING);
-		$this->trans->timers = array(1, 1);
+		$this->trans->timers = array(0.5, 0);
 	}
 	
 	function close(){
@@ -44,7 +44,7 @@ TEXT;
 	private $count = 0;
 
 	function outgoing($trans){
-		$this->trans->timers = array(1, 1);
+		$this->trans->timers = array(0.5, 0);
 		$this->count += 1;
 		if($this->count == 1){
 			$this->set_state(SIP::RINGING);

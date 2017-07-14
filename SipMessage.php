@@ -24,6 +24,7 @@ class SipMessage
 	
 	public $expires = null;
 	public $auth;
+	public $allow = array();
 	
 	// 未详细解析的 header, 每个元素是 pair [key, val]
 	public $headers = array();
@@ -248,6 +249,8 @@ class SipMessage
 			$this->auth = $val;
 		}else if($key == 'Authorization'){
 			$this->auth = $val;
+		}else if($key == 'Allow'){
+			$this->allow = preg_split('/[, ]+/', trim($val));;
 		}else{
 			$this->headers[] = array($key, $val);
 		}
