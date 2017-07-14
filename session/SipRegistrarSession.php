@@ -35,7 +35,7 @@ class SipRegistrarSession extends SipSession
 	function trying(){
 		$this->set_state(SIP::TRYING);
 		$this->trans->code = 100;
-		$this->trans->timers = array(0.5, 1, 2, 2);
+		$this->trans->timers = array(0, 1, 2, 2);
 	}
 	
 	function auth(){
