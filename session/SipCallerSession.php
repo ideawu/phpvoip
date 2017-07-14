@@ -37,7 +37,6 @@ class SipCallerSession extends SipSession
 		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 			$this->set_state(SIP::CLOSING);
 			Logger::debug("caller send CANCEL to close session");
-			
 			// 发送 BYE, 直到收到 200
 			$new = new SipTransaction();
 			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
@@ -48,18 +47,7 @@ class SipCallerSession extends SipSession
 			$new->timers = array(0, 1, 2, 2, 2);
 			$this->transactions = array($new);
 		}else{
-			$this->set_state(SIP::CLOSING);
-			Logger::debug("callee send BYE to close session");
-			
-			// 发送 BYE, 直到收到 200
-			$new = new SipTransaction();
-			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
-			$new->method = 'BYE';
-			$new->cseq = $this->local_cseq + 1;
-			$new->branch = $this->local_branch;
-			$new->to_tag = $this->remote->tag();
-			$new->timers = array(0, 1, 2, 2, 2);
-			$this->transactions = array($new);
+			$this->bye();
 		}
 	}
 
@@ -103,9 +91,7 @@ class SipCallerSession extends SipSession
 			$new->method = 'OPTIONS';
 			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
 			$new->cseq = $msg->cseq;
-			// $new->branch = $msg->branch;
-			$new->branch = $trans->branch;
-			$new->to_tag = $this->remote->tag();
+			$new->branch = $msg->branch;
 			$new->timers = array(10000); // TODO:
 		
 			$this->trans = $new;

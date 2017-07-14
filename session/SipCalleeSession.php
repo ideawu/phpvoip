@@ -36,10 +36,11 @@ class SipCalleeSession extends SipSession
 	function ringing(){
 		$this->set_state(SIP::RINGING);
 		$this->trans->code = 180;
-		$this->trans->timers = array(0, 15);
+		$this->trans->timers = array(0, 3, 3, 3, 3, 3);
 		if(!$this->local->tag()){
 			$this->local->set_tag(SIP::new_tag());
 		}
+		$this->trans->to_tag = $this->local->tag();
 	}
 	
 	function accept(){
@@ -59,24 +60,11 @@ class SipCalleeSession extends SipSession
 		if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 			$this->set_state(SIP::CLOSING);
 			Logger::debug("callee response 486 to close session");
-			
 			// 回复 BUSY, 直到收到 ACK
 			$this->trans->code = 486; // Busy Here
-			$this->trans->to_tag = $this->local->tag();
 			$this->trans->timers = array(0, 1, 2, 2, 2);
 		}else{
-			$this->set_state(SIP::CLOSING);
-			Logger::debug("callee send BYE to close session");
-			
-			// 发送 BYE, 直到收到 200
-			$new = new SipTransaction();
-			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
-			$new->method = 'BYE';
-			$new->cseq = $this->local_cseq;
-			$new->branch = $this->local_branch;
-			$new->to_tag = $this->remote->tag();
-			$new->timers = array(0, 1, 2, 2, 2);
-			$this->transactions = array($new);
+			$this->bye();
 		}
 	}
 	
@@ -90,7 +78,6 @@ class SipCalleeSession extends SipSession
 				$this->set_state(SIP::CLOSING);
 				
 				$trans->code = 487; // Request Terminated
-				$trans->to_tag = $this->local->tag();
 				$trans->timers = array(0, 1, 2, 2, 2);
 			}else{
 				// 不关闭
@@ -136,17 +123,7 @@ class SipCalleeSession extends SipSession
 				$trans->timers = array(3); // 等待可能重传的 ACK
 				$this->transactions[] = $trans;
 
-				// keepalive
-				$new = new SipTransaction();
-				$new->method = 'INFO';
-				$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
-				$new->cseq = $msg->cseq + 1;
-				$new->branch = SIP::new_branch();//$msg->branch;
-				$new->to_tag = $this->remote->tag();
-				$new->timers = array(3, 3, 10000); // TODO:
-			
-				$this->trans = $new;
-				$this->transactions[] = $new;
+				$this->keepalive();
 				return true;
 			}
 		}

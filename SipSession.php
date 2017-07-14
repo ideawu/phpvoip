@@ -80,6 +80,39 @@ abstract class SipSession
 	}
 
 	
+	protected function new_request($method){
+		$this->local_cseq ++;
+		$this->local_branch = SIP::new_branch();
+		
+		$new = new SipTransaction();
+		$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+		$new->method = $method;
+		$new->cseq = $this->local_cseq;
+		$new->branch = $this->local_branch;
+		
+		$this->transactions[] = $new;
+		return $new;
+	}
+
+	protected function bye(){
+		$this->set_state(SIP::CLOSING);
+		$this->transactions = array();
+		Logger::debug($this->role_name() . " send BYE to close session");
+		// 发送 BYE, 直到收到 200
+		$new = $this->new_request('BYE');
+		$new->timers = array(0, 1, 2, 2, 2);
+	}
+	
+	protected function keepalive(){
+		if(in_array('INFO', $this->remote_allow)){
+			$new = $this->new_request('INFO');
+		}else{
+			$new = $this->new_request('OPTIONS');
+		}
+		$new->timers = array(5, 3, 3, 3);
+		$this->trans = $new;
+	}
+	
 	function complete(){
 		$this->set_state(SIP::COMPLETED);
 	}
@@ -179,15 +212,16 @@ abstract class SipSession
 				Logger::debug("recv transaction request " . $msg->method);
 				return true;
 			}
-			// re-INVITE 或者 BYE
-			if($msg->cseq === $trans->cseq + 1 && $msg->to->tag() === $this->local->tag()){
-				Logger::debug("recv new cseq request " . $msg->method);
-				$this->remote_cseq = $msg->cseq;
-				return true;
-			}
+			// // re-INVITE 或者 BYE
+			// Logger::debug("{$msg->cseq} trans: {$trans->cseq} remote_cseq: {$this->remote_cseq}");
+			// if($msg->cseq === $trans->cseq + 1 && $msg->to->tag() === $this->local->tag()){
+			// 	Logger::debug("recv new cseq request " . $msg->method);
+			// 	$this->remote_cseq = $msg->cseq;
+			// 	return true;
+			// }
 			// 新请求或者 BYE
-			if(!$this->remote_cseq && $msg->to->tag() === $this->local->tag()){
-				Logger::debug("recv first cseq request " . $msg->method);
+			if((!$this->remote_cseq || $msg->cseq === $this->remote_cseq + 1) && $msg->to->tag() === $this->local->tag()){
+				Logger::debug("recv new cseq request " . $msg->method);
 				$this->remote_cseq = $msg->cseq;
 				return true;
 			}
@@ -284,6 +318,17 @@ abstract class SipSession
 				return true;
 			}
 		}
+
+		// keepalive
+		if($trans->method === 'INFO' || $trans->method === 'OPTIONS'){
+			if($msg->code !== 418){
+				Logger::debug("keepalive updated");
+				$this->del_transaction($trans);
+				$this->keepalive();
+				return true;
+			}
+		}
+
 		return false;
 	}
 	
