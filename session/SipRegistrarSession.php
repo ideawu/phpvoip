@@ -3,7 +3,7 @@ class SipRegistrarSession extends SipSession
 {
 	public $username;
 	public $password;
-	const MIN_EXPIRES = 35;
+	const MIN_EXPIRES = 30;
 	const MAX_EXPIRES = 120; // 似乎某些 UAC 不支持少于60
 	private $expires = self::MAX_EXPIRES;
 	

@@ -4,8 +4,7 @@ class SipRegisterSession extends SipSession
 	public $username;
 	public $password;
 	public $domain;
-
-	const MIN_EXPIRES = 30;
+	const MIN_EXPIRES = 29;
 	const MAX_EXPIRES = 120;
 	private $auth;
 	private $expires = self::MIN_EXPIRES;
@@ -55,13 +54,10 @@ class SipRegisterSession extends SipSession
 		}
 		if($msg->code == 401){
 			$this->register();
-			$this->trans->timers = $trans->timers;
 
-			if($trans->auth){
+			if($trans->auth){ // 原 trans
 				Logger::error("{$this->local->username} auth failed");
 				$this->trans->wait(3);
-			}else{
-				$this->trans->nowait();
 			}
 			if($msg->auth){
 				$auth = $msg->auth;
@@ -76,8 +72,6 @@ class SipRegisterSession extends SipSession
 				$this->expires = max(self::MIN_EXPIRES, intval($v));
 			}
 			$this->register();
-			$this->trans->timers = $trans->timers;
-			$this->trans->nowait();
 			return true;
 		}
 		if($msg->code == 200){
