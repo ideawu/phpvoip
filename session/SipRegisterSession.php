@@ -6,8 +6,8 @@ class SipRegisterSession extends SipSession
 	public $domain;
 	const MIN_EXPIRES = 29;
 	const MAX_EXPIRES = 120;
-	private $auth;
 	private $expires = self::MIN_EXPIRES;
+	private $auth;
 	
 	function __construct($username, $password, $remote_ip, $remote_port, $domain=null){
 		parent::__construct();

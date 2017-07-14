@@ -79,19 +79,20 @@ class SipRegistrar extends SipModule
 					Logger::debug("REGISTRAR " . $sess->remote->address() . " with new call_id");
 				}
 				
-				Logger::debug('    del ' . $sess->remote->encode());
+				Logger::debug('    del ' . $sess->remote->address());
 				unset($this->sessions[$index]);
 			}
 		}
 		if($sess->is_state(SIP::CLOSED)){
+			if($sess->expires <= 0){
+				Logger::debug($sess->remote->address() . " logout");
+			}else{
+				Logger::debug($sess->remote->address() . " expired");
+			}
 			foreach($this->sessions as $index=>$tmp){
-				if($tmp === $sess){
-					continue;
-				}
 				if($tmp->remote->username !== $sess->remote->username){
 					continue;
 				}
-				Logger::debug('    del ' . $sess->remote->encode());
 				unset($this->sessions[$index]);
 			}
 		}
