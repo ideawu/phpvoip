@@ -52,7 +52,7 @@ abstract class SipSession
 		$old = $this->state;
 		$this->state = $new;
 		if($old !== $new && $this->callback){
-			Logger::debug($this->brief() . " state = " . $this->state_text());
+			Logger::debug($this->brief() . " state=" . $this->state_text());
 			call_user_func($this->callback, $this);
 		}
 	}
@@ -76,7 +76,8 @@ abstract class SipSession
 	}
 	
 	function brief(){
-		return $this->role_name() .' '. $this->local->address() .'=>'. $this->remote->address();
+		$ret = sprintf('%9s %-4s=>%-4s', $this->role_name(), $this->local->username, $this->remote->username);
+		return $ret;
 	}
 
 	
@@ -177,11 +178,9 @@ abstract class SipSession
 	private function match_trans($msg, $trans){
 		if($msg->is_response()){
 			if($msg->cseq !== $trans->cseq){
-				Logger::debug("");
 				return false;
 			}
 			if($msg->cseq_method !== $trans->method){
-				Logger::debug("");
 				return false;
 			}
 			if($msg->branch !== $trans->branch){

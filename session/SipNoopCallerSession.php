@@ -9,8 +9,8 @@ class SipNoopCallerSession extends SipSession
 		$this->role = SIP::NOOP;
 		$this->set_state(SIP::TRYING);
 		
-		$this->local = new SipContact();
-		$this->remote = new SipContact();
+		$this->local = new SipContact('@');
+		$this->remote = new SipContact('@');
 		$this->remote_sdp = <<<TEXT
 v=0
 o=yate 1499684812 1499684812 IN IP4 127.0.0.1

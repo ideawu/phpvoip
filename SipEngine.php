@@ -144,7 +144,7 @@ class SipEngine
 			$module = $mi['module'];
 			$sess = $module->callin($msg);
 			if($sess){
-				Logger::debug("callin " . $sess->brief());
+				Logger::debug("callin  " . $sess->brief());
 				return $sess;
 			}
 		}
@@ -181,8 +181,12 @@ class SipEngine
 	}
 	
 	private function error_reply($msg, $code=0, $reason=null){
-		if($msg->is_response() || $msg->method === 'ACK'){
-			Logger::debug("drop msg");
+		if($msg->is_response()){
+			Logger::debug("drop response");
+			return;
+		}
+		if($msg->method === 'ACK'){
+			Logger::debug("drop ACK");
 			return;
 		}
 		

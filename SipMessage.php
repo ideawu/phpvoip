@@ -50,17 +50,17 @@ class SipMessage
 	function brief(){
 		if($this->is_request()){
 			$cmd = $this->method;
-			$src = $this->from->address();
-			$dst = $this->to->address();
+			$src = $this->from->username;
+			$dst = $this->to->username;
 		}else{
 			$cmd = $this->code;
 			if($this->code == 200){
 				$cmd .= ' OK';
 			}
-			$src = $this->to->address();
-			$dst = $this->from->address();
+			$src = $this->to->username;
+			$dst = $this->from->username;
 		}
-		$ret = sprintf('%-8s %3d %s=>%s', $cmd, $this->cseq, $src, $dst);
+		$ret = sprintf('%-8s %4d %-4s=>%-4s', $cmd, $this->cseq, $src, $dst);
 		return $ret;
 	}
 	

@@ -25,7 +25,7 @@ class SipLink
 	}
 	
 	function send($msg){
-		Logger::debug("send " . $msg->brief() . " to '{$msg->dst_ip}:{$msg->dst_port}'");
+		Logger::debug("send " . $msg->brief() . " -> '{$msg->dst_ip}:{$msg->dst_port}'");
 
 		//模拟丢包
 		// if($msg->code === 200 || ($msg->is_request() && $msg->method === 'ACK')){
@@ -38,7 +38,7 @@ class SipLink
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
-		echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
+		#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 	}
 	
 	function recv(){
@@ -68,7 +68,7 @@ class SipLink
 			Logger::error("bad SIP packet: " . json_encode($buf));
 			return;
 		}
-		Logger::debug("recv " . $msg->brief() . " from '{$msg->src_ip}:{$msg->src_port}'");
+		Logger::debug("recv " . $msg->brief() . " <- '{$msg->src_ip}:{$msg->src_port}'");
 		
 		// 模拟丢包
 		// if($msg->code === 200 || ($msg->is_request() && $msg->method === 'ACK')){
@@ -79,7 +79,7 @@ class SipLink
 		// 	}
 		// }
 		
-		echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
+		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 		return $msg;
 	}
 }
