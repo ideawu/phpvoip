@@ -3,15 +3,11 @@ class SipRegistrarSession extends SipSession
 {
 	public $username;
 	public $password;
-	private $expires = 180; // 似乎某个 UAC 不支持少于60
 	const MIN_EXPIRES = 35;
-	const MAX_EXPIRES = 120;
+	const MAX_EXPIRES = 120; // 似乎某些 UAC 不支持少于60
+	private $expires = self::MAX_EXPIRES;
 	
-	private $auth = array(
-		'scheme' => 'Digest',
-		'realm' => 'phpvoip',
-		'algorithm' => 'MD5',
-	);
+	private $auth;
 
 	function __construct($msg){
 		parent::__construct();
@@ -31,10 +27,6 @@ class SipRegistrarSession extends SipSession
 	}
 	
 	function init(){
-		$this->trying();
-	}
-	
-	function trying(){
 		$this->set_state(SIP::TRYING);
 		$this->trans->code = 100;
 		$this->trans->timers = array(0, 1, 2, 2);
@@ -44,9 +36,12 @@ class SipRegistrarSession extends SipSession
 		$this->set_state(SIP::AUTHING);
 		$this->trans->code = 401;
 		$this->trans->timers = array(0, 5);
-
-		$this->auth['nonce'] = SIP::long_token();
-		$this->trans->auth = $this->auth;
+		$this->auth = array(
+			'scheme' => 'Digest',
+			'realm' => 'phpvoip',
+			'algorithm' => 'MD5',
+			'nonce' => SIP::long_token(),
+		);
 	}
 	
 	function close(){
@@ -58,15 +53,14 @@ class SipRegistrarSession extends SipSession
 			$trans->cseq = $msg->cseq;
 			$trans->branch = $msg->branch;
 			
-			if($msg->cseq > 0 && $msg->cseq < self::MIN_EXPIRES){
+			if($msg->expires > 0 && $msg->expires < self::MIN_EXPIRES){
 				$trans->code = 423;
 				$trans->nowait();
 				return true;
 			}
-
-			if(!$msg->auth){
-				Logger::debug("recv duplicated REGISTER without auth info");
+			if(!$msg->auth && $this->auth){
 				$trans->code = 401;
+				$trans->auth = $this->auth;
 				$trans->nowait();
 				return true;
 			}
@@ -100,6 +94,9 @@ class SipRegistrarSession extends SipSession
 				$trans->timers = array(0, 0);
 				return true;
 			}
+			if($msg->expires >= self::MIN_EXPIRES && $msg->expires <= self::MAX_EXPIRES){
+				$this->expires = $msg->expires;
+			}
 
 			$this->complete();
 			$this->local->set_tag(SIP::new_tag());
@@ -109,4 +106,11 @@ class SipRegistrarSession extends SipSession
 		}
 	}
 	
+	function outgoing($trans){
+		$msg = parent::outgoing($trans);
+		if($msg && $msg->code === 423){
+			$msg->add_header('Min-Expires', self::MIN_EXPIRES);
+		}
+		return $msg;
+	}
 }

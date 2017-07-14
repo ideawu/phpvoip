@@ -41,6 +41,7 @@ class SipRegisterSession extends SipSession
 	private function register(){
 		$this->remote->del_tag();
 		$this->transactions = array();
+		
 		$uri = "sip:{$this->domain}";
 		$new = $this->new_request('REGISTER', $uri);
 		$new->expires = $this->expires;
@@ -92,10 +93,9 @@ class SipRegisterSession extends SipSession
 				Logger::debug("REGISTER " .$this->local->address(). " registered, expires: $expires");
 				$this->complete();
 			}
-
-			$this->remote->set_tag($msg->to->tag());
 	
 			$this->register();
+			$this->local->set_tag(SIP::new_tag());
 			$this->trans->wait($expires * 0.6);
 			return true;
 		}

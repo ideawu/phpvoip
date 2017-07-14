@@ -16,7 +16,10 @@ class SipRegistrar extends SipModule
 		
 		// 新的 REGISTER
 		if($msg->method === 'REGISTER'){
-			return $this->register($msg);
+			if($this->register($msg)){
+				// 如果创建了新的 session，应该处理消息，框架不会调用。
+				return parent::incoming($msg);
+			}
 		}
 		return false;
 	}
