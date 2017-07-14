@@ -112,15 +112,13 @@ abstract class SipSession
 		
 		if($msg->is_request()){
 			if($msg->from->username != $this->remote->username){
-				Logger::debug("");
 				return false;
 			}
 			if($msg->to->username != $this->local->username){
-				Logger::debug("");
 				return false;
 			}
 			if($msg->from->tag() !== $this->remote->tag()){
-				Logger::debug($msg->from->tag() . " != " . $this->remote->tag());
+				#Logger::debug($msg->from->tag() . " != " . $this->remote->tag());
 				return false;
 			}
 		}else{
@@ -131,7 +129,6 @@ abstract class SipSession
 				return false;
 			}
 			if($msg->from->tag() !== $this->local->tag()){
-				Logger::debug("");
 				return false;
 			}
 		}
