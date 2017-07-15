@@ -82,7 +82,7 @@ class SipRegistrar extends SipModule
 				Logger::debug('    del ' . $sess->remote->address());
 				unset($this->sessions[$index]);
 			}
-			$this->test($sess);
+			#$this->test($sess);
 		}
 		if($sess->is_state(SIP::CLOSED)){
 			if($sess->expires <= 0){
