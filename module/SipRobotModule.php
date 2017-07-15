@@ -10,8 +10,27 @@ class SipRobotModule extends SipModule
 	}
 	
 	function callout($msg){
-		$sess = new SipNoopCallerSession();
-		$sess->init();
-		return $sess;
+		$caller = new LocalCaller();
+		$callee = new LocalCallee();
+		$caller->callee = $callee;
+		$callee->caller = $caller;
+
+		$caller->call_id = $msg->call_id;
+		$caller->remote_sdp = $callee->local_sdp;
+		$caller->init();
+		
+		$caller->call_id = $msg->call_id;
+		$callee->init();
+		$callee->set_callback(array($this, 'sess_callback'));
+
+		// callee 自己保留，将 caller 返回给引擎管理
+		$this->add_session($callee);
+		return $caller;
+	}
+
+	function sess_callback($sess){
+		if($sess->is_state(SIP::CLOSED)){
+			Logger::debug("session closed.");
+		}
 	}
 }

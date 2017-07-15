@@ -38,8 +38,8 @@ class CalleeSession extends SipSession
 		}
 	}
 	
-	function accept(){
-		$this->set_state(SIP::ACCEPTING);
+	function completing(){
+		$this->set_state(SIP::COMPLETING);
 		$this->trans->code = 200;
 		$this->trans->timers = array(0, 1, 2, 2, 2);
 		if(!$this->local->tag()){
@@ -62,7 +62,7 @@ class CalleeSession extends SipSession
 		}
 	}
 	
-	function incoming($msg, $trans){		
+	protected function incoming($msg, $trans){		
 		if(parent::incoming($msg, $trans)){
 			return true;
 		}
@@ -92,12 +92,12 @@ class CalleeSession extends SipSession
 		if($msg->method === 'INVITE'){
 			if($this->is_state(SIP::COMPLETED)){
 				Logger::debug("recv re-INVITE after completed");
+				$trans->code = 200;
+				$trans->timers = array(0, 1, 2, 2, 2);
 			}else{
 				Logger::debug("recv duplicated INVITE");
+				$trans->nowait();
 			}
-			$trans->cseq = $msg->cseq;
-			$trans->branch = $msg->branch;
-			$trans->nowait();
 			return true;
 		}
 		if($msg->method === 'ACK'){
@@ -106,16 +106,13 @@ class CalleeSession extends SipSession
 				return true;
 			}
 			if($trans->method === 'INVITE'){
-				if($this->is_state(SIP::ACCEPTING)){
+				if($this->is_state(SIP::COMPLETING)){
 					$this->complete();
+					$this->keepalive();
 				}else{
 					Logger::debug("recv ACK when " . $this->state_text());
+					$trans->timers = array();
 				}
-				$trans->timers = array(3); // 等待可能重传的 ACK
-
-				$this->transactions = array();
-				$this->transactions[] = $trans;
-				$this->keepalive();
 				return true;
 			}
 		}

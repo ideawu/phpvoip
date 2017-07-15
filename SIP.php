@@ -14,6 +14,8 @@ include_once(dirname(__FILE__) . '/session/RegisterSession.php');
 include_once(dirname(__FILE__) . '/session/RegistrarSession.php');
 include_once(dirname(__FILE__) . '/session/CalleeSession.php');
 include_once(dirname(__FILE__) . '/session/CallerSession.php');
+include_once(dirname(__FILE__) . '/session/LocalCaller.php');
+include_once(dirname(__FILE__) . '/session/LocalCallee.php');
 include_once(dirname(__FILE__) . '/session/NoopCallerSession.php');
 
 include_once(dirname(__FILE__) . '/module/SipDialog.php');
@@ -39,7 +41,7 @@ class SIP
 	const CLOSING    = 1;
 	const TRYING     = 100;
 	const RINGING    = 180;
-	const ACCEPTING  = 199;
+	const COMPLETING = 199;
 	const COMPLETED  = 200;
 	const AUTHING    = 401;
 
@@ -58,8 +60,8 @@ class SIP
 			return 'TRYING';
 		}else if($state == self::RINGING){
 			return 'RINGING';
-		}else if($state == self::ACCEPTING){
-			return 'ACCEPTING';
+		}else if($state == self::COMPLETING){
+			return 'COMPLETING';
 		}else if($state == self::COMPLETED){
 			return 'COMPLETED';
 		}else if($state == self::AUTHING){

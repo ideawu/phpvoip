@@ -38,6 +38,7 @@ class SipEngine
 				$mi['module']->domain = $this->local_ip;
 			}
 		}
+		Logger::debug("started");
 	}
 	
 	function add_module($mod, $weight=0){

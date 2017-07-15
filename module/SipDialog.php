@@ -22,6 +22,7 @@ Dialog 只记录 session 之间的关系，不负责创建和销毁 session。
      |     ACK       |         |              |
      |-------------->|    ~    |    ACK       |
      |               |         |------------->|
+Caller 是否发出 ACK，取决于 Callee，Caller 收到 OK 后就立即回复 ACK。
 */
 
 class SipDialog
@@ -52,36 +53,38 @@ class SipDialog
 				Logger::debug("caller ringing, callee ringing");
 				$this->callee->ringing();
 			}
-			if($sess->is_state(SIP::COMPLETED)){
-				Logger::debug("caller completed, accept callee");
+			if($sess->is_state(SIP::COMPLETING)){
+				Logger::debug("caller completing, callee completing");
 				$this->callee->local_sdp = $this->caller->remote_sdp;
-				$this->callee->accept();
-				// TESTING
-				// Logger::debug("caller completed, closing callee");
-				// $this->callee->close();
+				$this->callee->completing();
 			}
-		}
-		if($sess === $this->callee){
 			if($sess->is_state(SIP::COMPLETED)){
-				// TESTING
-				#Logger::debug("callee completed, closing callee");
-				#$this->callee->close();
+				Logger::debug("caller completed");
 			}
-		}
-		if($sess->is_state(SIP::CLOSED)){
-			if($sess === $this->callee){
-				Logger::debug("callee closed");
-				$this->del_session($this->callee);
-				if($this->caller){
-					Logger::debug("closing caller");
-					$this->caller->close();
-				}
-			}else if($sess === $this->caller){
-				Logger::debug("caller closed");
+			
+			if($sess->is_state(SIP::CLOSED)){
 				$this->del_session($this->caller);
 				if($this->callee){
-					Logger::debug("closing callee");
+					Logger::debug("caller closed, closing callee");
 					$this->callee->close();
+				}else{
+					Logger::debug("caller closed");
+				}
+			}
+		}
+		
+		if($sess === $this->callee){
+			if($sess->is_state(SIP::COMPLETED)){
+				Logger::debug("callee completed");
+			}
+
+			if($sess->is_state(SIP::CLOSED)){
+				$this->del_session($this->callee);
+				if($this->caller){
+					Logger::debug("callee closed, closing caller");
+					$this->caller->close();
+				}else{
+					Logger::debug("callee closed");
 				}
 			}
 		}

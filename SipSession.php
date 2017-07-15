@@ -97,14 +97,15 @@ abstract class SipSession
 
 	protected function bye(){
 		$this->set_state(SIP::CLOSING);
-		$this->transactions = array();
 		Logger::debug($this->role_name() . " send BYE to close session");
-		// 发送 BYE, 直到收到 200
-		$new = $this->new_request('BYE');
+		$this->transactions = array();
+		$new = $this->new_request('BYE'); // 发送 BYE, 直到收到 200
 		$new->timers = array(0, 1, 2, 2, 2);
+		$this->trans = $new;
 	}
 	
 	protected function keepalive(){
+		$this->transactions = array();
 		if(in_array('INFO', $this->remote_allow)){
 			$new = $this->new_request('INFO');
 		}else{
@@ -192,7 +193,7 @@ abstract class SipSession
 			// ACK 特殊处理
 			if($msg->method === 'ACK'){
 				if($msg->cseq !== $trans->cseq){
-					Logger::debug("");
+					#Logger::debug("");
 					return false;
 				}
 				if($msg->uri !== $trans->uri){
@@ -205,16 +206,9 @@ abstract class SipSession
 				}
 				return true;
 			}
-
 			// CANCEL 不带 to.tag，重传的 INVITE，可能不带 to.tag
 			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri === $trans->uri){
 				#Logger::debug("recv transaction request " . $msg->method);
-				return true;
-			}
-			// 新请求或者 BYE
-			if((!$this->remote_cseq || $msg->cseq === $this->remote_cseq + 1) && $msg->to->tag() === $this->local->tag()){
-				#Logger::debug("recv new cseq request " . $msg->method);
-				$this->remote_cseq = $msg->cseq;
 				return true;
 			}
 			return false;
@@ -229,6 +223,19 @@ abstract class SipSession
 			if($this->match_trans($msg, $trans)){
 				return $this->incoming($msg, $trans);
 			}
+		}
+		// 新请求或者 BYE
+		if((!$this->remote_cseq || $msg->cseq === $this->remote_cseq + 1) && $msg->to->tag() === $this->local->tag()){
+			Logger::debug("recv new cseq request " . $msg->method);
+			$this->remote_cseq = $msg->cseq;
+			
+			$trans = new SipTransaction();
+			$trans->uri = $msg->uri;
+			$trans->method = $msg->method;
+			$trans->cseq = $msg->cseq;
+			$trans->branch = $msg->branch;
+			$this->transactions[] = $trans;
+			return $this->incoming($msg, $trans);
 		}
 		return false;
 	}
@@ -253,7 +260,7 @@ abstract class SipSession
 			}
 		}
 		if(!$this->transactions){
-			Logger::debug($this->role_name() . " terminated because of empty transactions");
+			#Logger::debug($this->role_name() . " terminated because of empty transactions");
 			$this->terminate();
 		}
 		return $ret;
@@ -309,7 +316,7 @@ abstract class SipSession
 		}
 
 		// keepalive
-		if($trans->method === 'INFO' || $trans->method === 'OPTIONS'){
+		if($msg->is_response() && ($trans->method === 'INFO' || $trans->method === 'OPTIONS')){
 			if($msg->code === 100){
 				return true;
 			}

@@ -16,7 +16,7 @@ $stime = microtime(1);
 $sip->init();
 while(1){
 	$i ++;
-	if($count < 500){
+	if($count < 10){
 		$ts = microtime(1) - $stime;
 		if($ts > 0.2 || $ts < 0){
 			$stime = microtime(1);

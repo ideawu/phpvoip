@@ -38,6 +38,9 @@ abstract class SipModule
 		foreach($this->sessions as $sess){
 			if($sess->match_sess($msg)){
 				$ret = $sess->proc_incoming($msg);
+				if($sess->is_state(SIP::CLOSED)){
+					$this->del_session($sess);
+				}
 				if(!$ret){
 					throw new Exception("Call/Transaction Does Not Exist", 481);
 				}else{

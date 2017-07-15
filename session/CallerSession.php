@@ -46,8 +46,26 @@ class CallerSession extends SipSession
 			$this->bye();
 		}
 	}
+	
+	function completing(){
+		$this->set_state(SIP::COMPLETING);
+		$this->trans->code = 199;
+		$this->trans->timers = array(3, 0); // Timer D 等待可能重传的 200
+	}
+	
+	// 应该只被 Timer D 调用
+	function complete(){
+		parent::complete();
+		if($this->trans->code !== 199){
+			// complete() 是由外界调用的，Timer D 事务继续执行
+			$trans = $this->trans;
+			$trans->code = 0;
+			$trans->timers = array(3);
+		}
+		$this->keepalive();
+	}
 
-	function incoming($msg, $trans){
+	protected function incoming($msg, $trans){
 		if(parent::incoming($msg, $trans)){
 			return true;
 		}
@@ -65,11 +83,10 @@ class CallerSession extends SipSession
 			$this->remote->set_tag($msg->to->tag());
 			$this->remote_sdp = $msg->content;
 			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-				$this->complete();
+				$this->completing();
 			}else{
 				Logger::debug("recv 200 when " . $this->state_text());
 			}
-			$trans->timers = array(3); // 等待可能重传的 200
 
 			$new = new SipTransaction();
 			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
@@ -77,16 +94,19 @@ class CallerSession extends SipSession
 			$new->cseq = $msg->cseq;
 			$new->branch = SIP::new_branch();
 			$new->timers = array(0, 0);
-
-			$this->transactions = array();
-			$this->transactions[] = $trans;
 			$this->transactions[] = $new;
-			$this->keepalive();
+
 			return true;
 		}
 	}
 	
 	protected function outgoing($trans){
+		Logger::debug("{$trans->method} {$trans->code}");
+		if($trans->code === 199){
+			$this->complete();
+			return null;
+		}
+		
 		$msg = parent::outgoing($trans);
 		if($msg && ($msg->is_request() && $msg->method === 'INVITE')){
 			$msg->content = $this->local_sdp;
