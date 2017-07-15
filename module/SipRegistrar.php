@@ -43,7 +43,7 @@ class SipRegistrar extends SipModule
 			$local_ip = SIP::guess_local_ip($msg->src_ip);
 		}
 
-		$sess = new SipRegistrarSession($msg);
+		$sess = new RegistrarSession($msg);
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
 		$sess->remote_ip = $msg->src_ip;
@@ -110,7 +110,7 @@ class SipRegistrar extends SipModule
 				continue;
 			}
 			
-			$call = new SipCalleeSession($msg);
+			$call = new CalleeSession($msg);
 			$call->local_ip = $sess->local_ip;
 			$call->local_port = $sess->local_port;
 			$call->remote_ip = $sess->remote_ip;
@@ -136,7 +136,7 @@ class SipRegistrar extends SipModule
 			$from = clone $msg->from;
 			$to = clone $msg->to;
 
-			$call = new SipCallerSession($uri, $from, $to);
+			$call = new CallerSession($uri, $from, $to);
 			$call->local_ip = $sess->local_ip;
 			$call->local_port = $sess->local_port;
 			$call->remote_ip = $sess->remote_ip;
@@ -155,7 +155,7 @@ class SipRegistrar extends SipModule
 			$to = clone $sess->remote;
 			$to->del_tag();
 
-			$call = new SipCallerSession($uri, $from, $to);
+			$call = new CallerSession($uri, $from, $to);
 			$call->local_ip = $sess->local_ip;
 			$call->local_port = $sess->local_port;
 			$call->remote_ip = $sess->remote_ip;

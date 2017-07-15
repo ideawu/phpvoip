@@ -1,5 +1,5 @@
 <?php
-class SipRegistrarSession extends SipSession
+class RegistrarSession extends SipSession
 {
 	public $username;
 	public $password;

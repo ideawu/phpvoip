@@ -10,11 +10,11 @@ include_once(dirname(__FILE__) . '/SipSession.php');
 include_once(dirname(__FILE__) . '/SipRouter.php');
 
 include_once(dirname(__FILE__) . '/session/SipTransaction.php');
-include_once(dirname(__FILE__) . '/session/SipRegisterSession.php');
-include_once(dirname(__FILE__) . '/session/SipRegistrarSession.php');
-include_once(dirname(__FILE__) . '/session/SipCalleeSession.php');
-include_once(dirname(__FILE__) . '/session/SipCallerSession.php');
-include_once(dirname(__FILE__) . '/session/SipNoopCallerSession.php');
+include_once(dirname(__FILE__) . '/session/RegisterSession.php');
+include_once(dirname(__FILE__) . '/session/RegistrarSession.php');
+include_once(dirname(__FILE__) . '/session/CalleeSession.php');
+include_once(dirname(__FILE__) . '/session/CallerSession.php');
+include_once(dirname(__FILE__) . '/session/NoopCallerSession.php');
 
 include_once(dirname(__FILE__) . '/module/SipDialog.php');
 include_once(dirname(__FILE__) . '/module/SipMixer.php');

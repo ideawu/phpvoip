@@ -1,5 +1,5 @@
 <?php
-class SipCallerSession extends SipSession
+class CallerSession extends SipSession
 {
 	public $local_sdp;
 	public $remote_sdp;

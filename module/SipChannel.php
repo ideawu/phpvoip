@@ -42,7 +42,7 @@ class SipChannel extends SipModule
 		$this->local_port = $local_port;
 		$this->contact = new SipContact($this->username, "{$this->local_ip}");
 
-		$sess = new SipRegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port, $this->domain);
+		$sess = new RegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port, $this->domain);
 		$sess->local_ip = $local_ip;
 		$sess->local_port = $local_port;
 		$sess->contact = $this->contact;
@@ -76,7 +76,7 @@ class SipChannel extends SipModule
 			return null;
 		}
 		
-		$call = new SipCalleeSession($msg);
+		$call = new CalleeSession($msg);
 		$call->local_ip = $sess->local_ip;
 		$call->local_port = $sess->local_port;
 		$call->remote_ip = $sess->remote_ip;
@@ -104,7 +104,7 @@ class SipChannel extends SipModule
 		#$from->username = $msg->contact->username; // 如果要保留原发起人
 		$to = clone $msg->to;
 
-		$call = new SipCallerSession($uri, $from, $to);
+		$call = new CallerSession($uri, $from, $to);
 		$call->local_ip = $sess->local_ip;
 		$call->local_port = $sess->local_port;
 		$call->remote_ip = $sess->remote_ip;
