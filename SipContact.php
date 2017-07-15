@@ -109,7 +109,7 @@ class SipContact
 		
 		$ts = explode('@', $uri);
 		if(count($ts) == 2){
-			$this->domain = $ts[1]; // 可能包含 port 和 tag，如 '127.0.0.1:1234;ob'
+			$this->domain = $ts[1]; // TODO: 可能包含 port 和 tag，如 '127.0.0.1:1234;ob'
 			$ps = explode(':', $ts[0]);
 			if(count($ps) == 2){
 				$this->scheme = $ps[0];

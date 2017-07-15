@@ -85,12 +85,6 @@ class RegistrarSession extends SipSession
 				$this->transactions = array($trans);
 				return true;
 			}
-			if($this->is_state(SIP::COMPLETED)){
-				Logger::debug("recv REGISTER while completed");
-				$trans->nowait();
-				$this->transactions = array($trans);
-				return true;
-			}
 			if($msg->expires <= 0){
 				Logger::debug($this->remote->address() . " client logout");
 				$this->close();
@@ -100,12 +94,17 @@ class RegistrarSession extends SipSession
 				$this->transactions = array($trans);
 				return true;
 			}
+			
 			if($msg->expires >= self::MIN_EXPIRES && $msg->expires <= self::MAX_EXPIRES){
 				$this->expires = $msg->expires;
 			}
+			if($this->is_state(SIP::COMPLETED)){
+				Logger::debug("recv REGISTER while completed");
+			}else{
+				$this->complete();
+			}
 
-			$this->complete();
-			$this->local->set_tag(SIP::new_tag());
+			$trans->to_tag = SIP::new_tag();
 			$trans->expires = $this->expires;
 			$trans->timers = array(0, $this->expires);
 			$this->transactions = array($trans);

@@ -22,7 +22,7 @@ abstract class SipSession
 
 	private $callback;
 	
-	protected $trans;
+	public $trans;
 	protected $transactions = array();
 	
 	function __construct(){

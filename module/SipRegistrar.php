@@ -76,25 +76,28 @@ class SipRegistrar extends SipModule
 				if($tmp->call_id === $sess->call_id){
 					Logger::debug("REGISTRAR " . $sess->remote->address() . " renewed");
 				}else{
+					Logger::debug("{$tmp->call_id} != {$sess->call_id}");
 					Logger::debug("REGISTRAR " . $sess->remote->address() . " with new call_id");
 				}
 				
-				Logger::debug('    del ' . $sess->remote->address());
+				Logger::debug('    del ' . $sess->remote->username . ' ' . $sess->call_id);
 				unset($this->sessions[$index]);
 			}
 			#$this->test($sess);
 		}
 		if($sess->is_state(SIP::CLOSED)){
-			if($sess->expires <= 0){
-				Logger::debug($sess->remote->address() . " logout");
-			}else{
-				Logger::debug($sess->remote->address() . " expired");
-			}
-			foreach($this->sessions as $index=>$tmp){
-				if($tmp->remote->username !== $sess->remote->username){
-					continue;
+			if($sess->trans->code === 200){
+				if($sess->expires <= 0){
+					Logger::debug($sess->remote->address() . " logout");
+				}else{
+					Logger::debug($sess->remote->address() . " expired");
 				}
-				unset($this->sessions[$index]);
+				foreach($this->sessions as $index=>$tmp){
+					if($tmp->remote->username !== $sess->remote->username){
+						continue;
+					}
+					unset($this->sessions[$index]);
+				}
 			}
 		}
 	}
