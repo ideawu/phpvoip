@@ -7,7 +7,6 @@ class NoopCallerSession extends SipSession
 	function __construct(){
 		parent::__construct();
 		$this->role = SIP::NOOP;
-		$this->set_state(SIP::TRYING);
 		
 		$this->local = new SipContact('@');
 		$this->remote = new SipContact('@');
@@ -50,7 +49,10 @@ TEXT;
 			$this->set_state(SIP::RINGING);
 		}
 		if($this->count == 2){
-			//$this->terminate();
+			$this->terminate();
+			#$this->completing();
+		}
+		if($this->count == 3){
 			$this->complete();
 		}
 		if($this->count == 10){

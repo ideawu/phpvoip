@@ -55,12 +55,14 @@ class RegistrarSession extends SipSession
 			if($msg->expires > 0 && $msg->expires < self::MIN_EXPIRES){
 				$trans->code = 423;
 				$trans->nowait();
+				$this->transactions = array($trans);
 				return true;
 			}
 			if(!$msg->auth && $this->auth){
 				$trans->code = 401;
 				$trans->auth = $this->auth;
 				$trans->nowait();
+				$this->transactions = array($trans);
 				return true;
 			}
 			// 账号密码验证
@@ -70,6 +72,7 @@ class RegistrarSession extends SipSession
 				Logger::debug("auth failed");
 				$trans->code = 401;
 				$trans->nowait();
+				$this->transactions = array($trans);
 				return true;
 			}
 
@@ -79,18 +82,22 @@ class RegistrarSession extends SipSession
 			if($this->is_state(SIP::CLOSING)){
 				Logger::debug("recv REGISTER while closing");
 				$trans->nowait();
+				$this->transactions = array($trans);
 				return true;
 			}
 			if($this->is_state(SIP::COMPLETED)){
 				Logger::debug("recv REGISTER while completed");
 				$trans->nowait();
+				$this->transactions = array($trans);
 				return true;
 			}
 			if($msg->expires <= 0){
 				Logger::debug($this->remote->address() . " client logout");
 				$this->close();
+				$this->expires = 0;
 				$trans->expires = 0;
-				$trans->timers = array(0, 0);
+				$trans->timers = array(0, 1);
+				$this->transactions = array($trans);
 				return true;
 			}
 			if($msg->expires >= self::MIN_EXPIRES && $msg->expires <= self::MAX_EXPIRES){
@@ -101,6 +108,7 @@ class RegistrarSession extends SipSession
 			$this->local->set_tag(SIP::new_tag());
 			$trans->expires = $this->expires;
 			$trans->timers = array(0, $this->expires);
+			$this->transactions = array($trans);
 			return true;
 		}
 	}

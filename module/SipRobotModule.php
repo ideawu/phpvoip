@@ -10,6 +10,10 @@ class SipRobotModule extends SipModule
 	}
 	
 	function callout($msg){
+		// $ret = new NoopCallerSession();
+		// $ret->init();
+		// return $ret;
+		
 		$caller = new LocalCaller();
 		$callee = new LocalCallee();
 		$caller->callee = $callee;

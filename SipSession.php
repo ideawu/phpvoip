@@ -49,6 +49,9 @@ abstract class SipSession
 	}
 	
 	function set_state($new){
+		if($new === SIP::CLOSED){
+			#debug_print_backtrace();
+		}
 		$old = $this->state;
 		$this->state = $new;
 		if($old !== $new && $this->callback){
@@ -76,7 +79,14 @@ abstract class SipSession
 	}
 	
 	function brief(){
-		$ret = sprintf('%9s %-4s=>%-4s', $this->role_name(), $this->local->username, $this->remote->username);
+		if($this->role == SIP::CALLEE){
+			$src = $this->remote->username;
+			$dst = $this->local->username;
+		}else{
+			$src = $this->local->username;
+			$dst = $this->remote->username;
+		}
+		$ret = sprintf('%9s %-4s=>%-4s', $this->role_name(), $src, $dst);
 		return $ret;
 	}
 
@@ -260,13 +270,24 @@ abstract class SipSession
 			}
 		}
 		if(!$this->transactions){
-			#Logger::debug($this->role_name() . " terminated because of empty transactions");
+			Logger::debug($this->role_name() . " terminated because of empty transactions");
 			$this->terminate();
 		}
 		return $ret;
 	}
 		
 	protected function incoming($msg, $trans){
+		if($msg->code === 481 || $msg->code === 486 || $msg->code === 487 || $msg->code === 603){
+			Logger::debug("recv {$msg->code} for {$trans->method}, closing");
+			$this->set_state(SIP::CLOSING);
+			$this->remote->set_tag($msg->to->tag());
+			
+			$trans->method = 'ACK';
+			$trans->timers = array(0, 0);
+			$this->transactions = array($trans);
+			return true;
+		}
+
 		if($msg->method === 'BYE'){
 			$this->transactions = array();
 			// if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
@@ -289,30 +310,21 @@ abstract class SipSession
 			$this->transactions[] = $new;
 			return true;
 		}
-		if($msg->code === 200){
-			if($trans->method === 'BYE'){
-				Logger::debug("recv 200 for BYE, terminate");
-				$this->terminate();
-				return true;
-			}
+		if($msg->code === 200 && $msg->cseq_method === 'BYE'){
+			Logger::debug("recv 200 for BYE, terminate");
+			$this->terminate();
+			return true;
 		}
-		
+		if($msg->is_response() && $msg->cseq_method === 'CANCEL'){
+			Logger::debug("recv {$msg->code} for CANCEL, do nothing");
+			return true;
+		}
 		if($msg->method === 'ACK'){
 			if($trans->code >= 300){
 				Logger::debug("recv ACK for {$trans->code}, terminate");
 				$this->terminate();
 				return true;
 			}
-		}
-		if($msg->code === 481 || $msg->code === 486 || $msg->code === 487){
-			Logger::debug("recv {$msg->code} for {$trans->method}, closing");
-			$this->set_state(SIP::CLOSING);
-			$this->remote->set_tag($msg->to->tag());
-			
-			$trans->method = 'ACK';
-			$trans->timers = array(0, 0);
-			$this->transactions = array($trans);
-			return true;
 		}
 
 		// keepalive

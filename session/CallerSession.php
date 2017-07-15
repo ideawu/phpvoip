@@ -39,9 +39,9 @@ class CallerSession extends SipSession
 			$new->method = 'CANCEL';
 			$new->cseq = $this->local_cseq;
 			$new->branch = $this->local_branch;
-			$this->remote->del_tag(); // TODO
 			$new->timers = array(0, 1, 2, 2, 2);
-			$this->transactions = array($new);
+			$this->remote->del_tag(); // TODO
+			$this->transactions[] = $new;
 		}else{
 			$this->bye();
 		}
@@ -49,26 +49,20 @@ class CallerSession extends SipSession
 	
 	function completing(){
 		$this->set_state(SIP::COMPLETING);
-		$this->trans->code = 199;
-		$this->trans->timers = array(3, 0); // Timer D 等待可能重传的 200
 	}
 	
-	// 应该只被 Timer D 调用
 	function complete(){
 		parent::complete();
-		if($this->trans->code !== 199){
-			// complete() 是由外界调用的，Timer D 事务继续执行
-			$trans = $this->trans;
-			$trans->code = 0;
-			$trans->timers = array(3);
-		}
-		$this->keepalive();
 	}
 
 	protected function incoming($msg, $trans){
 		if(parent::incoming($msg, $trans)){
 			return true;
 		}
+		if($msg->cseq_method != 'INVITE'){
+			return false;
+		}
+		
 		if($msg->code === 100){
 			$trans->timers = array(5);
 			return true;
@@ -84,6 +78,11 @@ class CallerSession extends SipSession
 			$this->remote_sdp = $msg->content;
 			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 				$this->completing();
+				$this->complete();
+				$this->keepalive();
+				
+				$trans->timers = array(3); // Timer D
+				$this->transactions[] = $trans;
 			}else{
 				Logger::debug("recv 200 when " . $this->state_text());
 			}
@@ -101,12 +100,6 @@ class CallerSession extends SipSession
 	}
 	
 	protected function outgoing($trans){
-		Logger::debug("{$trans->method} {$trans->code}");
-		if($trans->code === 199){
-			$this->complete();
-			return null;
-		}
-		
 		$msg = parent::outgoing($trans);
 		if($msg && ($msg->is_request() && $msg->method === 'INVITE')){
 			$msg->content = $this->local_sdp;

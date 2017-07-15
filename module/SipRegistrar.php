@@ -82,6 +82,7 @@ class SipRegistrar extends SipModule
 				Logger::debug('    del ' . $sess->remote->address());
 				unset($this->sessions[$index]);
 			}
+			$this->test($sess);
 		}
 		if($sess->is_state(SIP::CLOSED)){
 			if($sess->expires <= 0){
@@ -146,20 +147,31 @@ class SipRegistrar extends SipModule
 		}
 		return null;
 	}
+	
+	private function test($sess){
+		$uri = "sip:{$sess->remote->username}@{$sess->remote->domain}";
+		$from = new SipContact(1, '127.0.0.1:5070');
+		$to = new SipContact($sess->remote->username, $sess->remote->domain);
+
+		$call = new CallerSession($uri, $from, $to);
+		$call->local_ip = $sess->local_ip;
+		$call->local_port = $sess->local_port;
+		$call->remote_ip = $sess->remote_ip;
+		$call->remote_port = $sess->remote_port;
+		$call->init();
+		
+		$this->add_session($call);
+		$call->set_callback(array($this, 'test_cb'));
+	}
+	
+	function test_cb($sess){
+		if($sess->is_state(SIP::RINGING)){
+			$sess->close();
+		}
+	}
 }
 
 /*
-			// TESTING
-			$uri = "sip:{$sess->remote->username}@{$sess->remote->domain}";
-			$from = new SipContact(1, '127.0.0.1:5070');
-			$to = clone $sess->remote;
-			$to->del_tag();
-
-			$call = new CallerSession($uri, $from, $to);
-			$call->local_ip = $sess->local_ip;
-			$call->local_port = $sess->local_port;
-			$call->remote_ip = $sess->remote_ip;
-			$call->remote_port = $sess->remote_port;
 			$call->local_sdp = <<<TEXT
 v=0
 o=yate 1499684812 1499684812 IN IP4 127.0.0.1
