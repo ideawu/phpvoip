@@ -70,7 +70,6 @@ class CalleeSession extends SipSession
 		if($msg->method === 'CANCEL'){
 			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 				$this->set_state(SIP::CLOSING);
-				
 				$trans->code = 487; // Request Terminated
 				$trans->timers = array(0, 1, 2, 2, 2);
 			}else{

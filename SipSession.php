@@ -110,7 +110,7 @@ abstract class SipSession
 		Logger::debug($this->role_name() . " send BYE to close session");
 		$this->transactions = array();
 		$new = $this->new_request('BYE'); // 发送 BYE, 直到收到 200
-		$new->timers = array(0, 1, 2, 2, 2);
+		$new->timers = array(0, 1, 2, 2, 2, 2);
 		$this->trans = $new;
 	}
 	
@@ -235,7 +235,7 @@ abstract class SipSession
 			}
 		}
 		// 新请求或者 BYE
-		if((!$this->remote_cseq || $msg->cseq === $this->remote_cseq + 1) && $msg->to->tag() === $this->local->tag()){
+		if((!$this->remote_cseq || $msg->cseq > $this->remote_cseq) && $msg->to->tag() === $this->local->tag()){
 			Logger::debug("recv new cseq request " . $msg->method);
 			$this->remote_cseq = $msg->cseq;
 			
@@ -287,38 +287,6 @@ abstract class SipSession
 			$this->transactions = array($trans);
 			return true;
 		}
-
-		if($msg->method === 'BYE'){
-			$this->transactions = array();
-			// if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-			if($trans->code > 0 && $trans->code < 200){
-				$trans->code = 487; // Request Terminated
-				$trans->timers = array(0, 0);
-				$this->transactions[] = $trans;
-			}else{
-				//
-			}
-			$this->set_state(SIP::CLOSING);
-
-			// response OK
-			$new = new SipTransaction();
-			$new->code = 200;
-			$new->method = $msg->method;
-			$new->cseq = $msg->cseq;
-			$new->branch = $msg->branch; // 原 branch
-			$new->timers = array(0, 0);
-			$this->transactions[] = $new;
-			return true;
-		}
-		if($msg->code === 200 && $msg->cseq_method === 'BYE'){
-			Logger::debug("recv 200 for BYE, terminate");
-			$this->terminate();
-			return true;
-		}
-		if($msg->is_response() && $msg->cseq_method === 'CANCEL'){
-			Logger::debug("recv {$msg->code} for CANCEL, do nothing");
-			return true;
-		}
 		if($msg->method === 'ACK'){
 			if($trans->code >= 300){
 				Logger::debug("recv ACK for {$trans->code}, terminate");
@@ -327,17 +295,52 @@ abstract class SipSession
 			}
 		}
 
-		// keepalive
-		if($msg->is_response() && ($trans->method === 'INFO' || $trans->method === 'OPTIONS')){
-			if($msg->code === 100){
+		if($msg->is_response() && $msg->cseq_method === 'CANCEL'){
+			Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
+			return true;
+		}
+		
+		if($msg->method === 'BYE'){
+			$this->transactions = array();
+			// if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+			if($this->trans->code > 0 && $this->trans->code < 200){
+				$this->trans->code = 487; // Request Terminated
+				$this->trans->timers = array(0, 0);
+				$this->transactions[] = $this->trans;
+			}
+			$this->set_state(SIP::CLOSING);
+
+			// response OK
+			$trans->code = 200;
+			$trans->timers = array(0, 0);
+			$this->transactions[] = $trans;
+			return true;
+		}
+		if($msg->is_response() && $msg->cseq_method === 'BYE'){
+			if($msg->code === 200){
+				Logger::debug("recv 200 for BYE, terminate");
+				$this->terminate();
 				return true;
 			}
-			if($msg->code !== 418){
+			Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
+			return true;
+		}
+
+		if($msg->method === 'INFO' || $msg->method === 'OPTIONS'){
+			$trans->code = 200;
+			$trans->timers = array(0, 0);
+			return true;
+		}		
+		// keepalive
+		if($msg->is_response() && ($trans->method === 'INFO' || $trans->method === 'OPTIONS')){
+			if($msg->code >= 200){
 				Logger::debug("keepalive updated");
 				$this->del_transaction($trans);
 				$this->keepalive();
 				return true;
 			}
+			Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
+			return true;
 		}
 
 		return false;

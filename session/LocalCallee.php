@@ -7,7 +7,7 @@ class LocalCallee extends SipSession
 {
 	public $caller;
 	public $local_sdp;
-	private $interval = 0.1; // TESTING
+	private $interval = 0.5; // TESTING
 	
 	function __construct(){
 		parent::__construct();
