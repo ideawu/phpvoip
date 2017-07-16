@@ -1,5 +1,5 @@
 <?php
-class CallerSession extends SipSession
+class CallerSession extends BaseCallSession
 {
 	public $local_sdp;
 	public $remote_sdp;
@@ -35,7 +35,7 @@ class CallerSession extends SipSession
 			Logger::debug("caller send CANCEL to close session");
 			// 发送 BYE, 直到收到 200
 			$new = new SipTransaction();
-			$new->uri = new SipUri($this->remote->username, "{$this->remote_ip}:{$this->remote_port}");
+			$new->uri = new SipUri($this->remote->username, $this->remote->domain);
 			$new->method = 'CANCEL';
 			$new->cseq = $this->local_cseq;
 			$new->branch = $this->local_branch;
@@ -59,43 +59,42 @@ class CallerSession extends SipSession
 		if(parent::incoming($msg, $trans)){
 			return true;
 		}
-		if($msg->cseq_method != 'INVITE'){
-			return false;
-		}
-		
-		if($msg->code === 100){
-			$trans->timers = array(5);
-			return true;
-		}
-		if($msg->code === 180){
-			$this->set_state(SIP::RINGING);
-			$this->remote->set_tag($msg->to->tag());
-			$trans->timers = array(15);
-			return true;
-		}
-		if($msg->code === 200){
-			$this->remote->set_tag($msg->to->tag());
-			$this->remote_sdp = $msg->content;
-			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-				$this->completing();
-				$this->complete();
-				$this->keepalive();
-				
-				$trans->timers = array(3); // Timer D
-				$this->transactions[] = $trans;
-			}else{
-				Logger::debug("recv 200 when " . $this->state_text());
+		if($msg->is_response() && $msg->cseq_method === 'INVITE'){
+			if($msg->code === 100){
+				$trans->timers = array(5);
+				return true;
 			}
+			if($msg->code === 180){
+				$this->set_state(SIP::RINGING);
+				$this->remote->set_tag($msg->to->tag());
+				$trans->timers = array(15);
+				return true;
+			}
+			if($msg->code === 200){
+				$this->remote->set_tag($msg->to->tag());
+				$this->remote_sdp = $msg->content;
+				if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
+					$this->completing();
+					$this->complete();
+					$this->keepalive();
+				
+					$trans->timers = array(3); // Timer D
+					$this->transactions[] = $trans;
+				}else{
+					Logger::debug("recv 200 when " . $this->state_text());
+				}
 
-			$new = new SipTransaction();
-			$new->uri = new SipUri($this->remote->username, "{$this->remote_ip}:{$this->remote_port}");
-			$new->method = 'ACK';
-			$new->cseq = $msg->cseq;
-			$new->branch = SIP::new_branch();
-			$new->timers = array(0, 0);
-			$this->transactions[] = $new;
+				$new = new SipTransaction();
+				$new->uri = new SipUri($this->remote->username, $this->remote->domain);
+				$new->method = 'ACK';
+				$new->cseq = $msg->cseq;
+				$new->branch = SIP::new_branch();
+				$new->timers = array(0, 0);
+				$this->transactions[] = $new;
 
-			return true;
+				return true;
+			}
+			return false;
 		}
 	}
 	

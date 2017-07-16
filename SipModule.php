@@ -42,8 +42,10 @@ abstract class SipModule
 				// 	$this->del_session($sess);
 				// }
 				if(!$ret){
-					Logger::debug("no matching transaction, send 481");
-					throw new Exception("Call/Transaction Does Not Exist", 481);
+					// drop
+					return true;
+					// Logger::debug("no matching transaction, send 481");
+					// throw new Exception("Call/Transaction Does Not Exist", 481);
 				}else{
 					return true;
 				}

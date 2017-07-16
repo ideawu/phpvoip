@@ -13,6 +13,7 @@ include_once(dirname(__FILE__) . '/SipRouter.php');
 include_once(dirname(__FILE__) . '/session/SipTransaction.php');
 include_once(dirname(__FILE__) . '/session/RegisterSession.php');
 include_once(dirname(__FILE__) . '/session/RegistrarSession.php');
+include_once(dirname(__FILE__) . '/session/BaseCallSession.php');
 include_once(dirname(__FILE__) . '/session/CalleeSession.php');
 include_once(dirname(__FILE__) . '/session/CallerSession.php');
 include_once(dirname(__FILE__) . '/session/LocalCaller.php');

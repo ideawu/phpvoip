@@ -1,5 +1,5 @@
 <?php
-class CalleeSession extends SipSession
+class CalleeSession extends BaseCallSession
 {
 	public $local_sdp;
 	public $remote_sdp;
@@ -66,7 +66,6 @@ class CalleeSession extends SipSession
 		if(parent::incoming($msg, $trans)){
 			return true;
 		}
-		
 		if($msg->method === 'CANCEL'){
 			if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 				$this->set_state(SIP::CLOSING);
@@ -76,7 +75,7 @@ class CalleeSession extends SipSession
 				// 不关闭
 			}
 
-			// response OK
+			// 新建 response OK
 			$new = new SipTransaction();
 			$new->code = 200;
 			$new->method = $msg->method;
@@ -87,33 +86,9 @@ class CalleeSession extends SipSession
 			$this->transactions[] = $new;
 			return true;
 		}
-		
-		if($msg->method === 'INVITE'){
-			if($this->is_state(SIP::COMPLETED)){
-				Logger::debug("recv re-INVITE after completed");
-				$trans->code = 200;
-				$trans->timers = array(0, 1, 2, 2, 2);
-			}else{
-				Logger::debug("recv duplicated INVITE");
-				$trans->nowait();
-			}
+		if($msg->is_response() && $msg->cseq_method === 'CANCEL'){
+			Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
 			return true;
-		}
-		if($msg->method === 'ACK'){
-			if($msg->branch === $trans->branch){
-				Logger::debug("duplicated ACK, ignore");
-				return true;
-			}
-			if($trans->method === 'INVITE'){
-				if($this->is_state(SIP::COMPLETING)){
-					$this->complete();
-					$this->keepalive();
-				}else{
-					Logger::debug("recv ACK when " . $this->state_text());
-					$trans->timers = array();
-				}
-				return true;
-			}
 		}
 	}
 	

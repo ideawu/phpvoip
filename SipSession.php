@@ -98,7 +98,7 @@ abstract class SipSession
 		$this->local_branch = SIP::new_branch();
 		
 		$new = new SipTransaction();
-		$new->uri = $uri? $uri : new SipUri($this->remote->username, "{$this->remote_ip}:{$this->remote_port}");
+		$new->uri = $uri? $uri : new SipUri($this->remote->username, $this->remote->domain);
 		$new->method = $method;
 		$new->cseq = $this->local_cseq;
 		$new->branch = $this->local_branch;
@@ -298,54 +298,6 @@ abstract class SipSession
 				$this->terminate();
 				return true;
 			}
-		}
-
-		if($msg->is_response() && $msg->cseq_method === 'CANCEL'){
-			Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
-			return true;
-		}
-		
-		if($msg->method === 'BYE'){
-			$this->transactions = array();
-			// if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
-			if($this->trans->code > 0 && $this->trans->code < 200){
-				$this->trans->code = 487; // Request Terminated
-				$this->trans->timers = array(0, 0);
-				$this->transactions[] = $this->trans;
-			}
-			$this->set_state(SIP::CLOSING);
-
-			// response OK
-			$trans->code = 200;
-			$trans->timers = array(0, 0);
-			$this->transactions[] = $trans;
-			return true;
-		}
-		if($msg->is_response() && $msg->cseq_method === 'BYE'){
-			if($msg->code >= 200){
-				Logger::debug("recv 200 for BYE, terminate");
-				$this->terminate();
-				return true;
-			}
-			#Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
-			return true;
-		}
-
-		if($msg->method === 'INFO' || $msg->method === 'OPTIONS'){
-			$trans->code = 200;
-			$trans->timers = array(0, 0);
-			return true;
-		}		
-		// keepalive
-		if($msg->is_response() && ($trans->method === 'INFO' || $trans->method === 'OPTIONS')){
-			if($msg->code >= 200){
-				Logger::debug("keepalive updated");
-				$this->del_transaction($trans);
-				$this->keepalive();
-				return true;
-			}
-			#Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
-			return true;
 		}
 
 		return false;
