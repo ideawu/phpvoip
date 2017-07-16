@@ -64,22 +64,19 @@ class SipRegistrar extends SipModule
 	
 	function sess_callback($sess){
 		if($sess->is_state(SIP::COMPLETED)){
-			$key = $sess->remote->username;
-			$old = isset($this->onlines[$key])? $this->onlines[$key] : null;
+			$old = $this->get_online($sess->remote->username);
 			if($old){
 				if($old->call_id === $sess->call_id){
 					Logger::debug($sess->brief() . " renewed");
 				}else{
 					Logger::debug($sess->brief() . " registered with new call_id");
 				}
-				Logger::debug("offline " . $old->brief());
-				unset($this->onlines[$key]);
+				$this->offline($old);
 				$this->del_session($old);
 			}else{
 				Logger::debug($sess->brief() . ' registered');
 			}
-			Logger::debug("online " . $sess->brief());
-			$this->onlines[$key] = $sess;
+			$this->online($sess);
 		}
 
 		// 客户端退出，可能是在原来的 session 基础上，也可能新建一个新的 session，
@@ -87,11 +84,9 @@ class SipRegistrar extends SipModule
 		if($sess->is_state(SIP::CLOSING)){
 			if($sess->expires <= 0){
 				Logger::debug($sess->brief() . " logout");
-				$key = $sess->remote->username;
-				$old = isset($this->onlines[$key])? $this->onlines[$key] : null;
+				$old = $this->get_online($sess->remote->username);
 				if($old){
-					Logger::debug("offline " . $old->brief());
-					unset($this->onlines[$key]);
+					$this->offline($old);
 					if($old !== $sess){
 						$this->del_session($old);
 					}
@@ -100,64 +95,72 @@ class SipRegistrar extends SipModule
 		}
 		
 		if($sess->is_state(SIP::CLOSED)){
-			$key = $sess->remote->username;
-			$old = isset($this->onlines[$key])? $this->onlines[$key] : null;
+			$old = $this->get_online($sess->remote->username);
 			if($old && $old === $sess){
-				Logger::debug($sess->brief() . " expired");
-				Logger::debug("offline " . $old->brief());
-				unset($this->onlines[$key]);
+				$this->offline($old);
 				$this->del_session($old);
 			}
 		}
 	}
 	
+	private function get_online($username){
+		return isset($this->onlines[$username])? $this->onlines[$username] : null;
+	}
+	
+	private function online($sess){
+		Logger::debug("online " . $sess->brief());
+		$this->onlines[$sess->remote->username] = $sess;
+	}
+	
+	private function offline($sess){
+		Logger::debug("offline " . $sess->brief());
+		unset($this->onlines[$sess->remote->username]);
+	}
+	
 	function callin($msg){
-		foreach($this->sessions as $sess){
-			if(!$sess->is_state(SIP::COMPLETED)){
-				continue;
-			}
-			if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
-				continue;
-			}
-			if($msg->from->username !== $sess->remote->username){
-				continue;
-			}
-			
-			$call = new CalleeSession($msg);
-			$call->local_ip = $sess->local_ip;
-			$call->local_port = $sess->local_port;
-			$call->remote_ip = $sess->remote_ip;
-			$call->remote_port = $sess->remote_port;
-			$call->init();
-			return $call;
+		if(!isset($this->onlines[$msg->from->username])){
+			return null;
 		}
-		return null;
+		$sess = $this->onlines[$msg->from->username];
+		if(!$sess->is_state(SIP::COMPLETED)){
+			return null;
+		}
+		if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+			return null;
+		}
+
+		$call = new CalleeSession($msg);
+		$call->local_ip = $sess->local_ip;
+		$call->local_port = $sess->local_port;
+		$call->remote_ip = $sess->remote_ip;
+		$call->remote_port = $sess->remote_port;
+		$call->init();
+		return $call;
 	}
 	
 	function callout($msg){
-		foreach($this->sessions as $sess){
-			if(!$sess->is_state(SIP::COMPLETED)){
-				#Logger::debug('');
-				continue;
-			}
-			if($msg->to->username !== $sess->remote->username){
-				#Logger::debug("{$msg->to->username} {$sess->remote->username}");
-				continue;
-			}
-		
-			$uri = $msg->uri;
-			$from = clone $msg->from;
-			$to = clone $msg->to;
-
-			$call = new CallerSession($uri, $from, $to);
-			$call->local_ip = $sess->local_ip;
-			$call->local_port = $sess->local_port;
-			$call->remote_ip = $sess->remote_ip;
-			$call->remote_port = $sess->remote_port;
-			$call->init();
-			return $call;
+		if(!isset($this->onlines[$msg->to->username])){
+			return null;
 		}
-		return null;
+		$sess = $this->onlines[$msg->to->username];
+		if(!$sess->is_state(SIP::COMPLETED)){
+			return null;
+		}
+		if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
+			return null;
+		}
+
+		$uri = $msg->uri;
+		$from = clone $msg->from;
+		$to = clone $msg->to;
+
+		$call = new CallerSession($uri, $from, $to);
+		$call->local_ip = $sess->local_ip;
+		$call->local_port = $sess->local_port;
+		$call->remote_ip = $sess->remote_ip;
+		$call->remote_port = $sess->remote_port;
+		$call->init();
+		return $call;
 	}
 	
 	private function test($sess){
