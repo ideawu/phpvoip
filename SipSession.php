@@ -1,6 +1,7 @@
 <?php
 abstract class SipSession
 {
+	public $id;
 	public $role;
 	private $state = 0;
 
@@ -17,16 +18,17 @@ abstract class SipSession
 	public $remote_cseq;
 	public $local_branch;
 	// public $remote_branch;
-
 	public $remote_allow = array();
+	
+	protected $trans;
+	protected $transactions = array();
 
 	private $callback;
-	
-	public $trans;
-	protected $transactions = array();
+	private static $id_incr = 0;
 	
 	function __construct(){
 		$this->set_state(SIP::NONE);
+		$this->id = self::$id_incr ++;
 		$this->local_cseq = SIP::new_cseq();
 		$this->local_branch = SIP::new_branch();
 		$this->trans = new SipTransaction();
@@ -86,7 +88,7 @@ abstract class SipSession
 			$src = $this->local->username;
 			$dst = $this->remote->username;
 		}
-		$ret = sprintf('%9s %-4s=>%-4s', $this->role_name(), $src, $dst);
+		$ret = sprintf('%9s[%d] %-4s=>%-4s', $this->role_name(), $this->id, $src, $dst);
 		return $ret;
 	}
 
@@ -157,9 +159,11 @@ abstract class SipSession
 		
 		if($msg->is_request()){
 			if($msg->from->username != $this->remote->username){
+				#Logger::debug("");
 				return false;
 			}
 			if($msg->to->username != $this->local->username){
+				#Logger::debug("");
 				return false;
 			}
 			if($msg->from->tag() !== $this->remote->tag()){
@@ -234,9 +238,10 @@ abstract class SipSession
 				return $this->incoming($msg, $trans);
 			}
 		}
+		#Logger::debug("{$msg->cseq} {$this->remote_cseq} " . $msg->to->tag() . ' ' . $this->local->tag());
 		// 新请求或者 BYE
 		if((!$this->remote_cseq || $msg->cseq > $this->remote_cseq) && $msg->to->tag() === $this->local->tag()){
-			Logger::debug("recv new cseq request " . $msg->method);
+			Logger::debug("create new trans for " . $msg->method);
 			$this->remote_cseq = $msg->cseq;
 			
 			$trans = new SipTransaction();
@@ -270,7 +275,7 @@ abstract class SipSession
 			}
 		}
 		if(!$this->transactions){
-			Logger::debug($this->role_name() . " terminated because of empty transactions");
+			Logger::debug($this->role_name() . " terminated for empty transactions");
 			$this->terminate();
 		}
 		return $ret;

@@ -2,6 +2,7 @@
 class SipRegistrar extends SipModule
 {
 	private $users = array();
+	private $onlines = array();
 
 	// 添加一个用户配置
 	function add_user($username, $password){
@@ -34,7 +35,6 @@ class SipRegistrar extends SipModule
 			return false;
 		}
 		
-		Logger::debug("create new REGISTRAR session for $username");
 		$password = $this->users[$username];
 				
 		$local_ip = $this->engine->local_ip;
@@ -52,6 +52,7 @@ class SipRegistrar extends SipModule
 		$sess->username = $username;
 		$sess->password = $password;
 
+		Logger::debug("create new REGISTRAR " . $sess->brief());
 		$this->add_session($sess);
 				
 		$sess->init();
@@ -62,42 +63,50 @@ class SipRegistrar extends SipModule
 	}
 	
 	function sess_callback($sess){
-		// 将同用户不同 call_id 的会话清除，处理逻辑1
-		// 将同用户同 call_id 的会话清除，处理逻辑2
 		if($sess->is_state(SIP::COMPLETED)){
-			foreach($this->sessions as $index=>$tmp){
-				if($tmp === $sess){
-					continue;
-				}
-				if($tmp->remote->username !== $sess->remote->username){
-					continue;
-				}
-
-				if($tmp->call_id === $sess->call_id){
-					Logger::debug("REGISTRAR " . $sess->remote->address() . " renewed");
+			$key = $sess->remote->username;
+			$old = isset($this->onlines[$key])? $this->onlines[$key] : null;
+			if($old){
+				if($old->call_id === $sess->call_id){
+					Logger::debug($sess->brief() . " renewed");
 				}else{
-					Logger::debug("{$tmp->call_id} != {$sess->call_id}");
-					Logger::debug("REGISTRAR " . $sess->remote->address() . " with new call_id");
+					Logger::debug($sess->brief() . " registered with new call_id");
 				}
-				
-				Logger::debug('    del ' . $sess->remote->username . ' ' . $sess->call_id);
-				unset($this->sessions[$index]);
+				Logger::debug("offline " . $old->brief());
+				unset($this->onlines[$key]);
+				$this->del_session($old);
+			}else{
+				Logger::debug($sess->brief() . ' registered');
 			}
-			#$this->test($sess);
+			Logger::debug("online " . $sess->brief());
+			$this->onlines[$key] = $sess;
 		}
-		if($sess->is_state(SIP::CLOSED)){
-			if($sess->trans->code === 200){
-				if($sess->expires <= 0){
-					Logger::debug($sess->remote->address() . " logout");
-				}else{
-					Logger::debug($sess->remote->address() . " expired");
-				}
-				foreach($this->sessions as $index=>$tmp){
-					if($tmp->remote->username !== $sess->remote->username){
-						continue;
+
+		// 客户端退出，可能是在原来的 session 基础上，也可能新建一个新的 session，
+		// 所以要区分处理。如果是新建 sess，则立即删除旧 sess。否则，等 sess 自动删除。
+		if($sess->is_state(SIP::CLOSING)){
+			if($sess->expires <= 0){
+				Logger::debug($sess->brief() . " logout");
+				$key = $sess->remote->username;
+				$old = isset($this->onlines[$key])? $this->onlines[$key] : null;
+				if($old){
+					Logger::debug("offline " . $old->brief());
+					unset($this->onlines[$key]);
+					if($old !== $sess){
+						$this->del_session($old);
 					}
-					unset($this->sessions[$index]);
 				}
+			}
+		}
+		
+		if($sess->is_state(SIP::CLOSED)){
+			$key = $sess->remote->username;
+			$old = isset($this->onlines[$key])? $this->onlines[$key] : null;
+			if($old && $old === $sess){
+				Logger::debug($sess->brief() . " expired");
+				Logger::debug("offline " . $old->brief());
+				unset($this->onlines[$key]);
+				$this->del_session($old);
 			}
 		}
 	}

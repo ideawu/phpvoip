@@ -38,9 +38,9 @@ abstract class SipModule
 		foreach($this->sessions as $sess){
 			if($sess->match_sess($msg)){
 				$ret = $sess->proc_incoming($msg);
-				if($sess->is_state(SIP::CLOSED)){
-					$this->del_session($sess);
-				}
+				// if($sess->is_state(SIP::CLOSED)){
+				// 	$this->del_session($sess);
+				// }
 				if(!$ret){
 					Logger::debug("no matching transaction, send 481");
 					throw new Exception("Call/Transaction Does Not Exist", 481);
@@ -76,19 +76,12 @@ abstract class SipModule
 	function add_session($sess){
 		#Logger::debug("NEW " . $sess->brief());
 		$sess->module = $this;
-		$this->sessions[] = $sess;
+		$this->sessions[$sess->id] = $sess;
 	}
 
 	function del_session($sess){
 		#Logger::debug("DEL " . $sess->brief());
-		foreach($this->sessions as $index=>$tmp){
-			if($tmp !== $sess){
-				continue;
-			}
-			$sess->module = null;
-			unset($this->sessions[$index]);
-			break;
-		}
+		unset($this->sessions[$sess->id]);
 	}
 	
 	function complete_session($sess){

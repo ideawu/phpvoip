@@ -27,7 +27,7 @@ class SipLink
 	function send($msg){
 		Logger::debug("send " . $msg->brief() . " -> '{$msg->dst_ip}:{$msg->dst_port}'");
 
-		//模拟丢包
+		// // 模拟丢包
 		// if($msg->code === 200 || ($msg->is_request() && $msg->method === 'ACK')){
 		// 	static $i=0;
 		// 	if($i++%2 == 0){
@@ -38,7 +38,7 @@ class SipLink
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
-		#echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
+		// echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 	}
 	
 	function recv(){
