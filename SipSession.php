@@ -322,12 +322,12 @@ abstract class SipSession
 			return true;
 		}
 		if($msg->is_response() && $msg->cseq_method === 'BYE'){
-			if($msg->code === 200){
+			if($msg->code >= 200){
 				Logger::debug("recv 200 for BYE, terminate");
 				$this->terminate();
 				return true;
 			}
-			Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
+			#Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
 			return true;
 		}
 
@@ -344,7 +344,7 @@ abstract class SipSession
 				$this->keepalive();
 				return true;
 			}
-			Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
+			#Logger::debug("recv {$msg->code} for {$msg->cseq_method}, do nothing");
 			return true;
 		}
 

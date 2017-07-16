@@ -15,7 +15,6 @@ class RegistrarSession extends SipSession
 		$this->call_id = $msg->call_id;
 		$this->local = clone $msg->to;
 		$this->remote = clone $msg->from;
-		$this->contact = clone $this->remote;
 		$this->remote_cseq = $msg->cseq;
 		$this->remote_allow = $msg->allow;
 
@@ -27,6 +26,7 @@ class RegistrarSession extends SipSession
 	
 	function init(){
 		$this->set_state(SIP::TRYING);
+		$this->contact = new SipContact($this->remote->username, $this->remote_ip . ':' . $this->remote_port);
 		$this->trans->code = 100;
 		$this->trans->timers = array(0, 1, 2, 2);
 	}
