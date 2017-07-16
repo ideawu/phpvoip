@@ -16,7 +16,7 @@ class CalleeSession extends SipSession
 
 		$this->remote_sdp = $msg->content;
 
-		$this->trans->uri = $msg->uri;
+		$this->trans->uri = clone $msg->uri;
 		$this->trans->method = $msg->method;
 		$this->trans->cseq = $msg->cseq;
 		$this->trans->branch = $msg->branch;

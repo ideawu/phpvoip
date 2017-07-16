@@ -148,7 +148,7 @@ class SipRegistrar extends SipModule
 			return null;
 		}
 
-		$uri = $msg->uri;
+		$uri = clone $msg->uri;
 		$from = clone $msg->from;
 		$to = clone $msg->to;
 
@@ -162,7 +162,7 @@ class SipRegistrar extends SipModule
 	}
 	
 	private function test($sess){
-		$uri = "sip:{$sess->remote->username}@{$sess->remote->domain}";
+		$uri = new SipUri($sess->remote->username, $sess->remote->domain);
 		$from = new SipContact(1, '127.0.0.1:5070');
 		$to = new SipContact($sess->remote->username, $sess->remote->domain);
 

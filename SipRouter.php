@@ -18,7 +18,7 @@ class SipRouter
 	function route($msg){
 		$ret = new SipMessage();
 		$ret->method = 'INVITE';
-		$ret->uri = $msg->uri;
+		$ret->uri = clone $msg->uri;
 		$ret->from = clone $msg->from;
 		$ret->to = clone $msg->to;
 		$ret->contact = clone $msg->contact; // 重写后的INVITE要保留原有的 contact
@@ -34,7 +34,7 @@ class SipRouter
 			if($this->match_route($from, $to, $item)){
 				list($in_from, $in_to, $out_from, $out_to) = $item;
 				Logger::debug("rewrite {$from}->{$to} => {$out_from}->{$out_to}");
-				$ret->uri = "sip:{$out_to}@{$this->domain}";
+				$ret->uri = new SipUri($out_to, $this->domain);
 				$ret->from = new SipContact($out_from, $this->domain);
 				$ret->to = new SipContact($out_to, $this->domain);
 				break;

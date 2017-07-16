@@ -4,11 +4,9 @@ class SipContact
 	public $dispname;
 	public $scheme = 'sip';
 	public $username;
-	// public $password;
+	public $password;
 	public $domain; // 可包含 port
 	public $parameters = array();
-	
-	private $tag;
 	
 	function __construct($username='', $domain=''){
 		$this->username = $username;
@@ -107,18 +105,25 @@ class SipContact
 		}
 		$uri = trim($uri, '<>');
 		
-		$ts = explode('@', $uri);
-		if(count($ts) == 2){
-			$this->domain = $ts[1]; // TODO: 可能包含 port 和 tag，如 '127.0.0.1:1234;ob'
-			$ps = explode(':', $ts[0]);
-			if(count($ps) == 2){
-				$this->scheme = $ps[0];
-				$this->username = $ps[1];
-			}else if(count($ts) == 3){
-				$this->scheme = $ps[0];
-				$this->username = $ps[1];
-				$this->password = $ps[2];
-			}
-		}
+		$a = new SipUri();
+		$a->decode($uri);
+		$this->scheme = $a->scheme;
+		$this->username = $a->username;
+		$this->password = $a->password;
+		$this->domain = $a->domain;
+		return;
+		// $ts = explode('@', $uri);
+		// if(count($ts) == 2){
+		// 	$this->domain = $ts[1]; // TODO: 可能包含 port 和 tag，如 '127.0.0.1:1234;ob'
+		// 	$ps = explode(':', $ts[0]);
+		// 	if(count($ps) == 2){
+		// 		$this->scheme = $ps[0];
+		// 		$this->username = $ps[1];
+		// 	}else if(count($ts) == 3){
+		// 		$this->scheme = $ps[0];
+		// 		$this->username = $ps[1];
+		// 		$this->password = $ps[2];
+		// 	}
+		// }
 	}
 }

@@ -113,7 +113,7 @@ class SipMessage
 		
 		$headers = array();
 		if($this->is_request()){
-			$headers[] = "{$this->method} {$this->uri} SIP/2.0";
+			$headers[] = "{$this->method} " . $this->uri->encode() . " SIP/2.0";
 		}else{
 			$headers[] = "SIP/2.0 {$this->code} {$this->reason}";
 		}
@@ -160,6 +160,23 @@ class SipMessage
 		return $ret;
 	}
 	
+	private function parse_first_line($line){
+		$ps = explode(' ', trim($line), 3);
+		if(count($ps) != 3){
+			return false;
+		}
+		if($ps[0] == 'SIP/2.0'){
+			// is response
+			$this->code = intval($ps[1]);
+			$this->reason = $ps[2];
+		}else{
+			$this->method = $ps[0];
+			$uri = new SipUri();
+			$uri->decode($ps[1]);
+			$this->uri = $uri;
+		}
+	}
+	
 	// 返回解析的字节数，支持流式解析
 	function decode($buf){
 		$sp_len = 4;
@@ -177,18 +194,7 @@ class SipMessage
 		$lines = explode("\n", $header);
 		for($i=0; $i<count($lines); $i++){
 			if($i == 0){
-				$ps = explode(' ', trim($lines[0]), 3);
-				if(count($ps) != 3){
-					return false;
-				}
-				if($ps[0] == 'SIP/2.0'){
-					// is response
-					$this->code = intval($ps[1]);
-					$this->reason = $ps[2];
-				}else{
-					$this->method = $ps[0];
-					$this->uri = $ps[1];
-				}
+				$this->parse_first_line($lines[0]);
 				continue;
 			}
 			

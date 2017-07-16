@@ -4,6 +4,7 @@ include_once(dirname(__FILE__) . '/net/SipLink.php');
 
 include_once(dirname(__FILE__) . '/SipEngine.php');
 include_once(dirname(__FILE__) . '/SipMessage.php');
+include_once(dirname(__FILE__) . '/SipUri.php');
 include_once(dirname(__FILE__) . '/SipContact.php');
 include_once(dirname(__FILE__) . '/SipModule.php');
 include_once(dirname(__FILE__) . '/SipSession.php');

@@ -17,7 +17,7 @@ class RegisterSession extends SipSession
 		$this->remote_port = $remote_port;
 		$this->username = $username;
 		$this->password = $password;
-		$this->domain = $domain? $domain : $this->remote_ip;
+		$this->domain = $domain? $domain : $this->remote_ip . ':' . $this->remote_port;
 
 		$this->call_id = SIP::new_call_id();
 		$this->local = new SipContact($this->username, $this->domain);
@@ -41,7 +41,7 @@ class RegisterSession extends SipSession
 		$this->remote->del_tag();
 		$this->transactions = array();
 		
-		$uri = "sip:{$this->domain}";
+		$uri = new SipUri(null, $this->domain);
 		$new = $this->new_request('REGISTER', $uri);
 		$new->expires = $this->expires;
 		$new->timers = array(0, 1, 2, 2, 10);
@@ -61,7 +61,7 @@ class RegisterSession extends SipSession
 			}
 			if($msg->auth){
 				$auth = $msg->auth;
-				$this->trans->auth = SIP::www_auth($this->username, $this->password, $this->trans->uri, 'REGISTER', $auth);
+				$this->trans->auth = SIP::www_auth($this->username, $this->password, $this->trans->uri->encode(), 'REGISTER', $auth);
 			}
 			return true;
 		}

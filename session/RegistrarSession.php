@@ -19,7 +19,7 @@ class RegistrarSession extends SipSession
 		$this->remote_cseq = $msg->cseq;
 		$this->remote_allow = $msg->allow;
 
-		$this->trans->uri = $msg->uri;
+		$this->trans->uri = clone $msg->uri;
 		$this->trans->method = $msg->method;
 		$this->trans->cseq = $msg->cseq;
 		$this->trans->branch = $msg->branch;
@@ -69,7 +69,7 @@ class RegistrarSession extends SipSession
 			}
 			// 账号密码验证
 			$in_auth = $msg->auth;
-			$my_auth = SIP::www_auth($this->username, $this->password, $msg->uri, 'REGISTER', $this->auth);
+			$my_auth = SIP::www_auth($this->username, $this->password, $msg->uri->encode(), 'REGISTER', $this->auth);
 			if($in_auth['response'] !== $my_auth['response']){
 				Logger::debug("auth failed");
 				$trans->code = 401;

@@ -4,6 +4,24 @@ Logger::init();
 
 include_once('SIP.php');
 
+$str = 'sip:a@192.168.1.4:5070;ob';
+$uri = new SipUri();
+$uri->decode($str);
+echo $uri->encode() . "\n";
+
+$str = '"a" <sip:3005@192.168.1.4:5070;transport=UDP>;tag=7265285e';
+$addr = new SipContact();
+$addr->decode($str);
+var_dump($addr);
+echo $addr->encode() . "\n";
+
+
+die();
+
+
+
+
+
 if($argv[1]){
 	$port = intval($argv[1]);
 }else{

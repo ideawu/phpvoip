@@ -98,7 +98,7 @@ abstract class SipSession
 		$this->local_branch = SIP::new_branch();
 		
 		$new = new SipTransaction();
-		$new->uri = $uri? $uri : "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+		$new->uri = $uri? $uri : new SipUri($this->remote->username, "{$this->remote_ip}:{$this->remote_port}");
 		$new->method = $method;
 		$new->cseq = $this->local_cseq;
 		$new->branch = $this->local_branch;
@@ -210,8 +210,8 @@ abstract class SipSession
 					#Logger::debug("");
 					return false;
 				}
-				if($msg->uri !== $trans->uri){
-					Logger::debug("{$msg->uri} != {$trans->uri}");
+				if($msg->uri && $trans->uri && !$msg->uri->equals($trans->uri)){
+					Logger::debug($msg->uri->encode() . " != " . $trans->uri->encode());
 					return false;
 				}
 				if($msg->to->tag() !== $this->local->tag()){
@@ -221,7 +221,7 @@ abstract class SipSession
 				return true;
 			}
 			// CANCEL 不带 to.tag，重传的 INVITE，可能不带 to.tag
-			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri === $trans->uri){
+			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri->equals($trans->uri)){
 				#Logger::debug("recv transaction request " . $msg->method);
 				return true;
 			}
@@ -245,7 +245,7 @@ abstract class SipSession
 			$this->remote_cseq = $msg->cseq;
 			
 			$trans = new SipTransaction();
-			$trans->uri = $msg->uri;
+			$trans->uri = clone $msg->uri;
 			$trans->method = $msg->method;
 			$trans->cseq = $msg->cseq;
 			$trans->branch = $msg->branch;
@@ -378,7 +378,7 @@ abstract class SipSession
 			$msg->contact = clone $this->contact;
 		}
 		$msg->call_id = $this->call_id;
-		$msg->uri = $trans->uri;
+		$msg->uri = $trans->uri? (clone $trans->uri) : null;
 		$msg->branch = $trans->branch;
 		$msg->cseq = $trans->cseq;
 		$msg->expires = $trans->expires;

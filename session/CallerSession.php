@@ -35,7 +35,7 @@ class CallerSession extends SipSession
 			Logger::debug("caller send CANCEL to close session");
 			// 发送 BYE, 直到收到 200
 			$new = new SipTransaction();
-			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+			$new->uri = new SipUri($this->remote->username, "{$this->remote_ip}:{$this->remote_port}");
 			$new->method = 'CANCEL';
 			$new->cseq = $this->local_cseq;
 			$new->branch = $this->local_branch;
@@ -88,7 +88,7 @@ class CallerSession extends SipSession
 			}
 
 			$new = new SipTransaction();
-			$new->uri = "sip:{$this->remote->username}@{$this->remote_ip}:{$this->remote_port}";
+			$new->uri = new SipUri($this->remote->username, "{$this->remote_ip}:{$this->remote_port}");
 			$new->method = 'ACK';
 			$new->cseq = $msg->cseq;
 			$new->branch = SIP::new_branch();
