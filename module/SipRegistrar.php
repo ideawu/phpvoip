@@ -97,6 +97,7 @@ class SipRegistrar extends SipModule
 		if($sess->is_state(SIP::CLOSED)){
 			$old = $this->get_online($sess->remote->username);
 			if($old && $old === $sess){
+				Logger::debug($sess->brief() . " expired");
 				$this->offline($old);
 				$this->del_session($old);
 			}
