@@ -48,21 +48,22 @@ class RegistrarSession extends SipSession
 	}
 	
 	function incoming($msg, $trans){
+		// 新 cseq trans，需要将原来的 trans 替换掉。Registrar 同时只允许1个trans
+		if($trans != $this->trans){
+			$trans->timers = $this->trans->timers;
+			$this->transactions = array($trans);
+			$this->trans = $trans;
+		}
+		
 		if($msg->method == 'REGISTER'){
 			if($msg->expires > 0 && $msg->expires < self::MIN_EXPIRES){
 				$trans->code = 423;
-				// 将原来的定时器复制过来，因为新创建的 trans 没有定时器。然后将原定时器删除。
-				$trans->timers = $this->trans->timers;
-				$this->transactions = array($trans);
 				$trans->nowait();
 				return true;
 			}
 			if(!$msg->auth && $this->auth){
 				$trans->code = 401;
 				$trans->auth = $this->auth;
-				// 将原来的定时器复制过来，因为新创建的 trans 没有定时器。然后将原定时器删除。
-				$trans->timers = $this->trans->timers;
-				$this->transactions = array($trans);
 				$trans->nowait();
 				return true;
 			}
@@ -72,9 +73,6 @@ class RegistrarSession extends SipSession
 			if($in_auth['response'] !== $my_auth['response']){
 				Logger::debug("auth failed");
 				$trans->code = 401;
-				// 将原来的定时器复制过来，因为新创建的 trans 没有定时器。然后将原定时器删除。
-				$trans->timers = $this->trans->timers;
-				$this->transactions = array($trans);
 				$trans->nowait();
 				return true;
 			}
@@ -90,16 +88,12 @@ class RegistrarSession extends SipSession
 
 			if($this->is_state(SIP::CLOSING)){
 				Logger::debug("recv REGISTER while closing");
-				// 将原来的定时器复制过来，因为新创建的 trans 没有定时器。然后将原定时器删除。
-				$trans->timers = $this->trans->timers;
-				$this->transactions = array($trans);
 				$trans->nowait();
 				return true;
 			}
 			if($this->expires <= 0){
 				$this->close();
 				$trans->timers = array(0, 1);
-				$this->transactions = array($trans);
 				return true;
 			}
 			
@@ -112,8 +106,6 @@ class RegistrarSession extends SipSession
 			$trans->to_tag = SIP::new_tag();
 			$trans->expires = $this->expires;
 			$trans->timers = array(0, $this->expires);
-			$this->transactions = array($trans);
-			$this->trans = $trans;
 			return true;
 		}
 	}
