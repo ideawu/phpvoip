@@ -147,9 +147,6 @@ class SipRegistrar extends SipModule
 		if(!$sess->is_state(SIP::COMPLETED)){
 			return null;
 		}
-		if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
-			return null;
-		}
 
 		$uri = $msg->uri;
 		$from = clone $msg->from;
