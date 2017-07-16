@@ -290,6 +290,7 @@ abstract class SipSession
 			$trans->method = 'ACK';
 			$trans->timers = array(0, 0);
 			$this->transactions = array($trans);
+			$this->trans = $trans;
 			return true;
 		}
 		if($msg->method === 'ACK'){
