@@ -38,7 +38,7 @@ class SipLink
 		
 		$buf = $msg->encode();
 		$this->udp->sendto($buf, $msg->dst_ip, $msg->dst_port);
-		// echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
+		echo '  > ' . str_replace("\n", "\n  > ", trim($buf)) . "\n\n";
 	}
 	
 	function recv(){
@@ -79,7 +79,7 @@ class SipLink
 		// 	}
 		// }
 		
-		#echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
+		echo '  < ' . str_replace("\n", "\n  < ", trim($buf)) . "\n\n";
 		return $msg;
 	}
 }
