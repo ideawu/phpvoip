@@ -52,7 +52,7 @@ class SipRegistrar extends SipModule
 		$sess->username = $username;
 		$sess->password = $password;
 
-		Logger::debug("create new REGISTRAR " . $sess->brief());
+		Logger::debug("create new " . $sess->brief());
 		$this->add_session($sess);
 				
 		$sess->init();
@@ -109,7 +109,7 @@ class SipRegistrar extends SipModule
 	}
 	
 	private function online($sess){
-		Logger::debug("online " . $sess->brief());
+		Logger::debug("online  " . $sess->brief());
 		$this->onlines[$sess->remote->username] = $sess;
 	}
 	

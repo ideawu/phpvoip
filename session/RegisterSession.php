@@ -81,16 +81,17 @@ class RegisterSession extends SipSession
 				return true;
 			}
 			$expires = min(self::MAX_EXPIRES, $this->expires);
+			$renew = intval($expires * 0.6);
 			if($this->is_state(SIP::COMPLETED)){
-				Logger::debug("REGISTER " .$this->local->address(). " renewed, expires: $expires");
+				Logger::debug("REGISTER " .$this->local->address(). " renewed, expires: $expires, renew: $renew");
 			}else{
-				Logger::debug("REGISTER " .$this->local->address(). " registered, expires: $expires");
+				Logger::debug("REGISTER " .$this->local->address(). " registered, expires: $expires, renew: $renew");
 				$this->complete();
 			}
 	
 			$this->register();
 			$this->local->set_tag(SIP::new_tag());
-			$this->trans->wait($expires * 0.6);
+			$this->trans->wait($renew);
 			return true;
 		}
 	}
