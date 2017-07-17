@@ -24,21 +24,30 @@ abstract class BaseCallSession extends SipSession
 			}
 			return true;
 		}
-		if($msg->method === 'ACK'){
+		if($msg->method === 'ACK' && $trans->method === 'INVITE'){
 			if($msg->branch === $trans->branch){
 				Logger::debug("duplicated ACK, ignore");
 				return true;
 			}
-			if($trans->method === 'INVITE'){
-				if($this->is_state(SIP::COMPLETING)){
-					$this->complete();
-				}else{
-					Logger::debug("recv ACK when " . $this->state_text());
-					$trans->timers = array();
-				}
-				$this->keepalive();
-				return true;
+			if($this->is_state(SIP::COMPLETING)){
+				$this->complete();
+			}else{
+				Logger::debug("recv ACK when " . $this->state_text());
+				$trans->timers = array();
 			}
+			$this->keepalive();
+			return true;
+		}
+		if($msg->code >= 200 && $trans->method === 'INVITE'){
+			Logger::debug("recv {$msg->code} for {$trans->method}, closing");
+			$this->set_state(SIP::CLOSING);
+			$this->remote->set_tag($msg->to->tag());
+			
+			$trans->method = 'ACK';
+			$trans->timers = array(0, 0);
+			$this->transactions = array($trans);
+			$this->trans = $trans;
+			return true;
 		}
 
 		// bye

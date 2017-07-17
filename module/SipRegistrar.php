@@ -24,7 +24,15 @@ class SipRegistrar extends SipModule
 		}
 		return false;
 	}
-	
+
+	function outgoing($time, $timespan){
+		$msgs = parent::outgoing($time, $timespan);
+		foreach($msgs as $msg){
+			$msg->add_header('Server', 'phpvoip-registrar');
+		}
+		return $msgs;
+	}
+		
 	function register($msg){
 		$username = $msg->from->username;
 		if(!isset($this->users[$username])){

@@ -142,15 +142,21 @@ class SipMessage
 			}
 		}
 
+		$ua = null;
 		foreach($this->headers as $v){
+			if($v[0] === 'Server' || $v[0] === 'User-Agent'){
+				$ua = $v[0];
+			}
 			$headers[] = "{$v[0]}: {$v[1]}";
+		}
+		if(!$ua){
+			$headers[] = "User-Agent: phpvoip";
 		}
 		
 		$this->content_length = strlen($this->content);
 		if($this->expires !== null){
 			$headers[] = "Expires: {$this->expires}";
 		}
-		$headers[] = "User-Agent: phpvoip";
 		if($this->content_type){
 			$headers[] = "Content-Type: " . $this->content_type;
 		}
