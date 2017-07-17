@@ -94,6 +94,14 @@ A=>B 注册
 	> REGISTER (from.tag=at, to.tag=  , seq+1, branch1, contact=A, uri=S)
 	< 200      (from.tag=at, to.tag=bt, seq+1, branch1, contact= )
 
+### 刷新
+
+	> REGISTER (from.tag=xt, to.tag=  , seq+2, branch2, contact=A, uri=S)
+
+或
+
+	> REGISTER (from.tag=at, to.tag=  , seq+2, branch2, contact=A, uri=S)
+
 
 # INVITE
 
