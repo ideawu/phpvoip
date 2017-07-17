@@ -210,7 +210,7 @@ abstract class SipSession
 					#Logger::debug("");
 					return false;
 				}
-				if($msg->uri && $trans->uri && !$msg->uri->equals($trans->uri)){
+				if(!$trans->uri || $msg->uri->username !== $trans->uri->username){
 					Logger::debug($msg->uri->encode() . " != " . $trans->uri->encode());
 					return false;
 				}
@@ -221,7 +221,7 @@ abstract class SipSession
 				return true;
 			}
 			// CANCEL 不带 to.tag，重传的 INVITE，可能不带 to.tag
-			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri->equals($trans->uri)){
+			if($msg->cseq === $trans->cseq && $msg->branch === $trans->branch && $msg->uri->username === $trans->uri->username){
 				#Logger::debug("recv transaction request " . $msg->method);
 				return true;
 			}

@@ -90,6 +90,7 @@ class RegisterSession extends SipSession
 			}
 	
 			$this->register();
+			$this->contact = clone $msg->contact;
 			$this->local->set_tag(SIP::new_tag());
 			$this->trans->wait($renew);
 			return true;

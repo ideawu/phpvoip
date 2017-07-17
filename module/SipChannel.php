@@ -101,7 +101,7 @@ class SipChannel extends SipModule
 		// TODO: 可能需要修改各个地址中的 domain
 		$uri = clone $msg->uri;
 		$from = clone $msg->from;
-		$from->username = $msg->contact->username; // 如果要保留原发起人
+		#$from->username = $msg->contact->username; // 如果要保留原发起人，某些PBX不支持
 		$to = clone $msg->to;
 
 		$call = new CallerSession($uri, $from, $to);
