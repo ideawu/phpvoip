@@ -4,17 +4,17 @@ class CallerSession extends BaseCallSession
 	public $local_sdp;
 	public $remote_sdp;
 
-	function __construct($uri, $from, $to){
+	function __construct($from, $to){
 		parent::__construct();
 		$this->role = SIP::CALLER;
 
-		$this->uri = $uri;
+		$this->uri = new SipUri($to->username, $to->domain);
 		$this->call_id = SIP::new_call_id();
 		$this->local = $from;
 		$this->local->set_tag(SIP::new_tag());
 		$this->remote = $to;
 
-		$this->trans->uri = $uri;
+		$this->trans->uri = clone $this->uri;
 		$this->trans->method = 'INVITE';
 		$this->trans->cseq = $this->local_cseq;
 		$this->trans->branch = $this->local_branch;

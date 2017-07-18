@@ -17,7 +17,7 @@ class SipRegistrar extends SipModule
 		
 		// 新的 REGISTER
 		if($msg->method === 'REGISTER'){
-			if($this->register($msg)){
+			if($this->new_register($msg)){
 				// 如果创建了新的 session，应该处理消息，框架不会调用。
 				return parent::incoming($msg);
 			}
@@ -33,7 +33,7 @@ class SipRegistrar extends SipModule
 		return $msgs;
 	}
 		
-	function register($msg){
+	private function new_register($msg){
 		$username = $msg->from->username;
 		if(!isset($this->users[$username])){
 			return false;
@@ -59,6 +59,7 @@ class SipRegistrar extends SipModule
 
 		$sess->username = $username;
 		$sess->password = $password;
+		$sess->domain = "{$sess->local_ip}:{$sess->local_port}";
 
 		Logger::debug("create new " . $sess->brief());
 		$this->add_session($sess);
@@ -156,11 +157,10 @@ class SipRegistrar extends SipModule
 			return null;
 		}
 
-		$uri = clone $msg->uri;
-		$from = clone $msg->from;
-		$to = clone $msg->to;
+		$from = new SipContact($msg->from->username, $sess->domain);
+		$to = new SipContact($msg->to->username, $sess->domain);
 
-		$call = new CallerSession($uri, $from, $to);
+		$call = new CallerSession($from, $to);
 		$call->local_ip = $sess->local_ip;
 		$call->local_port = $sess->local_port;
 		$call->remote_ip = $sess->remote_ip;
@@ -170,11 +170,10 @@ class SipRegistrar extends SipModule
 	}
 	
 	private function test($sess){
-		$uri = new SipUri($sess->remote->username, $sess->remote->domain);
 		$from = new SipContact(1, '127.0.0.1:5070');
 		$to = new SipContact($sess->remote->username, $sess->remote->domain);
 
-		$call = new CallerSession($uri, $from, $to);
+		$call = new CallerSession($from, $to);
 		$call->local_ip = $sess->local_ip;
 		$call->local_port = $sess->local_port;
 		$call->remote_ip = $sess->remote_ip;

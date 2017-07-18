@@ -20,7 +20,7 @@ class SipChannel extends SipModule
 			$domain = $ps[1];
 		}else{
 			$username = $user;
-			$domain = $remote_ip;
+			$domain = $remote_ip . ':' . $remote_port;
 		}
 
 		$this->username = $username;
@@ -40,7 +40,7 @@ class SipChannel extends SipModule
 		}
 		$this->local_ip = $local_ip;
 		$this->local_port = $local_port;
-		$this->contact = new SipContact($this->username, "{$this->local_ip}");
+		$this->contact = new SipContact($this->username, "{$this->local_ip}:{$this->local_port}");
 
 		$sess = new RegisterSession($this->username, $this->password, $this->remote_ip, $this->remote_port, $this->domain);
 		$sess->local_ip = $local_ip;
@@ -70,7 +70,6 @@ class SipChannel extends SipModule
 		if($msg->src_ip !== $sess->remote_ip || $msg->src_port !== $sess->remote_port){
 			return null;
 		}
-		// TODO: 验证 uri, contact ...
 		if($msg->to->username !== $sess->username){
 			Logger::debug("to.username:{$msg->to->username} != username:{$sess->username}");
 			return null;
@@ -98,13 +97,11 @@ class SipChannel extends SipModule
 			return null;
 		}
 		
-		// TODO: 可能需要修改各个地址中的 domain
-		$uri = clone $msg->uri;
-		$from = clone $msg->from;
+		$from = new SipContact($msg->from->username, $sess->domain);
+		$to = new SipContact($msg->to->username, $sess->domain);
 		#$from->username = $msg->contact->username; // 如果要保留原发起人，某些PBX不支持
-		$to = clone $msg->to;
 
-		$call = new CallerSession($uri, $from, $to);
+		$call = new CallerSession($from, $to);
 		$call->local_ip = $sess->local_ip;
 		$call->local_port = $sess->local_port;
 		$call->remote_ip = $sess->remote_ip;
