@@ -38,7 +38,7 @@ abstract class BaseCallSession extends SipSession
 			$this->keepalive();
 			return true;
 		}
-		if($msg->code >= 200 && $trans->method === 'INVITE'){
+		if($msg->code > 200 && $trans->method === 'INVITE'){
 			Logger::debug("recv {$msg->code} for {$trans->method}, closing");
 			$this->set_state(SIP::CLOSING);
 			$this->remote->set_tag($msg->to->tag());
