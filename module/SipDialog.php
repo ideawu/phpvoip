@@ -42,47 +42,55 @@ class SipDialog
 		$this->caller->local_sdp = $this->callee->remote_sdp;
 	}
 	
-	function add_session($sess){
-		$this->sessions[] = $sess;
-		$sess->set_callback(array($this, 'sess_callback'));
-	}
-	
 	function sess_callback($sess){
-		if($sess === $this->caller){
+		$caller = $this->caller;
+		$callee = $this->callee;
+		
+		if($sess === $caller){
 			if($sess->is_state(SIP::RINGING)){
 				Logger::debug("caller ringing, callee ringing");
-				$this->callee->ringing();
+				$callee->ringing();
 			}
 			if($sess->is_state(SIP::COMPLETING)){
 				Logger::debug("caller completing, callee completing");
-				$this->callee->local_sdp = $this->caller->remote_sdp;
-				$this->callee->completing();
+				$callee->local_sdp = $caller->remote_sdp;
+				$callee->completing();
 			}
 			if($sess->is_state(SIP::COMPLETED)){
 				Logger::debug("caller completed");
 			}
-			
+			if($sess->is_state(SIP::CLOSING)){
+				if($callee && !$callee->is_state(SIP::CLOSING)){
+					Logger::debug("caller " . $sess->state_text() . ", closing callee");
+					$callee->close();
+				}
+			}
 			if($sess->is_state(SIP::CLOSED)){
-				$this->del_session($this->caller);
-				if($this->callee){
-					Logger::debug("caller closed, closing callee");
-					$this->callee->close();
+				$this->del_session($caller);
+				if($callee && !$callee->is_state(SIP::CLOSING)){
+					Logger::debug("caller " . $sess->state_text() . ", closing callee");
+					$callee->close();
 				}else{
 					Logger::debug("caller closed");
 				}
 			}
 		}
 		
-		if($sess === $this->callee){
+		if($sess === $callee){
 			if($sess->is_state(SIP::COMPLETED)){
 				Logger::debug("callee completed");
 			}
-
+			if($sess->is_state(SIP::CLOSING)){
+				if($caller && !$caller->is_state(SIP::CLOSING)){
+					Logger::debug("callee " . $sess->state_text() . ", closing caller");
+					$caller->close();
+				}
+			}
 			if($sess->is_state(SIP::CLOSED)){
-				$this->del_session($this->callee);
-				if($this->caller){
-					Logger::debug("callee closed, closing caller");
-					$this->caller->close();
+				$this->del_session($callee);
+				if($caller && !$caller->is_state(SIP::CLOSING)){
+					Logger::debug("callee " . $sess->state_text() . ", closing caller");
+					$caller->close();
 				}else{
 					Logger::debug("callee closed");
 				}
@@ -90,17 +98,17 @@ class SipDialog
 		}
 	}
 	
+	function add_session($sess){
+		$this->sessions[$sess->id] = $sess;
+		$sess->set_callback(array($this, 'sess_callback'));
+	}
+	
 	function del_session($sess){
-		foreach($this->sessions as $index=>$tmp){
-			if($tmp === $sess){
-				unset($this->sessions[$index]);
-				if($sess === $this->callee){
-					$this->callee = null;
-				}else if($sess === $this->caller){
-					$this->caller = null;
-				}
-				break;
-			}
+		unset($this->sessions[$sess->id]);
+		if($sess === $this->callee){
+			$this->callee = null;
+		}else if($sess === $this->caller){
+			$this->caller = null;
 		}
 	}
 }
