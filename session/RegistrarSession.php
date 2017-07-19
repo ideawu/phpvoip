@@ -106,7 +106,7 @@ class RegistrarSession extends SipSession
 
 			$trans->to_tag = SIP::new_tag();
 			$trans->expires = $this->expires;
-			$trans->timers = array(0, $this->expires);
+			$trans->timers = array(0, $this->expires + 10);
 			return true;
 		}
 	}
