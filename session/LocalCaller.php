@@ -29,8 +29,10 @@ class LocalCaller extends SipSession
 		$this->set_state(SIP::COMPLETING);
 	}
 	
+	// 对于 LocalCaller，上层应该主动调用 caller.complete() 方法
 	function complete(){
 		parent::complete();
+		$this->callee->complete();
 	}
 	
 	function close(){

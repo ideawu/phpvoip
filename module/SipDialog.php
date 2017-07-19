@@ -57,7 +57,7 @@ class SipDialog
 				$callee->completing();
 			}
 			if($sess->is_state(SIP::COMPLETED)){
-				Logger::debug("caller completed");
+				Logger::debug("caller " . $sess->state_text());
 			}
 			if($sess->is_state(SIP::CLOSING)){
 				if($callee && !$callee->is_state(SIP::CLOSING)){
@@ -71,14 +71,19 @@ class SipDialog
 					Logger::debug("caller " . $sess->state_text() . ", closing callee");
 					$callee->close();
 				}else{
-					Logger::debug("caller closed");
+					Logger::debug("caller " . $sess->state_text());
 				}
 			}
 		}
 		
 		if($sess === $callee){
 			if($sess->is_state(SIP::COMPLETED)){
-				Logger::debug("callee completed");
+				if($caller && !$caller->is_state(SIP::COMPLETED)){
+					Logger::debug("callee " . $sess->state_text() . ", complete caller");
+					$caller->complete();
+				}else{
+					Logger::debug("callee " . $sess->state_text());
+				}
 			}
 			if($sess->is_state(SIP::CLOSING)){
 				if($caller && !$caller->is_state(SIP::CLOSING)){
@@ -92,7 +97,7 @@ class SipDialog
 					Logger::debug("callee " . $sess->state_text() . ", closing caller");
 					$caller->close();
 				}else{
-					Logger::debug("callee closed");
+					Logger::debug("callee " . $sess->state_text());
 				}
 			}
 		}

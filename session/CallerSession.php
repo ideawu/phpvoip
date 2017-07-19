@@ -75,7 +75,7 @@ class CallerSession extends BaseCallSession
 				$this->remote_sdp = $msg->content;
 				if($this->is_state(SIP::TRYING) || $this->is_state(SIP::RINGING)){
 					$this->completing();
-					$this->complete();
+					$this->complete(); // 自动 complete
 					$this->keepalive();
 				
 					$trans->timers = array(3); // Timer D

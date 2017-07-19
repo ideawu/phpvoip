@@ -49,7 +49,6 @@ TEXT;
 
 	function complete(){
 		parent::complete();
-		$this->caller->complete();
 	}
 	
 	function close(){
@@ -82,9 +81,6 @@ TEXT;
 		}
 		if($this->count == 2){
 			$this->completing();
-		}
-		if($this->count == 3){
-			$this->complete();
 		}
 		return null;
 	}
