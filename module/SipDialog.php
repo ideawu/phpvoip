@@ -78,12 +78,7 @@ class SipDialog
 		
 		if($sess === $callee){
 			if($sess->is_state(SIP::COMPLETED)){
-				if($caller && !$caller->is_state(SIP::COMPLETED)){
-					Logger::debug("callee " . $sess->state_text() . ", complete caller");
-					$caller->complete();
-				}else{
-					Logger::debug("callee " . $sess->state_text());
-				}
+				Logger::debug("callee " . $sess->state_text());
 			}
 			if($sess->is_state(SIP::CLOSING)){
 				if($caller && !$caller->is_state(SIP::CLOSING)){

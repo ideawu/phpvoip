@@ -22,17 +22,24 @@ class LocalCaller extends SipSession
 	}
 	
 	function ringing(){
+		if($this->is_state(SIP::RINGING)){
+			return;
+		}
 		$this->set_state(SIP::RINGING);
 	}
 
 	function completing(){
+		if($this->is_state(SIP::COMPLETING)){
+			return;
+		}
 		$this->set_state(SIP::COMPLETING);
 	}
 	
-	// 对于 LocalCaller，上层应该主动调用 caller.complete() 方法
 	function complete(){
+		if($this->is_state(SIP::COMPLETED)){
+			return;
+		}
 		parent::complete();
-		$this->callee->complete();
 	}
 	
 	function close(){
@@ -52,11 +59,10 @@ class LocalCaller extends SipSession
 	}
 
 	function outgoing($trans){
-		if($this->is_state(SIP::COMPLETING)){
-			$this->complete();
-		}
 		if($this->is_state(SIP::COMPLETED)){
 			$this->trans->timers = array(10, 0);
+		}else{
+			$this->trans->timers = array($this->interval, 0);
 		}
 		return null;
 	}
