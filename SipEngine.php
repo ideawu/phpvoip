@@ -176,7 +176,7 @@ class SipEngine
 
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
-			$msgs = $module->outgoing($time, $timespan);
+			$msgs = $module->outgoing($this->time, $timespan);
 			foreach($msgs as $msg){
 				// TODO: 对于模块消息，不通过 socket 发送
 				$this->link->send($msg);
