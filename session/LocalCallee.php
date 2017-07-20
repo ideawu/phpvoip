@@ -87,9 +87,9 @@ TEXT;
 		
 		if($this->is_state(SIP::TRYING)){
 			$this->ringing();
-		}else if($this->is_state(SIP::RINGING){
+		}else if($this->is_state(SIP::RINGING)){
 			$this->completing();
-		}else if($this->is_state(SIP::COMPLETING){
+		}else if($this->is_state(SIP::COMPLETING)){
 			$this->complete();
 		}
 		return null;
