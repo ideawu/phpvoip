@@ -170,9 +170,18 @@ class SipEngine
 	private $time = 0;
 
 	function proc_send(){
-		$old_time = $this->time;
-		$this->time = microtime(1);
-		$timespan = max(0, $this->time - $old_time);
+		$now = microtime(1);
+		$timespan = $now - $this->time;
+		/*
+		小于0: 系统时钟回退了，具体间隔未知
+		大于10ms: 间隔足够
+		这两种情况都执行一次 outgoing，否则等下一次。
+		*/
+		if($timespan >= 0 && $timespan < 0.01){
+			return;
+		}
+		$this->time = $now;
+		$timespan = max(0, $timespan);
 
 		foreach($this->modules as $mi){
 			$module = $mi['module'];
