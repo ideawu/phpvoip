@@ -41,10 +41,17 @@ TEXT;
 	}
 	
 	function add_member($room_id, $ip, $port){
+		if(!$ip || !$port){
+			return;
+		}
+		Logger::debug("$room_id, $ip, $port");
 		
 	}
 	
 	function del_member($room_id, $ip, $port){
+		if(!$ip || !$port){
+			return;
+		}
 		
 	}
 	
