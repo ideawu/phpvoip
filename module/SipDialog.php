@@ -39,7 +39,6 @@ class SipDialog
 		$this->caller = $sess2;
 		$this->add_session($sess1);
 		$this->add_session($sess2);
-		$this->caller->local_sdp = $this->callee->remote_sdp;
 	}
 	
 	function sess_callback($sess){
@@ -53,7 +52,6 @@ class SipDialog
 			}
 			if($sess->is_state(SIP::COMPLETING)){
 				Logger::debug("caller completing, callee completing");
-				$callee->local_sdp = $caller->remote_sdp;
 				$callee->completing();
 			}
 			if($sess->is_state(SIP::COMPLETED)){

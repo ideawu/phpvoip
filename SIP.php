@@ -1,9 +1,12 @@
 <?php
 include_once(dirname(__FILE__) . '/net/UdpLink.php');
 include_once(dirname(__FILE__) . '/net/SipLink.php');
+include_once(dirname(__FILE__) . '/net/SipMessage.php');
+include_once(dirname(__FILE__) . '/net/RtpLink.php');
+include_once(dirname(__FILE__) . '/net/RtpMessage.php');
+include_once(dirname(__FILE__) . '/net/RtpExchange.php');
 
 include_once(dirname(__FILE__) . '/SipEngine.php');
-include_once(dirname(__FILE__) . '/SipMessage.php');
 include_once(dirname(__FILE__) . '/SipUri.php');
 include_once(dirname(__FILE__) . '/SipContact.php');
 include_once(dirname(__FILE__) . '/SipModule.php');

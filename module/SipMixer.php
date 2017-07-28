@@ -17,6 +17,18 @@ class SipMixer extends SipModule
 		$this->dialogs[] = $dia;
 		$this->add_session($callee);
 		$this->add_session($caller);
+		
+		// P2P 直连
+		// $caller->local_sdp = $callee->remote_sdp;
+		// $callee->local_sdp = $caller->remote_sdp;
+		// 服务器中转
+		$exchange = $this->engine->exchange;
+		$callee->local_sdp = $exchange->sdp($callee->remote_ip);
+		$caller->local_sdp = $exchange->sdp($caller->remote_ip);
+		$room_id = $callee->call_id;
+		$exchange->create_room($room_id);
+		$exchange->add_member($room_id, $callee->remote_ip, $callee->remote_port);
+		$exchange->add_member($room_id, $caller->remote_ip, $caller->remote_port);
 	}
 	
 	function add_session($sess){

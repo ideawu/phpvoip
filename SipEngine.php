@@ -9,6 +9,8 @@ class SipEngine
 	private $router;
 	private $mixer;
 	
+	public $exchange;
+	
 	private $inited = false;
 	
 	private function __construct(){
@@ -21,6 +23,8 @@ class SipEngine
 		$ret->link->set_nonblock();
 		$ret->local_ip = $ret->link->local_ip;
 		$ret->local_port = $ret->link->local_port;
+		
+		$ret->exchange = RtpExchange::listen();
 		return $ret;
 	}
 	
@@ -61,7 +65,7 @@ class SipEngine
 	}
 
 	function loop(){
-		$read = array($this->link->sock);
+		$read = array($this->link->sock, $this->exchange->link->sock);
 		$write = array();
 		$except = array();
 	
@@ -80,18 +84,22 @@ class SipEngine
 			return false;
 		}
 		
-		if($read){
-			while(1){
-				$msg = $this->link->recv();
-				if(!$msg){
-					break;
+		foreach($read as $sock){
+			if($sock === $this->link->sock){
+				while(1){
+					$msg = $this->link->recv();
+					if(!$msg){
+						break;
+					}
+					try{
+						$this->proc_recv($msg);
+					}catch(Exception $e){
+						$this->error_reply($msg, $e->getCode(), $e->getMessage());
+						return true;
+					}
 				}
-				try{
-					$this->proc_recv($msg);
-				}catch(Exception $e){
-					$this->error_reply($msg, $e->getCode(), $e->getMessage());
-					return true;
-				}
+			}else if($sock === $this->exchange->link->sock){
+				$this->exchange->recv();
 			}
 		}
 		
