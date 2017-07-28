@@ -20,7 +20,6 @@ class SipRobotModule extends SipModule
 		$callee->caller = $caller;
 
 		$caller->call_id = $msg->call_id;
-		$caller->remote_sdp = $this->engine->exchange->sdp($msg->remote_ip);
 		$caller->init();
 		
 		$caller->call_id = $msg->call_id;

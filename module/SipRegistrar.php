@@ -190,23 +190,3 @@ class SipRegistrar extends SipModule
 		}
 	}
 }
-
-/*
-			$call->local_sdp = <<<TEXT
-v=0
-o=yate 1499684812 1499684812 IN IP4 127.0.0.1
-s=SIP Call
-c=IN IP4 127.0.0.1
-t=0 0
-m=audio 28300 RTP/AVP 109 0 8 101
-a=rtpmap:109 iLBC/8000
-a=fmtp:109 mode=30
-a=rtpmap:0 PCMU/8000
-a=rtpmap:8 PCMA/8000
-a=rtpmap:101 telephone-event/8000
-a=ptime:30
-TEXT;
-			$call->init();
-			$this->add_session($call);
-			return;
-*/
