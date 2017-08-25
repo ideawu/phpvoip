@@ -54,6 +54,11 @@ class RegisterSession extends SipSession
 		}
 		if($msg->code == 401){
 			$this->register();
+			if($msg->to->tag()){
+				$this->remote->set_tag($msg->to->tag());
+			}
+			// 华为设备似乎不能用新 cseq
+			$this->trans->cseq -= 1;
 
 			if($trans->auth){ // 原 trans
 				Logger::error("{$this->local->username} auth failed");
