@@ -34,7 +34,7 @@ class SipEngine
 		$this->router->domain = $this->local_ip . ':' . $this->local_port;
 		
 		$this->mixer = new SipMixer();
-		$this->add_module($this->mixer, INT_MAX); // Mixer模块放在所有模块的前面
+		$this->add_module($this->mixer, 999999999); // Mixer模块放在所有模块的前面
 		
 		foreach($this->modules as $index=>$mi){
 			$mi['module']->init();
